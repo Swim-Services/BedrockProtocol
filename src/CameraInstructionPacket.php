@@ -47,7 +47,7 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 	protected function decodePayload(PacketSerializer $in) : void{
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
 			$this->set = $in->readOptional(fn() => CameraSetInstruction::read($in));
-			$this->clear = $in->readOptional(fn() => $in->getBool());
+			$this->clear = $in->readOptional($in->getBool(...));
 			$this->fade = $in->readOptional(fn() => CameraFadeInstruction::read($in));
 		}else{
 			$this->fromNBT($in->getNbtCompoundRoot());
@@ -67,7 +67,7 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 	protected function encodePayload(PacketSerializer $out) : void{
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
 			$out->writeOptional($this->set, fn(CameraSetInstruction $v) => $v->write($out));
-			$out->writeOptional($this->clear, fn(bool $v) => $out->putBool($v));
+			$out->writeOptional($this->clear, $out->putBool(...));
 			$out->writeOptional($this->fade, fn(CameraFadeInstruction $v) => $v->write($out));
 		}else{
 			$data = new CacheableNbt($this->toNBT());

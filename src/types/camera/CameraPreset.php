@@ -147,4 +147,46 @@ final class CameraPreset{
 
 		return $nbt;
 	}
+
+	public function toNBT(int $protocolId) : CompoundTag{
+		$nbt = CompoundTag::create()
+			->setString("identifier", $this->name)
+			->setString("inherit_from", $this->parent);
+
+		if($this->xPosition !== null){
+			$nbt->setFloat("pos_x", $this->xPosition);
+		}
+
+		if($this->yPosition !== null){
+			$nbt->setFloat("pos_y", $this->yPosition);
+		}
+
+		if($this->zPosition !== null){
+			$nbt->setFloat("pos_z", $this->zPosition);
+		}
+
+		if($this->pitch !== null){
+			$nbt->setFloat("rot_x", $this->pitch);
+		}
+
+		if($this->yaw !== null){
+			$nbt->setFloat("rot_y", $this->yaw);
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
+			if($this->audioListenerType !== null){
+				$nbt->setString("audio_listener_type", match($this->audioListenerType){
+					self::AUDIO_LISTENER_TYPE_CAMERA => "camera",
+					self::AUDIO_LISTENER_TYPE_PLAYER => "player",
+					default => throw new \InvalidArgumentException("Invalid audio listener type: $this->audioListenerType"),
+				});
+			}
+
+			if($this->playerEffects !== null){
+				$nbt->setByte("player_effects", (int) $this->playerEffects);
+			}
+		}
+
+		return $nbt;
+	}
 }

@@ -43,7 +43,7 @@ class UpdatePlayerGameTypePacket extends DataPacket implements ClientboundPacket
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->gameMode = $in->getVarInt();
 		$this->playerActorUniqueId = $in->getActorUniqueId();
-		if ($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80) {
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80){
 			$this->tick = $in->getUnsignedVarInt();
 		}
 	}
@@ -51,7 +51,7 @@ class UpdatePlayerGameTypePacket extends DataPacket implements ClientboundPacket
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putVarInt($this->gameMode);
 		$out->putActorUniqueId($this->playerActorUniqueId);
-		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80) {
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80){
 			$out->putUnsignedVarInt($this->tick);
 		}
 	}

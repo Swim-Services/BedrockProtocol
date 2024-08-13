@@ -820,4 +820,12 @@ trait PacketHandlerDefaultImplTrait{
 	public function handleAgentAnimation(AgentAnimationPacket $packet) : bool{
 		return false;
 	}
+
+	public function handleAwardAchievement(AwardAchievementPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleCloseForm(ClientboundCloseFormPacket $packet) : bool{
+		return false;
+	}
 }

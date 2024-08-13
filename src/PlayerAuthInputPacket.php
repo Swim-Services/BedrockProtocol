@@ -32,7 +32,7 @@ use function count;
 class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::PLAYER_AUTH_INPUT_PACKET;
 
-	private Vector3 $position;
+	public Vector3 $position;
 	private float $pitch;
 	private float $yaw;
 	private float $headYaw;
@@ -272,7 +272,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		$out->putLFloat($this->moveVecX);
 		$out->putLFloat($this->moveVecZ);
 		$out->putLFloat($this->headYaw);
-		$out->putUnsignedVarLong($this->inputFlags);
+		$out->putUnsignedVarLong($inputFlags);
 		$out->putUnsignedVarInt($this->inputMode);
 		$out->putUnsignedVarInt($this->playMode);
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_0){

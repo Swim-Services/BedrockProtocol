@@ -22,15 +22,17 @@ class CodeBuilderSourcePacket extends DataPacket implements ServerboundPacket{
 	private int $operation;
 	private int $category;
 	private string $value;
+	private int $codeStatus;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $operation, int $category, string $value) : self{
+	public static function create(int $operation, int $category, string $value, int $codeStatus) : self{
 		$result = new self;
 		$result->operation = $operation;
 		$result->category = $category;
 		$result->value = $value;
+		$result->codeStatus = $codeStatus;
 		return $result;
 	}
 
@@ -40,16 +42,26 @@ class CodeBuilderSourcePacket extends DataPacket implements ServerboundPacket{
 
 	public function getValue() : string{ return $this->value; }
 
+	public function getCodeStatus() : int{ return $this->codeStatus; }
+
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->operation = $in->getByte();
 		$this->category = $in->getByte();
-		$this->value = $in->getString();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_0){
+			$this->codeStatus = $in->getByte();
+		}else{
+			$this->value = $in->getString();
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putByte($this->operation);
 		$out->putByte($this->category);
-		$out->putString($this->value);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_0){
+			$out->putByte($this->codeStatus);
+		}else{
+			$out->putString($this->value);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -32,6 +32,8 @@ final class ProtocolInfo{
 	 */
 
 	/** Actual Minecraft: PE protocol version */
+	public const PROTOCOL_1_21_2 = 686;
+	public const PROTOCOL_1_21_0 = 685;	
 	public const PROTOCOL_1_20_80 = 671;
 	public const PROTOCOL_1_20_70 = 662;
 	public const PROTOCOL_1_20_60 = 649;
@@ -79,16 +81,17 @@ final class ProtocolInfo{
         self::PROTOCOL_1_20_50,
         self::PROTOCOL_1_20_60,
         self::PROTOCOL_1_20_70,
+		self::PROTOCOL_1_20_80,
+		self::PROTOCOL_1_21_0,
 		self::CURRENT_PROTOCOL
 	];
 
 
 
 	/** Current Minecraft PE version reported by the server. This is usually the earliest currently supported version. */
-	public const MINECRAFT_VERSION = 'v1.20.80';
+	public const MINECRAFT_VERSION = 'v1.21.2';
 	/** Version number sent to clients in ping responses. */
-	public const MINECRAFT_VERSION_NETWORK = '1.20.80';
-
+	public const MINECRAFT_VERSION_NETWORK = '1.21.2';
 
 
 	public const LOGIN_PACKET = 0x01;
@@ -146,8 +149,7 @@ final class ProtocolInfo{
 	public const CRAFTING_DATA_PACKET = 0x34;
 	public const CRAFTING_EVENT_PACKET = 0x35;
 	public const GUI_DATA_PICK_ITEM_PACKET = 0x36;
-    public const ADVENTURE_SETTINGS_PACKET = 0x37;
-
+	public const ADVENTURE_SETTINGS_PACKET = 0x37;
 	public const BLOCK_ACTOR_DATA_PACKET = 0x38;
 	public const PLAYER_INPUT_PACKET = 0x39;
 	public const LEVEL_CHUNK_PACKET = 0x3a;
@@ -301,4 +303,7 @@ final class ProtocolInfo{
 	public const PLAYER_TOGGLE_CRAFTER_SLOT_REQUEST_PACKET = 0x132;
 	public const SET_PLAYER_INVENTORY_OPTIONS_PACKET = 0x133;
 	public const SET_HUD_PACKET = 0x134;
+	public const AWARD_ACHIEVEMENT_PACKET = 0x135;
+	public const CLIENTBOUND_CLOSE_FORM_PACKET = 0x136;
+
 }

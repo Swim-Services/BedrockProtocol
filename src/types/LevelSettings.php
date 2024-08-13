@@ -76,6 +76,10 @@ final class LevelSettings{
 	public int $chatRestrictionLevel = ChatRestrictionLevel::NONE;
 	public bool $disablePlayerInteractions = false;
 
+	public string $serverIdentifier = "";
+	public string $worldIdentifier = "";
+	public string $scenarioIdentifier = "";
+
 	/**
 	 * @throws BinaryDataException
 	 * @throws PacketDecodeException
@@ -107,8 +111,8 @@ final class LevelSettings{
 		$this->difficulty = $in->getVarInt();
 		$this->spawnPosition = $in->getBlockPosition();
 		$this->hasAchievementsDisabled = $in->getBool();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_10){
-			$this->isEditorMode = $in->getBool();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_10) {
+			$this->editorWorldType = $in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30 ? $in->getVarInt() : ($in->getBool() ? EditorWorldType::PROJECT : EditorWorldType::NON_EDITOR);
 		}
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_80){
 			$this->createdInEditorMode = $in->getBool();
@@ -151,13 +155,16 @@ final class LevelSettings{
 		$this->limitedWorldWidth = $in->getLInt();
 		$this->limitedWorldLength = $in->getLInt();
 		$this->isNewNether = $in->getBool();
-		if($in->getProtocolId() > ProtocolInfo::PROTOCOL_1_16_100){
-			$this->eduSharedUriResource = EducationUriResource::read($in);
-		}
-		$this->experimentalGameplayOverride = $in->readOptional(\Closure::fromCallable([$in, 'getBool']));
+		$this->eduSharedUriResource = EducationUriResource::read($in);
+		$this->experimentalGameplayOverride = $in->readOptional($in->getBool(...));
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
 			$this->chatRestrictionLevel = $in->getByte();
 			$this->disablePlayerInteractions = $in->getBool();
+		}
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_0){
+			$this->serverIdentifier = $in->getString();
+			$this->worldIdentifier = $in->getString();
+			$this->scenarioIdentifier = $in->getString();
 		}
 	}
 
@@ -176,8 +183,10 @@ final class LevelSettings{
 		$out->putVarInt($this->difficulty);
 		$out->putBlockPosition($this->spawnPosition);
 		$out->putBool($this->hasAchievementsDisabled);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_10){
-			$out->putBool($this->isEditorMode);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+			$out->putVarInt($this->editorWorldType);
+		}else if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_10){
+			$out->putBool($this->editorWorldType !== EditorWorldType::NON_EDITOR);
 		}
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_80){
 			$out->putBool($this->createdInEditorMode);
@@ -220,13 +229,16 @@ final class LevelSettings{
 		$out->putLInt($this->limitedWorldWidth);
 		$out->putLInt($this->limitedWorldLength);
 		$out->putBool($this->isNewNether);
-		if($out->getProtocolId() > ProtocolInfo::PROTOCOL_1_16_100){
-			($this->eduSharedUriResource ?? new EducationUriResource("", ""))->write($out);
-		}
-		$out->writeOptional($this->experimentalGameplayOverride, \Closure::fromCallable([$out, 'putBool']));
+		($this->eduSharedUriResource ?? new EducationUriResource("", ""))->write($out);
+		$out->writeOptional($this->experimentalGameplayOverride, $out->putBool(...));
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
 			$out->putByte($this->chatRestrictionLevel);
 			$out->putBool($this->disablePlayerInteractions);
+		}
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_0){
+			$out->putString($this->serverIdentifier);
+			$out->putString($this->worldIdentifier);
+			$out->putString($this->scenarioIdentifier);
 		}
 	}
 }

@@ -417,4 +417,8 @@ interface PacketHandlerInterface{
 	public function handleAgentAnimation(AgentAnimationPacket $packet) : bool;
 
 	public function handleSetHud(SetHudPacket $packet) : bool;
+
+	public function handleAwardAchievement(AwardAchievementPacket $packet) : bool;
+
+	public function handleCloseForm(ClientboundCloseFormPacket $packet) : bool;
 }

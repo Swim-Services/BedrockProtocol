@@ -36,12 +36,11 @@ class DataPacketTest extends TestCase{
 		$pk->senderSubId = 3;
 		$pk->recipientSubId = 2;
 
-		$context = new PacketSerializerContext(new ItemTypeDictionary([new ItemTypeEntry("minecraft:shield", 0, false)]));
-		$serializer = PacketSerializer::encoder($context);
+		$serializer = PacketSerializer::encoder(ProtocolInfo::CURRENT_PROTOCOL);
 		$pk->encode($serializer);
 
 		$pk2 = new TestPacket();
-		$pk2->decode(PacketSerializer::decoder($serializer->getBuffer(), 0, $context));
+		$pk2->decode(PacketSerializer::decoder(ProtocolInfo::CURRENT_PROTOCOL, $serializer->getBuffer(), 0));
 		self::assertSame($pk2->senderSubId, 3);
 		self::assertSame($pk2->recipientSubId, 2);
 	}
