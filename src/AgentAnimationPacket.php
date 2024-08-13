@@ -16,7 +16,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
-class AgentAnimationPacket extends DataPacket implements ClientboundPacket{
+class AgentAnimationPacket extends DataPacket{
 	public const NETWORK_ID = ProtocolInfo::AGENT_ANIMATION_PACKET;
 
 	public const TYPE_ARM_SWING = 0;

@@ -60,16 +60,20 @@ class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPa
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->actorRuntimeId = $in->getActorRuntimeId();
 		$this->emoteId = $in->getString();
-		$this->xboxUserId = $in->getString();
-		$this->platformChatId = $in->getString();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0){
+			$this->xboxUserId = $in->getString();
+			$this->platformChatId = $in->getString();
+		}
 		$this->flags = $in->getByte();
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putActorRuntimeId($this->actorRuntimeId);
 		$out->putString($this->emoteId);
-		$out->putString($this->xboxUserId);
-		$out->putString($this->platformChatId);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0){
+			$out->putString($this->xboxUserId);
+			$out->putString($this->platformChatId);
+		}
 		$out->putByte($this->flags);
 	}
 

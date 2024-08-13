@@ -49,7 +49,11 @@ class UnlockedRecipesPacket extends DataPacket implements ClientboundPacket{
 	public function getRecipes() : array{ return $this->recipes; }
 
 	protected function decodePayload(PacketSerializer $in) : void{
-		$this->type = $in->getLInt();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0){
+			$this->type = $in->getLInt();
+		}else{
+			$this->type = $in->getBool() ? self::TYPE_NEWLY_UNLOCKED : self::TYPE_REMOVE;
+		}
 		$this->recipes = [];
 		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; $i++){
 			$this->recipes[] = $in->getString();
@@ -57,7 +61,11 @@ class UnlockedRecipesPacket extends DataPacket implements ClientboundPacket{
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putLInt($this->type);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0){
+			$out->putLInt($this->type);
+		}else{
+			$out->putBool($this->type === self::TYPE_NEWLY_UNLOCKED);
+		}
 		$out->putUnsignedVarInt(count($this->recipes));
 		foreach($this->recipes as $recipe){
 			$out->putString($recipe);

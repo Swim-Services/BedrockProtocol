@@ -16,10 +16,10 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\ChunkPosition;
-use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\utils\Limits;
 use function count;
 use const PHP_INT_MAX;
+use pocketmine\network\mcpe\protocol\types\DimensionIds;
 
 class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::LEVEL_CHUNK_PACKET;
@@ -49,7 +49,6 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	/**
 	 * @generate-create-func
 	 * @param int[] $usedBlobHashes
-	 * @phpstan-param DimensionIds::* $dimensionId
 	 */
 	public static function create(ChunkPosition $chunkPosition, int $dimensionId, int $subChunkCount, bool $clientSubChunkRequestsEnabled, ?array $usedBlobHashes, string $extraPayload) : self{
 		$result = new self;
@@ -91,8 +90,9 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->chunkPosition = ChunkPosition::read($in);
-		$this->dimensionId = $in->getVarInt();
-
+		if ($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60) {
+			$this->dimensionId = $in->getVarInt();
+		}
 		$subChunkCountButNotReally = $in->getUnsignedVarInt();
 		if($subChunkCountButNotReally === self::CLIENT_REQUEST_FULL_COLUMN_FAKE_COUNT){
 			$this->clientSubChunkRequestsEnabled = true;
@@ -121,8 +121,9 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->chunkPosition->write($out);
-		$out->putVarInt($this->dimensionId);
-
+		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60) {
+			$out->putVarInt($this->dimensionId);
+		}
 		if($this->clientSubChunkRequestsEnabled){
 			if($this->subChunkCount === PHP_INT_MAX){
 				$out->putUnsignedVarInt(self::CLIENT_REQUEST_FULL_COLUMN_FAKE_COUNT);

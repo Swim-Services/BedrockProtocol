@@ -45,7 +45,9 @@ class PlayerActionPacket extends DataPacket implements ClientboundPacket, Server
 		$this->actorRuntimeId = $in->getActorRuntimeId();
 		$this->action = $in->getVarInt();
 		$this->blockPosition = $in->getBlockPosition();
-		$this->resultPosition = $in->getBlockPosition();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_0){
+			$this->resultPosition = $in->getBlockPosition();
+		}
 		$this->face = $in->getVarInt();
 	}
 
@@ -53,7 +55,9 @@ class PlayerActionPacket extends DataPacket implements ClientboundPacket, Server
 		$out->putActorRuntimeId($this->actorRuntimeId);
 		$out->putVarInt($this->action);
 		$out->putBlockPosition($this->blockPosition);
-		$out->putBlockPosition($this->resultPosition);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_0){
+			$out->putBlockPosition($this->resultPosition);
+		}
 		$out->putVarInt($this->face);
 	}
 

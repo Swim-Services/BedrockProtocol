@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\recipe;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
@@ -36,9 +37,11 @@ final class IntIdMetaItemDescriptor implements ItemDescriptor{
 	public function getMeta() : int{ return $this->meta; }
 
 	public static function read(PacketSerializer $in) : self{
-		$id = $in->getSignedLShort();
+		$newFormat = $in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30;
+
+		$id = $newFormat ? $in->getSignedLShort() : $in->getVarInt();
 		if($id !== 0){
-			$meta = $in->getSignedLShort();
+			$meta = $newFormat ? $in->getSignedLShort() : $in->getVarInt();
 		}else{
 			$meta = 0;
 		}
@@ -47,9 +50,11 @@ final class IntIdMetaItemDescriptor implements ItemDescriptor{
 	}
 
 	public function write(PacketSerializer $out) : void{
-		$out->putLShort($this->id);
+		$newFormat = $out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30;
+
+		$newFormat ? $out->putLShort($this->id) : $out->putVarInt($this->id);
 		if($this->id !== 0){
-			$out->putLShort($this->meta);
+			$newFormat ? $out->putLShort($this->meta) : $out->putVarInt($this->meta);
 		}
 	}
 }

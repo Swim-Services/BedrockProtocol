@@ -16,25 +16,37 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
-class RefreshEntitlementsPacket extends DataPacket implements ClientboundPacket{
-	public const NETWORK_ID = ProtocolInfo::REFRESH_ENTITLEMENTS_PACKET;
+class FilterTextPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
+	public const NETWORK_ID = ProtocolInfo::FILTER_TEXT_PACKET;
+
+	private string $text;
+	private bool $fromServer;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create() : self{
-		return new self;
+	public static function create(string $text, bool $fromServer) : self{
+		$result = new self;
+		$result->text = $text;
+		$result->fromServer = $fromServer;
+		return $result;
 	}
 
+	public function getText() : string{ return $this->text; }
+
+	public function isFromServer() : bool{ return $this->fromServer; }
+
 	protected function decodePayload(PacketSerializer $in) : void{
-		//NOOP
+		$this->text = $in->getString();
+		$this->fromServer = $in->getBool();
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
-		//NOOP
+		$out->putString($this->text);
+		$out->putBool($this->fromServer);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
-		return $handler->handleRefreshEntitlements($this);
+		return $handler->handleFilterText($this);
 	}
 }

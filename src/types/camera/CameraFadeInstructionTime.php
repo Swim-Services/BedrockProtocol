@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class CameraFadeInstructionTime{
@@ -37,9 +38,23 @@ final class CameraFadeInstructionTime{
 		return new self($fadeInTime, $stayTime, $fadeOutTime);
 	}
 
+	public static function fromNBT(CompoundTag $nbt) : self{
+		$fadeInTime = $nbt->getFloat("fadeIn");
+		$stayTime = $nbt->getFloat("hold");
+		$fadeOutTime = $nbt->getFloat("fadeOut");
+		return new self($fadeInTime, $stayTime, $fadeOutTime);
+	}
+
 	public function write(PacketSerializer $out) : void{
 		$out->putLFloat($this->fadeInTime);
 		$out->putLFloat($this->stayTime);
 		$out->putLFloat($this->fadeOutTime);
+	}
+
+	public function toNBT() : CompoundTag{
+		return CompoundTag::create()
+			->setFloat("fadeIn", $this->fadeInTime)
+			->setFloat("hold", $this->stayTime)
+			->setFloat("fadeOut", $this->fadeOutTime);
 	}
 }

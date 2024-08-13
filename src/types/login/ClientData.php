@@ -46,7 +46,7 @@ final class ClientData{
 	/** @required */
 	public int $ClientRandomId;
 
-	/** @required */
+	/** >= PROTOCOL_1_19_80 */
 	public bool $CompatibleWithClientSideChunkGen;
 
 	/** @required */
@@ -70,12 +70,13 @@ final class ClientData{
 	/** @required */
 	public int $GuiScale;
 
-	/** @required */
+	/** >= PROTOCOL_1_19_10 */
 	public bool $IsEditorMode;
 
 	/** @required */
 	public string $LanguageCode;
 
+	/** >= PROTOCOL_1_19_63 */
 	public bool $OverrideSkin;
 
 	/**
@@ -101,7 +102,7 @@ final class ClientData{
 
 	public string $PlatformUserId = ""; //xbox-only, apparently
 
-	/** @required */
+	/** >= PROTOCOL_1_16_210 */
 	public string $PlayFabId;
 
 	/** @required */
@@ -125,7 +126,7 @@ final class ClientData{
 	/** @required */
 	public string $SkinGeometryData;
 
-	/** @required */
+	/** >= PROTOCOL_1_16_210 */
 	public string $SkinGeometryDataEngineVersion;
 
 	/** @required */
@@ -146,7 +147,7 @@ final class ClientData{
 	/** @required */
 	public bool $ThirdPartyNameOnly;
 
-	/** @required */
+	/** >= PROTOCOL_1_19_20 */
 	public bool $TrustedSkin;
 
 	/** @required */

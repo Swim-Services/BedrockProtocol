@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\protocol\types\resourcepacks;
 
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
-
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 class ResourcePackInfoEntry{
 	public function __construct(
 		private string $packId,
@@ -66,7 +66,9 @@ class ResourcePackInfoEntry{
 		$out->putString($this->subPackName);
 		$out->putString($this->contentId);
 		$out->putBool($this->hasScripts);
-		$out->putBool($this->isRtxCapable);
+		if($out->getProtocolId() > ProtocolInfo::PROTOCOL_1_16_100){
+			$out->putBool($this->isRtxCapable);
+		}
 	}
 
 	public static function read(PacketSerializer $in) : self{
@@ -77,7 +79,9 @@ class ResourcePackInfoEntry{
 		$subPackName = $in->getString();
 		$contentId = $in->getString();
 		$hasScripts = $in->getBool();
+		if($in->getProtocolId() > ProtocolInfo::PROTOCOL_1_16_100){
 		$rtxCapable = $in->getBool();
-		return new self($uuid, $version, $sizeBytes, $encryptionKey, $subPackName, $contentId, $hasScripts, $rtxCapable);
+		}
+		return new self($uuid, $version, $sizeBytes, $encryptionKey, $subPackName, $contentId, $hasScripts, $rtxCapable ?? false);
 	}
 }

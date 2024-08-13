@@ -45,7 +45,9 @@ class SpawnParticleEffectPacket extends DataPacket implements ClientboundPacket{
 		$this->actorUniqueId = $in->getActorUniqueId();
 		$this->position = $in->getVector3();
 		$this->particleName = $in->getString();
-		$this->molangVariablesJson = $in->getBool() ? $in->getString() : null;
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_30){
+			$this->molangVariablesJson = $in->getBool() ? $in->getString() : null;
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
@@ -53,9 +55,11 @@ class SpawnParticleEffectPacket extends DataPacket implements ClientboundPacket{
 		$out->putActorUniqueId($this->actorUniqueId);
 		$out->putVector3($this->position);
 		$out->putString($this->particleName);
-		$out->putBool($this->molangVariablesJson !== null);
-		if($this->molangVariablesJson !== null){
-			$out->putString($this->molangVariablesJson);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_30){
+			$out->putBool($this->molangVariablesJson !== null);
+			if($this->molangVariablesJson !== null){
+				$out->putString($this->molangVariablesJson);
+			}
 		}
 	}
 

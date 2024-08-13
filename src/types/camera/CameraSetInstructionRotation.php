@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class CameraSetInstructionRotation{
@@ -33,8 +34,20 @@ final class CameraSetInstructionRotation{
 		return new self($pitch, $yaw);
 	}
 
+	public static function fromNBT(CompoundTag $nbt) : self{
+		$pitch = $nbt->getFloat("x");
+		$yaw = $nbt->getFloat("y");
+		return new self($pitch, $yaw);
+	}
+
 	public function write(PacketSerializer $out) : void{
 		$out->putLFloat($this->pitch);
 		$out->putLFloat($this->yaw);
+	}
+
+	public function toNBT() : CompoundTag{
+		return CompoundTag::create()
+			->setFloat("x", $this->pitch)
+			->setFloat("y", $this->yaw);
 	}
 }

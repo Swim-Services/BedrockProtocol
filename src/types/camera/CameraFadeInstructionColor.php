@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class CameraFadeInstructionColor{
@@ -37,9 +38,23 @@ final class CameraFadeInstructionColor{
 		return new self($red, $green, $blue);
 	}
 
+	public static function fromNBT(CompoundTag $nbt) : self{
+		$red = $nbt->getFloat("red");
+		$green = $nbt->getFloat("green");
+		$blue = $nbt->getFloat("blue");
+		return new self($red, $green, $blue);
+	}
+
 	public function write(PacketSerializer $out) : void{
 		$out->putLFloat($this->red);
 		$out->putLFloat($this->green);
 		$out->putLFloat($this->blue);
+	}
+
+	public function toNBT() : CompoundTag{
+		return CompoundTag::create()
+			->setFloat("r", $this->red)
+			->setFloat("g", $this->green)
+			->setFloat("b", $this->blue);
 	}
 }

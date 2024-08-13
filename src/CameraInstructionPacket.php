@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\network\mcpe\protocol\types\camera\CameraFadeInstruction;
 use pocketmine\network\mcpe\protocol\types\camera\CameraSetInstruction;
 
@@ -43,15 +45,50 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 	public function getFade() : ?CameraFadeInstruction{ return $this->fade; }
 
 	protected function decodePayload(PacketSerializer $in) : void{
-		$this->set = $in->readOptional(fn() => CameraSetInstruction::read($in));
-		$this->clear = $in->readOptional($in->getBool(...));
-		$this->fade = $in->readOptional(fn() => CameraFadeInstruction::read($in));
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+			$this->set = $in->readOptional(fn() => CameraSetInstruction::read($in));
+			$this->clear = $in->readOptional(fn() => $in->getBool());
+			$this->fade = $in->readOptional(fn() => CameraFadeInstruction::read($in));
+		}else{
+			$this->fromNBT($in->getNbtCompoundRoot());
+		}
+	}
+
+	protected function fromNBT(CompoundTag $nbt) : void{
+		$setTag = $nbt->getCompoundTag("set");
+		$this->set = $setTag === null ? null : CameraSetInstruction::fromNBT($setTag);
+
+		$this->clear = $nbt->getTag("clear") === null ? null : $nbt->getByte("clear") !== 0;
+
+		$fadeTag = $nbt->getCompoundTag("fade");
+		$this->fade = $fadeTag === null ? null : CameraFadeInstruction::fromNBT($fadeTag);
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
-		$out->writeOptional($this->set, fn(CameraSetInstruction $v) => $v->write($out));
-		$out->writeOptional($this->clear, $out->putBool(...));
-		$out->writeOptional($this->fade, fn(CameraFadeInstruction $v) => $v->write($out));
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+			$out->writeOptional($this->set, fn(CameraSetInstruction $v) => $v->write($out));
+			$out->writeOptional($this->clear, fn(bool $v) => $out->putBool($v));
+			$out->writeOptional($this->fade, fn(CameraFadeInstruction $v) => $v->write($out));
+		}else{
+			$data = new CacheableNbt($this->toNBT());
+			$out->put($data->getEncodedNbt());
+		}
+	}
+
+	protected function toNBT() : CompoundTag{
+		$nbt = CompoundTag::create();
+
+		if($this->set !== null){
+			$nbt->setTag("set", $this->set->toNBT());
+		}
+		if($this->clear !== null){
+			$nbt->setByte("clear", (int) $this->clear);
+		}
+		if($this->fade !== null){
+			$nbt->setTag("fade", $this->fade->toNBT());
+		}
+
+		return $nbt;
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

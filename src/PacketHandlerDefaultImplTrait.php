@@ -85,12 +85,23 @@ trait PacketHandlerDefaultImplTrait{
 	public function handleServerPlayerPostMovePosition(ServerPlayerPostMovePositionPacket $packet) : bool{
 		return false;
 	}
+	public function handleSetHud(SetHudPacket $packet) : bool{
+		return false;
+	}
 
 	public function handleTakeItemActor(TakeItemActorPacket $packet) : bool{
 		return false;
 	}
 
 	public function handleMoveActorAbsolute(MoveActorAbsolutePacket $packet) : bool{
+		return false;
+	}
+
+	public function handlePlayerToggleCrafterSlotRequest(PlayerToggleCrafterSlotRequestPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleSetPlayerInventoryOptions(SetPlayerInventoryOptionsPacket $packet) : bool{
 		return false;
 	}
 
@@ -226,7 +237,15 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
+	public function handleCraftingEvent(CraftingEventPacket $packet) : bool{
+		return false;
+	}
+
 	public function handleGuiDataPickItem(GuiDataPickItemPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleAdventureSettings(AdventureSettingsPacket $packet) : bool{
 		return false;
 	}
 
@@ -287,6 +306,10 @@ trait PacketHandlerDefaultImplTrait{
 	}
 
 	public function handleChunkRadiusUpdated(ChunkRadiusUpdatedPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleItemFrameDropItem(ItemFrameDropItemPacket $packet) : bool{
 		return false;
 	}
 
@@ -498,6 +521,14 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
+	public function handleAddEntity(AddEntityPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleRemoveEntity(RemoveEntityPacket $packet) : bool{
+		return false;
+	}
+
 	public function handleClientCacheStatus(ClientCacheStatusPacket $packet) : bool{
 		return false;
 	}
@@ -627,6 +658,10 @@ trait PacketHandlerDefaultImplTrait{
 	}
 
 	public function handleItemComponent(ItemComponentPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleFilterText(FilterTextPacket $packet) : bool{
 		return false;
 	}
 
@@ -783,22 +818,6 @@ trait PacketHandlerDefaultImplTrait{
 	}
 
 	public function handleAgentAnimation(AgentAnimationPacket $packet) : bool{
-		return false;
-	}
-
-	public function handleRefreshEntitlements(RefreshEntitlementsPacket $packet) : bool{
-		return false;
-	}
-
-	public function handlePlayerToggleCrafterSlotRequest(PlayerToggleCrafterSlotRequestPacket $packet) : bool{
-		return false;
-	}
-
-	public function handleSetPlayerInventoryOptions(SetPlayerInventoryOptionsPacket $packet) : bool{
-		return false;
-	}
-
-	public function handleSetHud(SetHudPacket $packet) : bool{
 		return false;
 	}
 }

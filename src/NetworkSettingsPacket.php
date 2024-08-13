@@ -68,18 +68,22 @@ class NetworkSettingsPacket extends DataPacket implements ClientboundPacket{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->compressionThreshold = $in->getLShort();
-		$this->compressionAlgorithm = $in->getLShort();
-		$this->enableClientThrottling = $in->getBool();
-		$this->clientThrottleThreshold = $in->getByte();
-		$this->clientThrottleScalar = $in->getLFloat();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30){
+			$this->compressionAlgorithm = $in->getLShort();
+			$this->enableClientThrottling = $in->getBool();
+			$this->clientThrottleThreshold = $in->getByte();
+			$this->clientThrottleScalar = $in->getLFloat();
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putLShort($this->compressionThreshold);
-		$out->putLShort($this->compressionAlgorithm);
-		$out->putBool($this->enableClientThrottling);
-		$out->putByte($this->clientThrottleThreshold);
-		$out->putLFloat($this->clientThrottleScalar);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30){
+			$out->putLShort($this->compressionAlgorithm);
+			$out->putBool($this->enableClientThrottling);
+			$out->putByte($this->clientThrottleThreshold);
+			$out->putLFloat($this->clientThrottleScalar);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

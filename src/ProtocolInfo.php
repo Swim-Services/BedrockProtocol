@@ -32,11 +32,64 @@ final class ProtocolInfo{
 	 */
 
 	/** Actual Minecraft: PE protocol version */
-	public const CURRENT_PROTOCOL = 671;
+	public const PROTOCOL_1_20_80 = 671;
+	public const PROTOCOL_1_20_70 = 662;
+	public const PROTOCOL_1_20_60 = 649;
+	public const PROTOCOL_1_20_50 = 630;
+	public const PROTOCOL_1_20_40 = 622;
+	public const PROTOCOL_1_20_30 = 618;
+	public const PROTOCOL_1_20_10 = 594;
+	public const PROTOCOL_1_20_0 = 589;
+	public const PROTOCOL_1_19_80 = 582;
+	public const PROTOCOL_1_19_70 = 575;
+	public const PROTOCOL_1_19_63 = 568;
+	public const PROTOCOL_1_19_60 = 567;
+	public const PROTOCOL_1_19_50 = 560;
+	public const PROTOCOL_1_19_40 = 557;
+	public const PROTOCOL_1_19_30 = 554;
+	public const PROTOCOL_1_19_21 = 545;
+	public const PROTOCOL_1_19_20 = 544;
+	public const PROTOCOL_1_19_10 = 534;
+	public const PROTOCOL_1_19_0 = 527;
+	public const PROTOCOL_1_18_30 = 503;
+	public const PROTOCOL_1_18_10 = 486;
+	public const PROTOCOL_1_18_0 = 475;
+	public const PROTOCOL_1_16_100 = 419;
+
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_20_80;
+	public const ACCEPTED_PROTOCOL = [
+		self::PROTOCOL_1_18_0,
+		self::PROTOCOL_1_18_10,
+		/*self::PROTOCOL_1_18_30,
+		self::PROTOCOL_1_19_0,
+		self::PROTOCOL_1_19_10,
+		self::PROTOCOL_1_19_20,
+		self::PROTOCOL_1_19_21,
+		self::PROTOCOL_1_19_30,
+		self::PROTOCOL_1_19_40,
+		self::PROTOCOL_1_19_50,
+		self::PROTOCOL_1_19_60,
+		self::PROTOCOL_1_19_63,
+		self::PROTOCOL_1_19_70,
+		self::PROTOCOL_1_19_80,*/
+		self::PROTOCOL_1_20_0,
+		self::PROTOCOL_1_20_10,
+		self::PROTOCOL_1_20_30,
+        self::PROTOCOL_1_20_40,
+        self::PROTOCOL_1_20_50,
+        self::PROTOCOL_1_20_60,
+        self::PROTOCOL_1_20_70,
+		self::CURRENT_PROTOCOL
+	];
+
+
+
 	/** Current Minecraft PE version reported by the server. This is usually the earliest currently supported version. */
 	public const MINECRAFT_VERSION = 'v1.20.80';
 	/** Version number sent to clients in ping responses. */
 	public const MINECRAFT_VERSION_NETWORK = '1.20.80';
+
+
 
 	public const LOGIN_PACKET = 0x01;
 	public const PLAY_STATUS_PACKET = 0x02;
@@ -53,6 +106,7 @@ final class ProtocolInfo{
 	public const ADD_ACTOR_PACKET = 0x0d;
 	public const REMOVE_ACTOR_PACKET = 0x0e;
 	public const ADD_ITEM_ACTOR_PACKET = 0x0f;
+
 	public const SERVER_PLAYER_POST_MOVE_POSITION_PACKET = 0x10;
 	public const TAKE_ITEM_ACTOR_PACKET = 0x11;
 	public const MOVE_ACTOR_ABSOLUTE_PACKET = 0x12;
@@ -74,7 +128,7 @@ final class ProtocolInfo{
 	public const BLOCK_PICK_REQUEST_PACKET = 0x22;
 	public const ACTOR_PICK_REQUEST_PACKET = 0x23;
 	public const PLAYER_ACTION_PACKET = 0x24;
-
+	public const ACTOR_FALL_PACKET = 0x25;
 	public const HURT_ARMOR_PACKET = 0x26;
 	public const SET_ACTOR_DATA_PACKET = 0x27;
 	public const SET_ACTOR_MOTION_PACKET = 0x28;
@@ -90,8 +144,9 @@ final class ProtocolInfo{
 	public const INVENTORY_SLOT_PACKET = 0x32;
 	public const CONTAINER_SET_DATA_PACKET = 0x33;
 	public const CRAFTING_DATA_PACKET = 0x34;
-
+	public const CRAFTING_EVENT_PACKET = 0x35;
 	public const GUI_DATA_PICK_ITEM_PACKET = 0x36;
+    public const ADVENTURE_SETTINGS_PACKET = 0x37;
 
 	public const BLOCK_ACTOR_DATA_PACKET = 0x38;
 	public const PLAYER_INPUT_PACKET = 0x39;
@@ -108,7 +163,7 @@ final class ProtocolInfo{
 	public const MAP_INFO_REQUEST_PACKET = 0x44;
 	public const REQUEST_CHUNK_RADIUS_PACKET = 0x45;
 	public const CHUNK_RADIUS_UPDATED_PACKET = 0x46;
-
+	public const ITEM_FRAME_DROP_ITEM_PACKET = 0x47;
 	public const GAME_RULES_CHANGED_PACKET = 0x48;
 	public const CAMERA_PACKET = 0x49;
 	public const BOSS_EVENT_PACKET = 0x4a;
@@ -163,6 +218,8 @@ final class ProtocolInfo{
 	public const LEVEL_EVENT_GENERIC_PACKET = 0x7c;
 	public const LECTERN_UPDATE_PACKET = 0x7d;
 
+	public const ADD_ENTITY_PACKET = 0x7f;
+	public const REMOVE_ENTITY_PACKET = 0x80;
 	public const CLIENT_CACHE_STATUS_PACKET = 0x81;
 	public const ON_SCREEN_TEXTURE_ANIMATION_PACKET = 0x82;
 	public const MAP_CREATE_LOCKED_COPY_PACKET = 0x83;
@@ -197,7 +254,7 @@ final class ProtocolInfo{
 	public const PLAYER_FOG_PACKET = 0xa0;
 	public const CORRECT_PLAYER_MOVE_PREDICTION_PACKET = 0xa1;
 	public const ITEM_COMPONENT_PACKET = 0xa2;
-
+	public const FILTER_TEXT_PACKET = 0xa3;
 	public const CLIENTBOUND_DEBUG_RENDERER_PACKET = 0xa4;
 	public const SYNC_ACTOR_PROPERTY_PACKET = 0xa5;
 	public const ADD_VOLUME_ENTITY_PACKET = 0xa6;
@@ -244,5 +301,4 @@ final class ProtocolInfo{
 	public const PLAYER_TOGGLE_CRAFTER_SLOT_REQUEST_PACKET = 0x132;
 	public const SET_PLAYER_INVENTORY_OPTIONS_PACKET = 0x133;
 	public const SET_HUD_PACKET = 0x134;
-
 }

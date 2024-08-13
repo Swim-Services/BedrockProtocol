@@ -25,7 +25,7 @@ final class CacheableNbt{
 	private ?string $encodedNbt;
 
 	/**
-	 * @phpstan-param TTagType $nbtRoot
+	 * @phpstan-param TTagType $nbtRoot 
 	 */
 	public function __construct(
 		private Tag $nbtRoot

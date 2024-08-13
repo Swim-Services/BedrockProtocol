@@ -8,19 +8,19 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     strategy:
       matrix:
-        php: ['8.1', '8.2', '8.3']
+        php: ['8.1', '8.2']
     name: Tests (PHP ${{ matrix.php }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.30.4
+        uses: shivammathur/setup-php@2.25.5
         with:
           php-version: ${{ matrix.php }}
           ini-values: xdebug.max_nesting_level=3000
 
       - name: Load Composer package cache
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: "~/.cache/composer"
           key: "php-${{ matrix.php }}-composer-${{ hashFiles('**/composer.json') }}"
@@ -41,10 +41,10 @@ jobs:
     needs: codestyle #to avoid false positives
     name: Generated Code consistency checks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.30.4
+        uses: shivammathur/setup-php@2.25.5
         with:
           php-version: 8.1
           ini-values: xdebug.max_nesting_level=3000
@@ -53,7 +53,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Load Composer package cache
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: "~/.cache/composer"
           key: "php-${{ matrix.php }}-composer-${{ hashFiles('**/composer.json') }}"
@@ -74,12 +74,12 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     name: Code Style checks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.30.4
+        uses: shivammathur/setup-php@2.25.5
         with:
-          php-version: 8.2
+          php-version: 8.1
           ini-values: xdebug.max_nesting_level=3000
           tools: php-cs-fixer:3
         env:

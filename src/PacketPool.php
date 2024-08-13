@@ -84,7 +84,9 @@ class PacketPool{
 		$this->registerPacket(new InventorySlotPacket());
 		$this->registerPacket(new ContainerSetDataPacket());
 		$this->registerPacket(new CraftingDataPacket());
+		$this->registerPacket(new CraftingEventPacket());
 		$this->registerPacket(new GuiDataPickItemPacket());
+		$this->registerPacket(new AdventureSettingsPacket());
 		$this->registerPacket(new BlockActorDataPacket());
 		$this->registerPacket(new PlayerInputPacket());
 		$this->registerPacket(new LevelChunkPacket());
@@ -100,6 +102,7 @@ class PacketPool{
 		$this->registerPacket(new MapInfoRequestPacket());
 		$this->registerPacket(new RequestChunkRadiusPacket());
 		$this->registerPacket(new ChunkRadiusUpdatedPacket());
+		$this->registerPacket(new ItemFrameDropItemPacket());
 		$this->registerPacket(new GameRulesChangedPacket());
 		$this->registerPacket(new CameraPacket());
 		$this->registerPacket(new BossEventPacket());
@@ -152,6 +155,8 @@ class PacketPool{
 		$this->registerPacket(new LevelSoundEventPacket());
 		$this->registerPacket(new LevelEventGenericPacket());
 		$this->registerPacket(new LecternUpdatePacket());
+		$this->registerPacket(new AddEntityPacket());
+		$this->registerPacket(new RemoveEntityPacket());
 		$this->registerPacket(new ClientCacheStatusPacket());
 		$this->registerPacket(new OnScreenTextureAnimationPacket());
 		$this->registerPacket(new MapCreateLockedCopyPacket());
@@ -185,6 +190,7 @@ class PacketPool{
 		$this->registerPacket(new PlayerFogPacket());
 		$this->registerPacket(new CorrectPlayerMovePredictionPacket());
 		$this->registerPacket(new ItemComponentPacket());
+		$this->registerPacket(new FilterTextPacket());
 		$this->registerPacket(new ClientboundDebugRendererPacket());
 		$this->registerPacket(new SyncActorPropertyPacket());
 		$this->registerPacket(new AddVolumeEntityPacket());
@@ -224,7 +230,6 @@ class PacketPool{
 		$this->registerPacket(new TrimDataPacket());
 		$this->registerPacket(new OpenSignPacket());
 		$this->registerPacket(new AgentAnimationPacket());
-		$this->registerPacket(new RefreshEntitlementsPacket());
 		$this->registerPacket(new PlayerToggleCrafterSlotRequestPacket());
 		$this->registerPacket(new SetPlayerInventoryOptionsPacket());
 		$this->registerPacket(new SetHudPacket());

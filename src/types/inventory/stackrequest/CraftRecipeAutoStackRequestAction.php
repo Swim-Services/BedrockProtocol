@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 use pocketmine\network\mcpe\protocol\types\recipe\RecipeIngredient;
@@ -52,8 +53,10 @@ final class CraftRecipeAutoStackRequestAction extends ItemStackRequestAction{
 		$recipeId = $in->readRecipeNetId();
 		$repetitions = $in->getByte();
 		$ingredients = [];
-		for($i = 0, $count = $in->getByte(); $i < $count; ++$i){
-			$ingredients[] = $in->getRecipeIngredient();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_40){
+			for($i = 0, $count = $in->getByte(); $i < $count; ++$i){
+				$ingredients[] = $in->getRecipeIngredient();
+			}
 		}
 		return new self($recipeId, $repetitions, $ingredients);
 	}
@@ -61,9 +64,11 @@ final class CraftRecipeAutoStackRequestAction extends ItemStackRequestAction{
 	public function write(PacketSerializer $out) : void{
 		$out->writeRecipeNetId($this->recipeId);
 		$out->putByte($this->repetitions);
-		$out->putByte(count($this->ingredients));
-		foreach($this->ingredients as $ingredient){
-			$out->putRecipeIngredient($ingredient);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_40){
+			$out->putByte(count($this->ingredients));
+			foreach($this->ingredients as $ingredient){
+				$out->putRecipeIngredient($ingredient);
+			}
 		}
 	}
 }

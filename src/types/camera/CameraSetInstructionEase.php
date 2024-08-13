@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class CameraSetInstructionEase{
@@ -39,8 +40,21 @@ final class CameraSetInstructionEase{
 		return new self($type, $duration);
 	}
 
+	public static function fromNBT(CompoundTag $nbt) : self{
+		$typeName = $nbt->getString("type");
+		$type = CameraSetInstructionEaseType::fromString($typeName) ?? throw new \InvalidArgumentException("Invalid type tag");
+		$duration = $nbt->getFloat("time");
+		return new self($type, $duration);
+	}
+
 	public function write(PacketSerializer $out) : void{
 		$out->putByte($this->type);
 		$out->putLFloat($this->duration);
+	}
+
+	public function toNBT() : CompoundTag{
+		return CompoundTag::create()
+			->setString("type", CameraSetInstructionEaseType::toString($this->type) ?? throw new \InvalidArgumentException("Invalid type"))
+			->setFloat("time", $this->duration);
 	}
 }

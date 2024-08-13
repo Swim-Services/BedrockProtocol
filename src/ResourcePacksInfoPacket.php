@@ -65,7 +65,9 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->mustAccept = $in->getBool();
-		$this->hasAddons = $in->getBool();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
+			$this->hasAddons = $in->getBool();
+		}
 		$this->hasScripts = $in->getBool();
 		$this->forceServerPacks = $in->getBool();
 		$behaviorPackCount = $in->getLShort();
@@ -78,17 +80,21 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			$this->resourcePackEntries[] = ResourcePackInfoEntry::read($in);
 		}
 
-		$this->cdnUrls = [];
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; $i++){
-			$packId = $in->getString();
-			$cdnUrl = $in->getString();
-			$this->cdnUrls[$packId] = $cdnUrl;
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+			$this->cdnUrls = [];
+			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; $i++){
+				$packId = $in->getString();
+				$cdnUrl = $in->getString();
+				$this->cdnUrls[$packId] = $cdnUrl;
+			}
 		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putBool($this->mustAccept);
-		$out->putBool($this->hasAddons);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
+			$out->putBool($this->hasAddons);
+		}
 		$out->putBool($this->hasScripts);
 		$out->putBool($this->forceServerPacks);
 		$out->putLShort(count($this->behaviorPackEntries));
@@ -99,10 +105,12 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		foreach($this->resourcePackEntries as $entry){
 			$entry->write($out);
 		}
-		$out->putUnsignedVarInt(count($this->cdnUrls));
-		foreach($this->cdnUrls as $packId => $cdnUrl){
-			$out->putString($packId);
-			$out->putString($cdnUrl);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+			$out->putUnsignedVarInt(count($this->cdnUrls));
+			foreach($this->cdnUrls as $packId => $cdnUrl){
+				$out->putString($packId);
+				$out->putString($cdnUrl);
+			}
 		}
 	}
 

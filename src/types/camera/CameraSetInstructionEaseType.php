@@ -14,6 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use function array_change_key_case;
+use function array_search;
+use function strtolower;
+use const CASE_LOWER;
+
 final class CameraSetInstructionEaseType{
 
 	private function __construct(){
@@ -53,4 +58,22 @@ final class CameraSetInstructionEaseType{
 	public const OUT_ELASTIC = 30;
 	public const IN_OUT_ELASTIC = 31;
 
+	/**
+	 * @return array<string, int>
+	 */
+	private static function getStringIdMap() : array{
+		static $map = null;
+		if($map === null){
+			$map = (new \ReflectionClass(self::class))->getConstants();
+		}
+		return array_change_key_case($map, CASE_LOWER);
+	}
+
+	public static function toString(int $type) : ?string {
+		return ($key = array_search($type, self::getStringIdMap(), true)) === false ? null : $key;
+	}
+
+	public static function fromString(string $type) : ?int {
+		return self::getStringIdMap()[strtolower($type)] ?? null;
+	}
 }

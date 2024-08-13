@@ -48,11 +48,11 @@ interface PacketHandlerInterface{
 
 	public function handleAddItemActor(AddItemActorPacket $packet) : bool;
 
-	public function handleServerPlayerPostMovePosition(ServerPlayerPostMovePositionPacket $packet) : bool;
-
 	public function handleTakeItemActor(TakeItemActorPacket $packet) : bool;
 
 	public function handleMoveActorAbsolute(MoveActorAbsolutePacket $packet) : bool;
+
+	public function handleServerPlayerPostMovePosition(ServerPlayerPostMovePositionPacket $packet) : bool;
 
 	public function handleMovePlayer(MovePlayerPacket $packet) : bool;
 
@@ -73,6 +73,10 @@ interface PacketHandlerInterface{
 	public function handleActorEvent(ActorEventPacket $packet) : bool;
 
 	public function handleMobEffect(MobEffectPacket $packet) : bool;
+
+	public function handlePlayerToggleCrafterSlotRequest(PlayerToggleCrafterSlotRequestPacket $packet) : bool;
+
+	public function handleSetPlayerInventoryOptions(SetPlayerInventoryOptionsPacket $packet) : bool;
 
 	public function handleUpdateAttributes(UpdateAttributesPacket $packet) : bool;
 
@@ -120,7 +124,11 @@ interface PacketHandlerInterface{
 
 	public function handleCraftingData(CraftingDataPacket $packet) : bool;
 
+	public function handleCraftingEvent(CraftingEventPacket $packet) : bool;
+
 	public function handleGuiDataPickItem(GuiDataPickItemPacket $packet) : bool;
+
+	public function handleAdventureSettings(AdventureSettingsPacket $packet) : bool;
 
 	public function handleBlockActorData(BlockActorDataPacket $packet) : bool;
 
@@ -151,6 +159,8 @@ interface PacketHandlerInterface{
 	public function handleRequestChunkRadius(RequestChunkRadiusPacket $packet) : bool;
 
 	public function handleChunkRadiusUpdated(ChunkRadiusUpdatedPacket $packet) : bool;
+
+	public function handleItemFrameDropItem(ItemFrameDropItemPacket $packet) : bool;
 
 	public function handleGameRulesChanged(GameRulesChangedPacket $packet) : bool;
 
@@ -256,6 +266,10 @@ interface PacketHandlerInterface{
 
 	public function handleLecternUpdate(LecternUpdatePacket $packet) : bool;
 
+	public function handleAddEntity(AddEntityPacket $packet) : bool;
+
+	public function handleRemoveEntity(RemoveEntityPacket $packet) : bool;
+
 	public function handleClientCacheStatus(ClientCacheStatusPacket $packet) : bool;
 
 	public function handleOnScreenTextureAnimation(OnScreenTextureAnimationPacket $packet) : bool;
@@ -321,6 +335,8 @@ interface PacketHandlerInterface{
 	public function handleCorrectPlayerMovePrediction(CorrectPlayerMovePredictionPacket $packet) : bool;
 
 	public function handleItemComponent(ItemComponentPacket $packet) : bool;
+
+	public function handleFilterText(FilterTextPacket $packet) : bool;
 
 	public function handleClientboundDebugRenderer(ClientboundDebugRendererPacket $packet) : bool;
 
@@ -399,12 +415,6 @@ interface PacketHandlerInterface{
 	public function handleOpenSign(OpenSignPacket $packet) : bool;
 
 	public function handleAgentAnimation(AgentAnimationPacket $packet) : bool;
-
-	public function handleRefreshEntitlements(RefreshEntitlementsPacket $packet) : bool;
-
-	public function handlePlayerToggleCrafterSlotRequest(PlayerToggleCrafterSlotRequestPacket $packet) : bool;
-
-	public function handleSetPlayerInventoryOptions(SetPlayerInventoryOptionsPacket $packet) : bool;
 
 	public function handleSetHud(SetHudPacket $packet) : bool;
 }

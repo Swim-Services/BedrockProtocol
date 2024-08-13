@@ -128,6 +128,70 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
+	public static function convertArg(int $protocolId, int $type) : int{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			return $type;
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
+			return match($type){
+				self::ARG_FLAG_VALID | self::ARG_TYPE_EQUIPMENT_SLOT => self::ARG_FLAG_VALID | 43,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_STRING => self::ARG_FLAG_VALID | 44,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_INT_POSITION => self::ARG_FLAG_VALID | 52,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_POSITION => self::ARG_FLAG_VALID | 53,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_MESSAGE => self::ARG_FLAG_VALID | 55,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_RAWTEXT => self::ARG_FLAG_VALID | 58,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_JSON => self::ARG_FLAG_VALID | 62,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_BLOCK_STATES => self::ARG_FLAG_VALID | 71,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_COMMAND => self::ARG_FLAG_VALID | 74,
+				default => $type,
+			};
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_0){
+			return match ($type) {
+				self::ARG_FLAG_VALID | self::ARG_TYPE_INT_POSITION => self::ARG_FLAG_VALID | 0x2f,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_POSITION => self::ARG_FLAG_VALID | 0x30,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_MESSAGE => self::ARG_FLAG_VALID | 0x33,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_RAWTEXT => self::ARG_FLAG_VALID | 0x35,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_JSON => self::ARG_FLAG_VALID | 0x39,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_BLOCK_STATES => self::ARG_FLAG_VALID | 0x43,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_COMMAND => self::ARG_FLAG_VALID | 0x46,
+				default => $type,
+			};
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
+			return match($type) {
+				self::ARG_FLAG_VALID | self::ARG_TYPE_TARGET => self::ARG_FLAG_VALID | 0x07,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_WILDCARD_TARGET => self::ARG_FLAG_VALID | 0x09,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_FILEPATH => self::ARG_FLAG_VALID | 0x10,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_EQUIPMENT_SLOT => self::ARG_FLAG_VALID | 0x25,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_STRING => self::ARG_FLAG_VALID | 0x26,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_INT_POSITION => self::ARG_FLAG_VALID | 0x2e,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_POSITION => self::ARG_FLAG_VALID | 0x2f,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_MESSAGE => self::ARG_FLAG_VALID | 0x32,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_RAWTEXT => self::ARG_FLAG_VALID | 0x34,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_JSON => self::ARG_FLAG_VALID | 0x38,
+				self::ARG_FLAG_VALID | self::ARG_TYPE_COMMAND => self::ARG_FLAG_VALID | 0x45,
+				default => $type,
+			};
+		}
+
+		return match ($type) {
+			self::ARG_FLAG_VALID | self::ARG_TYPE_TARGET => self::ARG_FLAG_VALID | 0x07,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_WILDCARD_TARGET => self::ARG_FLAG_VALID | 0x08,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_FILEPATH => self::ARG_FLAG_VALID | 0x10,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_STRING => self::ARG_FLAG_VALID | 0x20,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_POSITION => self::ARG_FLAG_VALID | 0x28,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_MESSAGE => self::ARG_FLAG_VALID | 0x2c,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_RAWTEXT => self::ARG_FLAG_VALID  | 0x2e,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_JSON => self::ARG_FLAG_VALID | 0x32,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_COMMAND => self::ARG_FLAG_VALID | 0x3f,
+			default => $type,
+		};
+	}
+
 	protected function decodePayload(PacketSerializer $in) : void{
 		/** @var string[] $enumValues */
 		$enumValues = [];
@@ -137,8 +201,10 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 
 		/** @var string[] $chainedSubcommandValueNames */
 		$chainedSubcommandValueNames = [];
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			$chainedSubcommandValueNames[] = $in->getString();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10){
+			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
+				$chainedSubcommandValueNames[] = $in->getString();
+			}
 		}
 
 		/** @var string[] $postfixes */
@@ -162,15 +228,17 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 		}
 
 		$chainedSubCommandData = [];
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			$name = $in->getString();
-			$values = [];
-			for($j = 0, $valueCount = $in->getUnsignedVarInt(); $j < $valueCount; ++$j){
-				$valueName = $chainedSubcommandValueNames[$in->getLShort()];
-				$valueType = $in->getLShort();
-				$values[] = new ChainedSubCommandValue($valueName, $valueType);
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10){
+			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
+				$name = $in->getString();
+				$values = [];
+				for($j = 0, $valueCount = $in->getUnsignedVarInt(); $j < $valueCount; ++$j){
+					$valueName = $chainedSubcommandValueNames[$in->getLShort()];
+					$valueType = $in->getLShort();
+					$values[] = new ChainedSubCommandValue($valueName, $valueType);
+				}
+				$chainedSubCommandData[] = new ChainedSubCommandData($name, $values);
 			}
-			$chainedSubCommandData[] = new ChainedSubCommandData($name, $values);
 		}
 
 		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
@@ -357,15 +425,17 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 		$aliases = $enums[$in->getLInt()] ?? null;
 
 		$chainedSubCommandData = [];
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			$index = $in->getLShort();
-			$chainedSubCommandData[] = $allChainedSubCommandData[$index] ?? throw new PacketDecodeException("Unknown chained subcommand data index $index");
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10){
+			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
+				$index = $in->getLShort();
+				$chainedSubCommandData[] = $allChainedSubCommandData[$index] ?? throw new PacketDecodeException("Unknown chained subcommand data index $index");
+			}
 		}
 		$overloads = [];
 
 		for($overloadIndex = 0, $overloadCount = $in->getUnsignedVarInt(); $overloadIndex < $overloadCount; ++$overloadIndex){
 			$parameters = [];
-			$isChaining = $in->getBool();
+			$isChaining = $in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10 && $in->getBool();
 			for($paramIndex = 0, $paramCount = $in->getUnsignedVarInt(); $paramIndex < $paramCount; ++$paramIndex){
 				$parameter = new CommandParameter();
 				$parameter->paramName = $in->getString();
@@ -406,7 +476,11 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 	protected function putCommandData(CommandData $data, array $enumIndexes, array $softEnumIndexes, array $postfixIndexes, array $chainedSubCommandDataIndexes, PacketSerializer $out) : void{
 		$out->putString($data->name);
 		$out->putString($data->description);
-		$out->putLShort($data->flags);
+		if($out->getProtocolId() > ProtocolInfo::PROTOCOL_1_16_100){
+			$out->putLShort($data->flags);
+		}else{
+			$out->putByte($data->flags);
+		}
 		$out->putByte($data->permission);
 
 		if($data->aliases !== null){
@@ -415,23 +489,26 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 			$out->putLInt(-1);
 		}
 
-		$out->putUnsignedVarInt(count($data->chainedSubCommandData));
-		foreach($data->chainedSubCommandData as $chainedSubCommandData){
-			$index = $chainedSubCommandDataIndexes[$chainedSubCommandData->getName()] ??
-				throw new \LogicException("Chained subcommand data {$chainedSubCommandData->getName()} does not have an index (this should be impossible)");
-			$out->putLShort($index);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10){
+			$out->putUnsignedVarInt(count($data->chainedSubCommandData));
+			foreach($data->chainedSubCommandData as $chainedSubCommandData){
+				$index = $chainedSubCommandDataIndexes[$chainedSubCommandData->getName()] ??
+					throw new \LogicException("Chained subcommand data {$chainedSubCommandData->getName()} does not have an index (this should be impossible)");
+				$out->putLShort($index);
+			}
 		}
 
 		$out->putUnsignedVarInt(count($data->overloads));
 		foreach($data->overloads as $overload){
-			$out->putBool($overload->isChaining());
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10){
+				$out->putBool($overload->isChaining());
+			}
 			$out->putUnsignedVarInt(count($overload->getParameters()));
 			foreach($overload->getParameters() as $parameter){
 				$out->putString($parameter->paramName);
-
 				if($parameter->enum !== null){
 					if($parameter->enum->isSoft()){
-						$type = self::ARG_FLAG_SOFT_ENUM | self::ARG_FLAG_VALID | ($softEnumIndexes[$parameter->enum->getName()] ?? -1);
+						$type = self::ARG_FLAG_SOFT_ENUM | self::ARG_FLAG_VALID | (self::convertArg($softEnumIndexes[$parameter->enum->getName()] ?? -1));
 					}else{
 						$type = self::ARG_FLAG_ENUM | self::ARG_FLAG_VALID | ($enumIndexes[$parameter->enum->getName()] ?? -1);
 					}
@@ -532,6 +609,8 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 			}
 			foreach($commandData->overloads as $overload){
 				foreach($overload->getParameters() as $parameter){
+					$parameter->paramType = self::convertArg($out->getProtocolId(), $parameter->paramType);
+					
 					if($parameter->enum !== null){
 						$addEnumFn($parameter->enum);
 					}
@@ -541,13 +620,15 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 					}
 				}
 			}
-			foreach($commandData->chainedSubCommandData as $chainedSubCommandData){
-				if(!isset($allChainedSubCommandData[$chainedSubCommandData->getName()])){
-					$allChainedSubCommandData[$chainedSubCommandData->getName()] = $chainedSubCommandData;
-					$chainedSubCommandDataIndexes[$chainedSubCommandData->getName()] = count($chainedSubCommandDataIndexes);
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10){
+				foreach($commandData->chainedSubCommandData as $chainedSubCommandData){
+					if(!isset($allChainedSubCommandData[$chainedSubCommandData->getName()])){
+						$allChainedSubCommandData[$chainedSubCommandData->getName()] = $chainedSubCommandData;
+						$chainedSubCommandDataIndexes[$chainedSubCommandData->getName()] = count($chainedSubCommandDataIndexes);
 
-					foreach($chainedSubCommandData->getValues() as $value){
-						$chainedSubCommandValueNameIndexes[$value->getName()] ??= count($chainedSubCommandValueNameIndexes);
+						foreach($chainedSubCommandData->getValues() as $value){
+							$chainedSubCommandValueNameIndexes[$value->getName()] ??= count($chainedSubCommandValueNameIndexes);
+						}
 					}
 				}
 			}
@@ -558,9 +639,11 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 			$out->putString((string) $enumValue); //stupid PHP key casting D:
 		}
 
-		$out->putUnsignedVarInt(count($chainedSubCommandValueNameIndexes));
-		foreach($chainedSubCommandValueNameIndexes as $chainedSubCommandValueName => $index){
-			$out->putString((string) $chainedSubCommandValueName); //stupid PHP key casting D:
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10){
+			$out->putUnsignedVarInt(count($chainedSubCommandValueNameIndexes));
+			foreach($chainedSubCommandValueNameIndexes as $chainedSubCommandValueName => $index){
+				$out->putString((string) $chainedSubCommandValueName); //stupid PHP key casting D:
+			}
 		}
 
 		$out->putUnsignedVarInt(count($postfixIndexes));
@@ -573,15 +656,17 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 			$this->putEnum($enum, $enumValueIndexes, $out);
 		}
 
-		$out->putUnsignedVarInt(count($allChainedSubCommandData));
-		foreach($allChainedSubCommandData as $chainedSubCommandData){
-			$out->putString($chainedSubCommandData->getName());
-			$out->putUnsignedVarInt(count($chainedSubCommandData->getValues()));
-			foreach($chainedSubCommandData->getValues() as $value){
-				$valueNameIndex = $chainedSubCommandValueNameIndexes[$value->getName()] ??
-					throw new \LogicException("Chained subcommand value name index for \"" . $value->getName() . "\" not found (this should never happen)");
-				$out->putLShort($valueNameIndex);
-				$out->putLShort($value->getType());
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_10){
+			$out->putUnsignedVarInt(count($allChainedSubCommandData));
+			foreach($allChainedSubCommandData as $chainedSubCommandData){
+				$out->putString($chainedSubCommandData->getName());
+				$out->putUnsignedVarInt(count($chainedSubCommandData->getValues()));
+				foreach($chainedSubCommandData->getValues() as $value){
+					$valueNameIndex = $chainedSubCommandValueNameIndexes[$value->getName()] ??
+						throw new \LogicException("Chained subcommand value name index for \"" . $value->getName() . "\" not found (this should never happen)");
+					$out->putLShort($valueNameIndex);
+					$out->putLShort($value->getType());
+				}
 			}
 		}
 

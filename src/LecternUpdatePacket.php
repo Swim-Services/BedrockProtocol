@@ -23,15 +23,17 @@ class LecternUpdatePacket extends DataPacket implements ServerboundPacket{
 	public int $page;
 	public int $totalPages;
 	public BlockPosition $blockPosition;
+	public bool $dropBook;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $page, int $totalPages, BlockPosition $blockPosition) : self{
+	public static function create(int $page, int $totalPages, BlockPosition $blockPosition, bool $dropBook) : self{
 		$result = new self;
 		$result->page = $page;
 		$result->totalPages = $totalPages;
 		$result->blockPosition = $blockPosition;
+		$result->dropBook = $dropBook;
 		return $result;
 	}
 
@@ -39,12 +41,18 @@ class LecternUpdatePacket extends DataPacket implements ServerboundPacket{
 		$this->page = $in->getByte();
 		$this->totalPages = $in->getByte();
 		$this->blockPosition = $in->getBlockPosition();
+		if($in->getProtocolId() <= ProtocolInfo::PROTOCOL_1_20_60){
+			$this->dropBook = $in->getBool();
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putByte($this->page);
 		$out->putByte($this->totalPages);
 		$out->putBlockPosition($this->blockPosition);
+		if($out->getProtocolId() <= ProtocolInfo::PROTOCOL_1_20_60){
+			$out->putBool($this->dropBook);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -19,6 +19,7 @@ use pocketmine\nbt\NbtDataException;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\TreeRoot;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\types\BoolGameRule;
 use pocketmine\network\mcpe\protocol\types\command\CommandOriginData;
@@ -65,17 +66,21 @@ use function strrev;
 use function substr;
 
 class PacketSerializer extends BinaryStream{
-	protected function __construct(string $buffer = "", int $offset = 0){
+	protected function __construct(private int $protocolId, string $buffer = "", int $offset = 0){
 		//overridden to change visibility
 		parent::__construct($buffer, $offset);
 	}
 
-	public static function encoder() : self{
-		return new self();
+	public static function encoder(int $protocolId) : self{
+		return new self($protocolId);
 	}
 
-	public static function decoder(string $buffer, int $offset) : self{
-		return new self($buffer, $offset);
+	public static function decoder(int $protocolId, string $buffer, int $offset) : self{
+		return new self($protocolId, $buffer, $offset);
+	}
+
+	public function getProtocolId() : int{
+		return $this->protocolId;
 	}
 
 	/**
@@ -157,7 +162,11 @@ class PacketSerializer extends BinaryStream{
 		$persona = $this->getBool();
 		$capeOnClassic = $this->getBool();
 		$isPrimaryUser = $this->getBool();
-		$override = $this->getBool();
+
+		$override = false;
+		if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_63){
+			$override = $this->getBool();
+		}
 
 		return new SkinData(
 			$skinId,
@@ -224,7 +233,9 @@ class PacketSerializer extends BinaryStream{
 		$this->putBool($skin->isPersona());
 		$this->putBool($skin->isPersonaCapeOnClassic());
 		$this->putBool($skin->isPrimaryUser());
-		$this->putBool($skin->isOverride());
+		if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_63){
+			$this->putBool($skin->isOverride());
+		}
 	}
 
 	private function getSkinImage() : SkinImage{
@@ -331,16 +342,21 @@ class PacketSerializer extends BinaryStream{
 	}
 
 	public function getRecipeIngredient() : RecipeIngredient{
-		$descriptorType = $this->getByte();
-		$descriptor = match($descriptorType){
-			ItemDescriptorType::INT_ID_META => IntIdMetaItemDescriptor::read($this),
-			ItemDescriptorType::STRING_ID_META => StringIdMetaItemDescriptor::read($this),
-			ItemDescriptorType::TAG => TagItemDescriptor::read($this),
-			ItemDescriptorType::MOLANG => MolangItemDescriptor::read($this),
-			ItemDescriptorType::COMPLEX_ALIAS => ComplexAliasItemDescriptor::read($this),
-			default => null
-		};
-		$count = $this->getVarInt();
+		if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30){
+			$descriptorType = $this->getByte();
+			$descriptor = match($descriptorType){
+				ItemDescriptorType::INT_ID_META => IntIdMetaItemDescriptor::read($this),
+				ItemDescriptorType::STRING_ID_META => StringIdMetaItemDescriptor::read($this),
+				ItemDescriptorType::TAG => TagItemDescriptor::read($this),
+				ItemDescriptorType::MOLANG => MolangItemDescriptor::read($this),
+				ItemDescriptorType::COMPLEX_ALIAS => ComplexAliasItemDescriptor::read($this),
+				default => null
+			};
+			$count = $this->getVarInt();
+		}else{
+			$descriptor = IntIdMetaItemDescriptor::read($this);
+			$count = $descriptor->getId() === 0 ? 0 : $this->getVarInt();
+		}
 
 		return new RecipeIngredient($descriptor, $count);
 	}
@@ -348,10 +364,21 @@ class PacketSerializer extends BinaryStream{
 	public function putRecipeIngredient(RecipeIngredient $ingredient) : void{
 		$type = $ingredient->getDescriptor();
 
-		$this->putByte($type?->getTypeId() ?? 0);
-		$type?->write($this);
+		if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30){
+			$this->putByte($type?->getTypeId() ?? 0);
+			$type?->write($this);
 
-		$this->putVarInt($ingredient->getCount());
+			$this->putVarInt($ingredient->getCount());
+		}elseif($type instanceof IntIdMetaItemDescriptor){
+			$type->write($this);
+			if($type->getId() !== 0){
+				$this->putVarInt($ingredient->getCount());
+			}
+		}elseif($type === null){
+			$this->putVarInt(0);
+		}else{
+			throw new \InvalidArgumentException("Unsupported item descriptor type");
+		}
 	}
 
 	/**
@@ -425,8 +452,10 @@ class PacketSerializer extends BinaryStream{
 			$id = $this->getString();
 
 			$modifiers = [];
-			for($j = 0, $modifierCount = $this->getUnsignedVarInt(); $j < $modifierCount; $j++){
-				$modifiers[] = AttributeModifier::read($this);
+			if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
+				for($j = 0, $modifierCount = $this->getUnsignedVarInt(); $j < $modifierCount; $j++){
+					$modifiers[] = AttributeModifier::read($this);
+				}
 			}
 
 			$list[] = new Attribute($id, $min, $max, $current, $default, $modifiers);
@@ -447,9 +476,11 @@ class PacketSerializer extends BinaryStream{
 			$this->putLFloat($attribute->getDefault());
 			$this->putString($attribute->getId());
 
-			$this->putUnsignedVarInt(count($attribute->getModifiers()));
-			foreach($attribute->getModifiers() as $modifier){
-				$modifier->write($this);
+			if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
+				$this->putUnsignedVarInt(count($attribute->getModifiers()));
+				foreach($attribute->getModifiers() as $modifier){
+					$modifier->write($this);
+				}
 			}
 		}
 	}
@@ -669,7 +700,11 @@ class PacketSerializer extends BinaryStream{
 
 		$result->ignoreEntities = $this->getBool();
 		$result->ignoreBlocks = $this->getBool();
-		$result->allowNonTickingChunks = $this->getBool();
+		if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_30){
+			$result->allowNonTickingChunks = $this->getBool();
+		}else{
+			$result->allowNonTickingChunks = false;
+		}
 
 		$result->dimensions = $this->getBlockPosition();
 		$result->offset = $this->getBlockPosition();
@@ -691,7 +726,9 @@ class PacketSerializer extends BinaryStream{
 
 		$this->putBool($structureSettings->ignoreEntities);
 		$this->putBool($structureSettings->ignoreBlocks);
-		$this->putBool($structureSettings->allowNonTickingChunks);
+		if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_30){
+			$this->putBool($structureSettings->allowNonTickingChunks);
+		}
 
 		$this->putBlockPosition($structureSettings->dimensions);
 		$this->putBlockPosition($structureSettings->offset);

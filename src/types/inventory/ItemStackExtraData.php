@@ -20,6 +20,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\TreeRoot;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\utils\BinaryStream;
 use function count;
 use function strlen;
 
@@ -57,7 +58,7 @@ class ItemStackExtraData{
 		return $this->nbt;
 	}
 
-	public static function read(PacketSerializer $in) : self{
+	public static function read(BinaryStream $in) : self{
 		$nbtLen = $in->getLShort();
 
 		/** @var CompoundTag|null $compound */

@@ -69,7 +69,9 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		$this->amplifier = $in->getVarInt();
 		$this->particles = $in->getBool();
 		$this->duration = $in->getVarInt();
-		$this->tick = $in->getLLong();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
+			$this->tick = $in->getLLong();
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
@@ -79,7 +81,9 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		$out->putVarInt($this->amplifier);
 		$out->putBool($this->particles);
 		$out->putVarInt($this->duration);
-		$out->putLLong($this->tick);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
+			$out->putLLong($this->tick);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

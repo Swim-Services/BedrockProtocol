@@ -79,9 +79,11 @@ class AddVolumeEntityPacket extends DataPacket implements ClientboundPacket{
 		$this->data = new CacheableNbt($in->getNbtCompoundRoot());
 		$this->jsonIdentifier = $in->getString();
 		$this->instanceName = $in->getString();
-		$this->minBound = $in->getBlockPosition();
-		$this->maxBound = $in->getBlockPosition();
-		$this->dimension = $in->getVarInt();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_30){
+			$this->minBound = $in->getBlockPosition();
+			$this->maxBound = $in->getBlockPosition();
+			$this->dimension = $in->getVarInt();
+		}
 		$this->engineVersion = $in->getString();
 	}
 
@@ -90,9 +92,11 @@ class AddVolumeEntityPacket extends DataPacket implements ClientboundPacket{
 		$out->put($this->data->getEncodedNbt());
 		$out->putString($this->jsonIdentifier);
 		$out->putString($this->instanceName);
-		$out->putBlockPosition($this->minBound);
-		$out->putBlockPosition($this->maxBound);
-		$out->putVarInt($this->dimension);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_30){
+			$out->putBlockPosition($this->minBound);
+			$out->putBlockPosition($this->maxBound);
+			$out->putVarInt($this->dimension);
+		}
 		$out->putString($this->engineVersion);
 	}
 
