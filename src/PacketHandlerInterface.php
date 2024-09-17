@@ -420,5 +420,17 @@ interface PacketHandlerInterface{
 
 	public function handleAwardAchievement(AwardAchievementPacket $packet) : bool;
 
-	public function handleCloseForm(ClientboundCloseFormPacket $packet) : bool;
+	public function handleClientboundCloseForm(ClientboundCloseFormPacket $packet) : bool;
+
+	public function handleServerboundLoadingScreen(ServerboundLoadingScreenPacket $packet) : bool;
+
+	public function handleJigsawStructureData(JigsawStructureDataPacket $packet) : bool;
+
+	public function handleCurrentStructureFeature(CurrentStructureFeaturePacket $packet) : bool;
+
+	public function handleServerboundDiagnostics(ServerboundDiagnosticsPacket $packet) : bool;
+
+	public function handleCameraAimAssist(CameraAimAssistPacket $packet) : bool;
+
+	public function handleContainerRegistryCleanup(ContainerRegistryCleanupPacket $packet) : bool;
 }

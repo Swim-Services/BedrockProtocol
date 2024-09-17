@@ -17,48 +17,34 @@ namespace pocketmine\network\mcpe\protocol;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 
-class StructureTemplateDataResponsePacket extends DataPacket implements ClientboundPacket{
-	public const NETWORK_ID = ProtocolInfo::STRUCTURE_TEMPLATE_DATA_RESPONSE_PACKET;
+class JigsawStructureDataPacket extends DataPacket implements ClientboundPacket{
+	public const NETWORK_ID = ProtocolInfo::JIGSAW_STRUCTURE_DATA_PACKET;
 
-	public const TYPE_FAILURE = 0;
-	public const TYPE_EXPORT = 1;
-	public const TYPE_QUERY = 2;
-
-	public string $structureTemplateName;
 	/** @phpstan-var CacheableNbt<\pocketmine\nbt\tag\CompoundTag> */
-	public ?CacheableNbt $nbt;
-	public int $responseType;
+	private CacheableNbt $nbt;
 
 	/**
 	 * @generate-create-func
 	 * @phpstan-param CacheableNbt<\pocketmine\nbt\tag\CompoundTag> $nbt
 	 */
-	public static function create(string $structureTemplateName, ?CacheableNbt $nbt, int $responseType) : self{
+	public static function create(CacheableNbt $nbt) : self{
 		$result = new self;
-		$result->structureTemplateName = $structureTemplateName;
 		$result->nbt = $nbt;
-		$result->responseType = $responseType;
 		return $result;
 	}
 
+	/** @phpstan-return CacheableNbt<\pocketmine\nbt\tag\CompoundTag> */
+	public function getNbt() : CacheableNbt{ return $this->nbt; }
+
 	protected function decodePayload(PacketSerializer $in) : void{
-		$this->structureTemplateName = $in->getString();
-		if($in->getBool()){
-			$this->nbt = new CacheableNbt($in->getNbtCompoundRoot());
-		}
-		$this->responseType = $in->getByte();
+		$this->nbt = new CacheableNbt($in->getNbtCompoundRoot());
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putString($this->structureTemplateName);
-		$out->putBool($this->nbt !== null);
-		if($this->nbt !== null){
-			$out->put($this->nbt->getEncodedNbt());
-		}
-		$out->putByte($this->responseType);
+		$out->put($this->nbt->getEncodedNbt());
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
-		return $handler->handleStructureTemplateDataResponse($this);
+		return $handler->handleJigsawStructureData($this);
 	}
 }

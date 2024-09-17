@@ -23,6 +23,7 @@ use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 class EditorNetworkPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::EDITOR_NETWORK_PACKET;
 
+	private bool $isRouteToManager;
 	/** @phpstan-var CacheableNbt<\pocketmine\nbt\tag\CompoundTag> */
 	private CacheableNbt $payload;
 
@@ -30,8 +31,9 @@ class EditorNetworkPacket extends DataPacket implements ClientboundPacket, Serve
 	 * @generate-create-func
 	 * @phpstan-param CacheableNbt<\pocketmine\nbt\tag\CompoundTag> $payload
 	 */
-	public static function create(CacheableNbt $payload) : self{
+	public static function create(bool $isRouteToManager, CacheableNbt $payload) : self{
 		$result = new self;
+		$result->isRouteToManager = $isRouteToManager;
 		$result->payload = $payload;
 		return $result;
 	}
@@ -39,11 +41,19 @@ class EditorNetworkPacket extends DataPacket implements ClientboundPacket, Serve
 	/** @phpstan-return CacheableNbt<\pocketmine\nbt\tag\CompoundTag> */
 	public function getPayload() : CacheableNbt{ return $this->payload; }
 
+	public function isRouteToManager() : bool{ return $this->isRouteToManager; }
+
 	protected function decodePayload(PacketSerializer $in) : void{
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->isRouteToManager = $in->getBool();
+		}
 		$this->payload = new CacheableNbt($in->getNbtCompoundRoot());
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$out->putBool($this->isRouteToManager);
+		}
 		$out->put($this->payload->getEncodedNbt());
 	}
 

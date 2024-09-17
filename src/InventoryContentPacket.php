@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\types\inventory\FullContainerName;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use function count;
 
@@ -24,15 +25,19 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 	public int $windowId;
 	/** @var ItemStackWrapper[] */
 	public array $items = [];
+	public FullContainerName $containerName;
+	public int $dynamicContainerSize;
 
 	/**
 	 * @generate-create-func
 	 * @param ItemStackWrapper[] $items
 	 */
-	public static function create(int $windowId, array $items) : self{
+	public static function create(int $windowId, array $items, FullContainerName $containerName, int $dynamicContainerSize) : self{
 		$result = new self;
 		$result->windowId = $windowId;
 		$result->items = $items;
+		$result->containerName = $containerName;
+		$result->dynamicContainerSize = $dynamicContainerSize;
 		return $result;
 	}
 
@@ -42,6 +47,12 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 		for($i = 0; $i < $count; ++$i){
 			$this->items[] = $in->getItemStackWrapper();
 		}
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->containerName = FullContainerName::read($in);
+			$this->dynamicContainerSize = $in->getUnsignedVarInt();
+		}elseif($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->containerName = new FullContainerName(0, $in->getUnsignedVarInt());
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
@@ -49,6 +60,12 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 		$out->putUnsignedVarInt(count($this->items));
 		foreach($this->items as $item){
 			$out->putItemStackWrapper($item);
+		}
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->containerName->write($out);
+			$out->putUnsignedVarInt($this->dynamicContainerSize);
+		}elseif($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$out->putUnsignedVarInt($this->containerName->getDynamicId() ?? 0);
 		}
 	}
 

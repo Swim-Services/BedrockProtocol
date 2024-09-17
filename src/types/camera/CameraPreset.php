@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pocketmine\math\Vector2;
+use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
@@ -30,6 +32,11 @@ final class CameraPreset{
 		private ?float $zPosition,
 		private ?float $pitch,
 		private ?float $yaw,
+		private ?float $rotationSpeed,
+		private ?bool $snapToTarget,
+		private ?Vector2 $viewOffset,
+		private ?Vector3 $entityOffset,
+		private ?float $radius,
 		private ?int $audioListenerType,
 		private ?bool $playerEffects
 	){}
@@ -48,6 +55,16 @@ final class CameraPreset{
 
 	public function getYaw() : ?float{ return $this->yaw; }
 
+	public function getRotationSpeed() : ?float { return $this->rotationSpeed; }
+
+	public function getSnapToTarget() : ?bool { return $this->snapToTarget; }
+
+	public function getViewOffset() : ?Vector2{ return $this->viewOffset; }
+
+	public function getEntityOffset() : ?Vector3{ return $this->entityOffset; }
+
+	public function getRadius() : ?float{ return $this->radius; }
+
 	public function getAudioListenerType() : ?int{ return $this->audioListenerType; }
 
 	public function getPlayerEffects() : ?bool{ return $this->playerEffects; }
@@ -55,13 +72,24 @@ final class CameraPreset{
 	public static function read(PacketSerializer $in) : self{
 		$name = $in->getString();
 		$parent = $in->getString();
-		$xPosition = $in->readOptional(fn() => $in->getLFloat());
-		$yPosition = $in->readOptional(fn() => $in->getLFloat());
-		$zPosition = $in->readOptional(fn() => $in->getLFloat());
-		$pitch = $in->readOptional(fn() => $in->getLFloat());
-		$yaw = $in->readOptional(fn() => $in->getLFloat());
-		$audioListenerType = $in->readOptional(fn() => $in->getByte());
-		$playerEffects = $in->readOptional(fn() => $in->getBool());
+		$xPosition = $in->readOptional($in->getLFloat(...));
+		$yPosition = $in->readOptional($in->getLFloat(...));
+		$zPosition = $in->readOptional($in->getLFloat(...));
+		$pitch = $in->readOptional($in->getLFloat(...));
+		$yaw = $in->readOptional($in->getLFloat(...));
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
+				$rotationSpeed = $in->readOptional($in->getLFloat(...));
+				$snapToTarget = $in->readOptional($in->getBool(...));
+			}
+			$viewOffset = $in->readOptional($in->getVector2(...));
+			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
+				$entityOffset = $in->readOptional($in->getVector3(...));
+			}
+			$radius = $in->readOptional($in->getLFloat(...));
+		}
+		$audioListenerType = $in->readOptional($in->getByte(...));
+		$playerEffects = $in->readOptional($in->getBool(...));
 
 		return new self(
 			$name,
@@ -71,6 +99,11 @@ final class CameraPreset{
 			$zPosition,
 			$pitch,
 			$yaw,
+			$rotationSpeed ?? null,
+			$snapToTarget ?? null,
+			$viewOffset ?? null,
+			$entityOffset ?? null,
+			$radius ?? null,
 			$audioListenerType,
 			$playerEffects
 		);
@@ -85,6 +118,11 @@ final class CameraPreset{
 			$nbt->getTag("pos_z") === null ? null : $nbt->getFloat("pos_z"),
 			$nbt->getTag("rot_x") === null ? null : $nbt->getFloat("rot_x"),
 			$nbt->getTag("rot_y") === null ? null : $nbt->getFloat("rot_y"),
+			null,
+			null,
+			null,
+			null,
+			null,
 			$nbt->getTag("audio_listener_type") === null ? null : match($nbt->getString("audio_listener_type")){
 				"camera" => self::AUDIO_LISTENER_TYPE_CAMERA,
 				"player" => self::AUDIO_LISTENER_TYPE_PLAYER,
@@ -97,55 +135,24 @@ final class CameraPreset{
 	public function write(PacketSerializer $out) : void{
 		$out->putString($this->name);
 		$out->putString($this->parent);
-		$out->writeOptional($this->xPosition, fn(float $v) => $out->putLFloat($v));
-		$out->writeOptional($this->yPosition, fn(float $v) => $out->putLFloat($v));
-		$out->writeOptional($this->zPosition, fn(float $v) => $out->putLFloat($v));
-		$out->writeOptional($this->pitch, fn(float $v) => $out->putLFloat($v));
-		$out->writeOptional($this->yaw, fn(float $v) => $out->putLFloat($v));
-		$out->writeOptional($this->audioListenerType, fn(int $v) => $out->putByte($v));
-		$out->writeOptional($this->playerEffects, fn(bool $v) => $out->putBool($v));
-	}
-
-	public function toNBT(int $protocolId) : CompoundTag{
-		$nbt = CompoundTag::create()
-			->setString("identifier", $this->name)
-			->setString("inherit_from", $this->parent);
-
-		if($this->xPosition !== null){
-			$nbt->setFloat("pos_x", $this->xPosition);
-		}
-
-		if($this->yPosition !== null){
-			$nbt->setFloat("pos_y", $this->yPosition);
-		}
-
-		if($this->zPosition !== null){
-			$nbt->setFloat("pos_z", $this->zPosition);
-		}
-
-		if($this->pitch !== null){
-			$nbt->setFloat("rot_x", $this->pitch);
-		}
-
-		if($this->yaw !== null){
-			$nbt->setFloat("rot_y", $this->yaw);
-		}
-
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
-			if($this->audioListenerType !== null){
-				$nbt->setString("audio_listener_type", match($this->audioListenerType){
-					self::AUDIO_LISTENER_TYPE_CAMERA => "camera",
-					self::AUDIO_LISTENER_TYPE_PLAYER => "player",
-					default => throw new \InvalidArgumentException("Invalid audio listener type: $this->audioListenerType"),
-				});
+		$out->writeOptional($this->xPosition, $out->putLFloat(...));
+		$out->writeOptional($this->yPosition, $out->putLFloat(...));
+		$out->writeOptional($this->zPosition, $out->putLFloat(...));
+		$out->writeOptional($this->pitch, $out->putLFloat(...));
+		$out->writeOptional($this->yaw, $out->putLFloat(...));
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
+				$out->writeOptional($this->rotationSpeed, $out->putLFloat(...));
+				$out->writeOptional($this->snapToTarget, $out->putBool(...));
 			}
-
-			if($this->playerEffects !== null){
-				$nbt->setByte("player_effects", (int) $this->playerEffects);
+			$out->writeOptional($this->viewOffset, $out->putVector2(...));
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
+				$out->writeOptional($this->entityOffset, $out->putVector3(...));
 			}
+			$out->writeOptional($this->radius, $out->putLFloat(...));
 		}
-
-		return $nbt;
+		$out->writeOptional($this->audioListenerType, $out->putByte(...));
+		$out->writeOptional($this->playerEffects, $out->putBool(...));
 	}
 
 	public function toNBT(int $protocolId) : CompoundTag{

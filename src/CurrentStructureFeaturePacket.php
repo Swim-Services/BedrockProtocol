@@ -16,41 +16,29 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
-class TransferPacket extends DataPacket implements ClientboundPacket{
-	public const NETWORK_ID = ProtocolInfo::TRANSFER_PACKET;
+class CurrentStructureFeaturePacket extends DataPacket implements ClientboundPacket{
+	public const NETWORK_ID = ProtocolInfo::CURRENT_STRUCTURE_FEATURE_PACKET;
 
-	public string $address;
-	public int $port = 19132;
-	public bool $reloadWorld;
+	public string $currentStructureFeature;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(string $address, int $port, bool $reloadWorld) : self{
+	public static function create(string $currentStructureFeature) : self{
 		$result = new self;
-		$result->address = $address;
-		$result->port = $port;
-		$result->reloadWorld = $reloadWorld;
+		$result->currentStructureFeature = $currentStructureFeature;
 		return $result;
 	}
 
 	protected function decodePayload(PacketSerializer $in) : void{
-		$this->address = $in->getString();
-		$this->port = $in->getLShort();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-			$this->reloadWorld = $in->getBool();
-		}
+		$this->currentStructureFeature = $in->getString();
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putString($this->address);
-		$out->putLShort($this->port);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-			$out->putBool($this->reloadWorld);
-		}
+		$out->putString($this->currentStructureFeature);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
-		return $handler->handleTransfer($this);
+		return $handler->handleCurrentStructureFeature($this);
 	}
 }

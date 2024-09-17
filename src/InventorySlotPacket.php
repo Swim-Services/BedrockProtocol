@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\types\inventory\FullContainerName;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 
 class InventorySlotPacket extends DataPacket implements ClientboundPacket{
@@ -22,15 +23,19 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 
 	public int $windowId;
 	public int $inventorySlot;
+	public FullContainerName $containerName;
+	public int $dynamicContainerSize;
 	public ItemStackWrapper $item;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $windowId, int $inventorySlot, ItemStackWrapper $item) : self{
+	public static function create(int $windowId, int $inventorySlot, FullContainerName $containerName, int $dynamicContainerSize, ItemStackWrapper $item) : self{
 		$result = new self;
 		$result->windowId = $windowId;
 		$result->inventorySlot = $inventorySlot;
+		$result->containerName = $containerName;
+		$result->dynamicContainerSize = $dynamicContainerSize;
 		$result->item = $item;
 		return $result;
 	}
@@ -38,12 +43,24 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->windowId = $in->getUnsignedVarInt();
 		$this->inventorySlot = $in->getUnsignedVarInt();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->containerName = FullContainerName::read($in);
+			$this->dynamicContainerSize = $in->getUnsignedVarInt();
+		}elseif($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->containerName = new FullContainerName(0, $in->getUnsignedVarInt());
+		}
 		$this->item = $in->getItemStackWrapper();
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putUnsignedVarInt($this->windowId);
 		$out->putUnsignedVarInt($this->inventorySlot);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->containerName->write($out);
+			$out->putUnsignedVarInt($this->dynamicContainerSize);
+		}elseif($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$out->putUnsignedVarInt($this->containerName->getDynamicId() ?? 0);
+		}
 		$out->putItemStackWrapper($this->item);
 	}
 

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\serializer;
 
+use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\NbtDataException;
 use pocketmine\nbt\tag\CompoundTag;
@@ -23,8 +24,6 @@ use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\types\BoolGameRule;
 use pocketmine\network\mcpe\protocol\types\command\CommandOriginData;
-use pocketmine\network\mcpe\protocol\types\entity\Attribute;
-use pocketmine\network\mcpe\protocol\types\entity\AttributeModifier;
 use pocketmine\network\mcpe\protocol\types\entity\BlockPosMetadataProperty;
 use pocketmine\network\mcpe\protocol\types\entity\ByteMetadataProperty;
 use pocketmine\network\mcpe\protocol\types\entity\CompoundTagMetadataProperty;
@@ -435,57 +434,6 @@ class PacketSerializer extends BinaryStream{
 	}
 
 	/**
-	 * Reads a list of Attributes from the stream.
-	 * @return Attribute[]
-	 *
-	 * @throws BinaryDataException
-	 */
-	public function getAttributeList() : array{
-		$list = [];
-		$count = $this->getUnsignedVarInt();
-
-		for($i = 0; $i < $count; ++$i){
-			$min = $this->getLFloat();
-			$max = $this->getLFloat();
-			$current = $this->getLFloat();
-			$default = $this->getLFloat();
-			$id = $this->getString();
-
-			$modifiers = [];
-			if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
-				for($j = 0, $modifierCount = $this->getUnsignedVarInt(); $j < $modifierCount; $j++){
-					$modifiers[] = AttributeModifier::read($this);
-				}
-			}
-
-			$list[] = new Attribute($id, $min, $max, $current, $default, $modifiers);
-		}
-
-		return $list;
-	}
-
-	/**
-	 * Writes a list of Attributes to the packet buffer using the standard format.
-	 */
-	public function putAttributeList(Attribute ...$attributes) : void{
-		$this->putUnsignedVarInt(count($attributes));
-		foreach($attributes as $attribute){
-			$this->putLFloat($attribute->getMin());
-			$this->putLFloat($attribute->getMax());
-			$this->putLFloat($attribute->getCurrent());
-			$this->putLFloat($attribute->getDefault());
-			$this->putString($attribute->getId());
-
-			if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
-				$this->putUnsignedVarInt(count($attribute->getModifiers()));
-				foreach($attribute->getModifiers() as $modifier){
-					$modifier->write($this);
-				}
-			}
-		}
-	}
-
-	/**
 	 * @throws BinaryDataException
 	 */
 	final public function getActorUniqueId() : int{
@@ -562,6 +510,17 @@ class PacketSerializer extends BinaryStream{
 	}
 
 	/**
+	 * Reads a floating-point Vector2 object with coordinates rounded to 4 decimal places.
+	 *
+	 * @throws BinaryDataException
+	 */
+	public function getVector2() : Vector2{
+		$x = $this->getLFloat();
+		$y = $this->getLFloat();
+		return new Vector2($x, $y);
+	}
+
+	/**
 	 * Writes a floating-point Vector3 object, or 3x zero if null is given.
 	 *
 	 * Note: ONLY use this where it is reasonable to allow not specifying the vector.
@@ -586,6 +545,14 @@ class PacketSerializer extends BinaryStream{
 		$this->putLFloat($vector->x);
 		$this->putLFloat($vector->y);
 		$this->putLFloat($vector->z);
+	}
+
+	/**
+	 * Writes a floating-point Vector2 object
+	 */
+	public function putVector2(Vector2 $vector2) : void{
+		$this->putLFloat($vector2->x);
+		$this->putLFloat($vector2->y);
 	}
 
 	/**
@@ -655,7 +622,10 @@ class PacketSerializer extends BinaryStream{
 		$type = $this->getByte();
 		$immediate = $this->getBool();
 		$causedByRider = $this->getBool();
-		return new EntityLink($fromActorUniqueId, $toActorUniqueId, $type, $immediate, $causedByRider);
+		if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$vehicleAngularVelocity = $this->getLFloat();
+		}
+		return new EntityLink($fromActorUniqueId, $toActorUniqueId, $type, $immediate, $causedByRider, $vehicleAngularVelocity ?? 0.0);
 	}
 
 	public function putEntityLink(EntityLink $link) : void{
@@ -664,6 +634,9 @@ class PacketSerializer extends BinaryStream{
 		$this->putByte($link->type);
 		$this->putBool($link->immediate);
 		$this->putBool($link->causedByRider);
+		if($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->putLFloat($link->vehicleAngularVelocity);
+		}
 	}
 
 	/**

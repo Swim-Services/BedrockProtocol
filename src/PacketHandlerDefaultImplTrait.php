@@ -825,7 +825,31 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
-	public function handleCloseForm(ClientboundCloseFormPacket $packet) : bool{
+	public function handleClientboundCloseForm(ClientboundCloseFormPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleServerboundLoadingScreen(ServerboundLoadingScreenPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleJigsawStructureData(JigsawStructureDataPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleCurrentStructureFeature(CurrentStructureFeaturePacket $packet) : bool{
+		return false;
+	}
+
+	public function handleServerboundDiagnostics(ServerboundDiagnosticsPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleCameraAimAssist(CameraAimAssistPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleContainerRegistryCleanup(ContainerRegistryCleanupPacket $packet) : bool{
 		return false;
 	}
 }

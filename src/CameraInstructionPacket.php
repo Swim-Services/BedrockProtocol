@@ -19,6 +19,7 @@ use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\network\mcpe\protocol\types\camera\CameraFadeInstruction;
 use pocketmine\network\mcpe\protocol\types\camera\CameraSetInstruction;
+use pocketmine\network\mcpe\protocol\types\camera\CameraTargetInstruction;
 
 class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::CAMERA_INSTRUCTION_PACKET;
@@ -26,15 +27,19 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 	private ?CameraSetInstruction $set;
 	private ?bool $clear;
 	private ?CameraFadeInstruction $fade;
+	private ?CameraTargetInstruction $target;
+	private ?bool $removeTarget;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(?CameraSetInstruction $set, ?bool $clear, ?CameraFadeInstruction $fade) : self{
+	public static function create(?CameraSetInstruction $set, ?bool $clear, ?CameraFadeInstruction $fade, ?CameraTargetInstruction $target, ?bool $removeTarget) : self{
 		$result = new self;
 		$result->set = $set;
 		$result->clear = $clear;
 		$result->fade = $fade;
+		$result->target = $target;
+		$result->removeTarget = $removeTarget;
 		return $result;
 	}
 
@@ -44,11 +49,19 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 
 	public function getFade() : ?CameraFadeInstruction{ return $this->fade; }
 
+	public function getTarget() : ?CameraTargetInstruction{ return $this->target; }
+
+	public function getRemoveTarget() : ?bool{ return $this->removeTarget; }
+
 	protected function decodePayload(PacketSerializer $in) : void{
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
 			$this->set = $in->readOptional(fn() => CameraSetInstruction::read($in));
 			$this->clear = $in->readOptional($in->getBool(...));
 			$this->fade = $in->readOptional(fn() => CameraFadeInstruction::read($in));
+			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+				$this->target = $in->readOptional(fn() => CameraTargetInstruction::read($in));
+				$this->removeTarget = $in->readOptional($in->getBool(...));
+			}
 		}else{
 			$this->fromNBT($in->getNbtCompoundRoot());
 		}
@@ -69,6 +82,10 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 			$out->writeOptional($this->set, fn(CameraSetInstruction $v) => $v->write($out));
 			$out->writeOptional($this->clear, $out->putBool(...));
 			$out->writeOptional($this->fade, fn(CameraFadeInstruction $v) => $v->write($out));
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+				$out->writeOptional($this->target, fn(CameraTargetInstruction $v) => $v->write($out));
+				$out->writeOptional($this->removeTarget, $out->putBool(...));
+			}
 		}else{
 			$data = new CacheableNbt($this->toNBT());
 			$out->put($data->getEncodedNbt());
