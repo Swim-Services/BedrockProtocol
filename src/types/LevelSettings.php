@@ -30,6 +30,7 @@ final class LevelSettings{
 	public BlockPosition $spawnPosition;
 	public bool $hasAchievementsDisabled = true;
 	public bool $isEditorMode = false;
+	public int $editorWorldType = EditorWorldType::NON_EDITOR;
 	public bool $createdInEditorMode = false;
 	public bool $exportedFromEditorMode = false;
 	public int $time = -1;

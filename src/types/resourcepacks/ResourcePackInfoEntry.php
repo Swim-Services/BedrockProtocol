@@ -16,7 +16,6 @@ namespace pocketmine\network\mcpe\protocol\types\resourcepacks;
 
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
-use pocketmine\network\mcpe\protocol\ProtocolInfo;
 class ResourcePackInfoEntry{
 	public function __construct(
 		private string $packId,

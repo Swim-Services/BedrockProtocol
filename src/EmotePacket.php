@@ -51,7 +51,7 @@ class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPa
 		return $this->emoteId;
 	}
 
-	public function getEmoteLengthTicks() : int{ return $this->emoteLengthTicks; }
+	public function getEmoteLengthTicks() : int{ return $this->emoteLengthTicks ?? 0; }
 
 	public function getXboxUserId() : string{ return $this->xboxUserId; }
 
