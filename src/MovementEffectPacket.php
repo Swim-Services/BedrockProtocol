@@ -14,44 +14,50 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
-class SetActorMotionPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
-	public const NETWORK_ID = ProtocolInfo::SET_ACTOR_MOTION_PACKET;
+class MovementEffectPacket extends DataPacket implements ClientboundPacket{
+	public const NETWORK_ID = ProtocolInfo::MOVEMENT_EFFECT;
+
+	public const GLIDE_BOOST = 0;
 
 	public int $actorRuntimeId;
-	public Vector3 $motion;
+	public int $effectType;
+	public int $effectDuration;
 	public int $tick;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $actorRuntimeId, Vector3 $motion, int $tick) : self{
+	public static function create(
+		int $actorRuntimeId,
+		int $effectType,
+		int $effectDuration,
+		int $tick,
+	) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
-		$result->motion = $motion;
+		$result->effectType = $effectType;
+		$result->effectDuration = $effectDuration;
 		$result->tick = $tick;
 		return $result;
 	}
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->actorRuntimeId = $in->getActorRuntimeId();
-		$this->motion = $in->getVector3();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
-			$this->tick = $in->getPlayerInputTick();
-		}
+		$this->effectType = $in->getVarInt();
+		$this->effectDuration = $in->getVarInt();
+		$this->tick = $in->getPlayerInputTick();
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putActorRuntimeId($this->actorRuntimeId);
-		$out->putVector3($this->motion);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
-			$out->putPlayerInputTick($this->tick);
-		}
+		$out->putVarInt($this->effectType);
+		$out->putVarInt($this->effectDuration);
+		$out->putPlayerInputTick($this->tick);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
-		return $handler->handleSetActorMotion($this);
+		return $handler->handleMovementEffect($this);
 	}
 }

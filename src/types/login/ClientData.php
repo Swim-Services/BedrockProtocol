@@ -75,6 +75,10 @@ final class ClientData{
 
 	/** @required */
 	public string $LanguageCode;
+	/** >= PROTOCOL_1_21_40 */
+	public int $MaxViewDistance;
+	/** >= PROTOCOL_1_21_40 */
+	public int $MemoryTier;
 
 	/** >= PROTOCOL_1_19_63 */
 	public bool $OverrideSkin;
@@ -99,6 +103,8 @@ final class ClientData{
 
 	/** @required */
 	public string $PlatformOnlineId;
+	/** >= PROTOCOL_1_21_40 */
+	public string $PlatformType;
 
 	public string $PlatformUserId = ""; //xbox-only, apparently
 

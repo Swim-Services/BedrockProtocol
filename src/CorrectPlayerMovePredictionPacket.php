@@ -90,7 +90,7 @@ class CorrectPlayerMovePredictionPacket extends DataPacket implements Clientboun
 			}
 		}
 		$this->onGround = $in->getBool();
-		$this->tick = $in->getUnsignedVarLong();
+		$this->tick = $in->getPlayerInputTick();
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
@@ -112,7 +112,7 @@ class CorrectPlayerMovePredictionPacket extends DataPacket implements Clientboun
 			}
 		}
 		$out->putBool($this->onGround);
-		$out->putUnsignedVarLong($this->tick);
+		$out->putPlayerInputTick($this->tick);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

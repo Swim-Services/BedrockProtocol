@@ -456,6 +456,21 @@ class PacketSerializer extends BinaryStream{
 	}
 
 	/**
+	 * @throws BinaryDataException
+	 */
+	public function getPlayerInputTick() : int{
+		return $this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40 ? $this->getVarLong() : $this->getUnsignedVarLong();
+	}
+
+	public function putPlayerInputTick(int $tick) : void{
+		if ($this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40) {
+			$this->putVarLong($tick);
+		} else {
+			$this->putUnsignedVarLong($tick);
+		}
+	}
+
+	/**
 	 * Reads a block position with unsigned Y coordinate.
 	 *
 	 * @throws BinaryDataException

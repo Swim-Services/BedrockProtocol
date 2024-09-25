@@ -40,7 +40,6 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 	 * @generate-create-func
 	 * @param ResourcePackInfoEntry[] $resourcePackEntries
 	 * @param BehaviorPackInfoEntry[] $behaviorPackEntries
-	 * @param string[]                $cdnUrls
 	 * @phpstan-param array<string, string> $cdnUrls
 	 */
 	public static function create(
@@ -82,7 +81,7 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			$this->resourcePackEntries[] = ResourcePackInfoEntry::read($in);
 		}
 
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30 && $in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_40){
 			$this->cdnUrls = [];
 			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; $i++){
 				$packId = $in->getString();
@@ -109,9 +108,15 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		foreach($this->resourcePackEntries as $entry){
 			$entry->write($out);
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
-			$out->putUnsignedVarInt(count($this->cdnUrls));
-			foreach($this->cdnUrls as $packId => $cdnUrl){
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30 && $out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_40){
+			$cdnUrls = $this->cdnUrls;
+			foreach($this->resourcePackEntries as $entry){
+				if ($entry->getCdnUrl() !== "") {
+					$cdnUrls[$entry->getPackId() . "_" . $entry->getVersion()] = $entry->getCdnUrl();
+				}
+			}
+			$out->putUnsignedVarInt(count($cdnUrls));
+			foreach($cdnUrls as $packId => $cdnUrl){
 				$out->putString($packId);
 				$out->putString($cdnUrl);
 			}

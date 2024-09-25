@@ -43,7 +43,7 @@ class UpdateAttributesPacket extends DataPacket implements ClientboundPacket{
 		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
 			$this->entries[] = UpdateAttribute::read($in);
 		}
-		$this->tick = $in->getUnsignedVarLong();
+		$this->tick = $in->getPlayerInputTick();
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
@@ -52,7 +52,7 @@ class UpdateAttributesPacket extends DataPacket implements ClientboundPacket{
 		foreach($this->entries as $entry){
 			$entry->write($out);
 		}
-		$out->putUnsignedVarLong($this->tick);
+		$out->putPlayerInputTick($this->tick);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
