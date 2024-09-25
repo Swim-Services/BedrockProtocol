@@ -459,7 +459,7 @@ class PacketSerializer extends BinaryStream{
 	 * @throws BinaryDataException
 	 */
 	public function getPlayerInputTick() : int{
-		return $this->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40 ? $this->getVarLong() : $this->getUnsignedVarLong();
+		return $this->getUnsignedVarLong();
 	}
 
 	public function putPlayerInputTick(int $tick) : void{
