@@ -42,7 +42,7 @@ final class PlayerAction{
 	public const SET_ENCHANTMENT_SEED = 20; //no longer used
 	public const START_SWIMMING = 21;
 	public const STOP_SWIMMING = 22;
-	public const START_SPIN_ATTACK = 23; //no longer used
+	public const START_SPIN_ATTACK = 23;
 	public const STOP_SPIN_ATTACK = 24;
 	public const INTERACT_BLOCK = 25;
 	public const PREDICT_DESTROY_BLOCK = 26;
@@ -53,6 +53,10 @@ final class PlayerAction{
 	public const MISSED_SWING = 31;
 	public const START_CRAWLING = 32;
 	public const STOP_CRAWLING = 33;
+	public const START_FLYING = 34;
+	public const STOP_FLYING = 35;
+	public const ACK_ACTOR_DATA = 36;
+	public const START_USING_ITEM = 37;
 
 	//Backwards compatibility (blame @dktapps)
 	public const CRACK_BREAK = 18;
