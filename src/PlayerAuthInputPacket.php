@@ -52,6 +52,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 	private ?PlayerAuthInputVehicleInfo $vehicleInfo = null;
 	private float $analogMoveVecX;
 	private float $analogMoveVecZ;
+	private Vector3 $cameraOrientation;
 
 	/**
 	 * @generate-create-func
@@ -77,6 +78,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		?PlayerAuthInputVehicleInfo $vehicleInfo,
 		float $analogMoveVecX,
 		float $analogMoveVecZ,
+		Vector3 $cameraOrientation,
 	) : self{
 		$result = new self;
 		$result->position = $position;
@@ -98,6 +100,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		$result->vehicleInfo = $vehicleInfo;
 		$result->analogMoveVecX = $analogMoveVecX;
 		$result->analogMoveVecZ = $analogMoveVecZ;
+		$result->cameraOrientation = $cameraOrientation;
 		return $result;
 	}
 
@@ -127,7 +130,8 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		?array $blockActions,
 		?PlayerAuthInputVehicleInfo $vehicleInfo,
 		float $analogMoveVecX,
-		float $analogMoveVecZ
+		float $analogMoveVecZ,
+		Vector3 $cameraOrientation,
 	) : self{
 		$realInputFlags = $inputFlags & ~((1 << PlayerAuthInputFlags::PERFORM_ITEM_STACK_REQUEST) | (1 << PlayerAuthInputFlags::PERFORM_ITEM_INTERACTION) | (1 << PlayerAuthInputFlags::PERFORM_BLOCK_ACTIONS));
 		if($itemStackRequest !== null){
@@ -159,7 +163,8 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 			$blockActions,
 			$vehicleInfo,
 			$analogMoveVecX,
-			$analogMoveVecZ
+			$analogMoveVecZ,
+			$cameraOrientation
 		);
 	}
 
@@ -248,6 +253,8 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 
 	public function getAnalogMoveVecZ() : float{ return $this->analogMoveVecZ; }
 
+	public function getCameraOrientation() : Vector3{ return $this->cameraOrientation; }
+
 	public function hasFlag(int $flag) : bool{
 		return ($this->inputFlags & (1 << $flag)) !== 0;
 	}
@@ -298,6 +305,11 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 			$this->analogMoveVecX = $in->getLFloat();
 			$this->analogMoveVecZ = $in->getLFloat();
 		}
+
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+			$this->cameraOrientation = $in->getVector3();
+		}
+
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
@@ -345,6 +357,10 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 			}
 			$out->putLFloat($this->analogMoveVecX);
 			$out->putLFloat($this->analogMoveVecZ);
+		}
+
+		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40) {
+			$out->putVector3($this->cameraOrientation);
 		}
 	}
 
