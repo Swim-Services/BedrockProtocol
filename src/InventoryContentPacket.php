@@ -27,17 +27,19 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 	public array $items = [];
 	public FullContainerName $containerName;
 	public int $dynamicContainerSize;
+	public ItemStackWrapper $storage;
 
 	/**
 	 * @generate-create-func
 	 * @param ItemStackWrapper[] $items
 	 */
-	public static function create(int $windowId, array $items, FullContainerName $containerName, int $dynamicContainerSize) : self{
+	public static function create(int $windowId, array $items, FullContainerName $containerName, int $dynamicContainerSize, ItemStackWrapper $storage) : self{
 		$result = new self;
 		$result->windowId = $windowId;
 		$result->items = $items;
 		$result->containerName = $containerName;
 		$result->dynamicContainerSize = $dynamicContainerSize;
+		$result->storage = $storage;
 		return $result;
 	}
 
@@ -49,7 +51,11 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 		}
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
 			$this->containerName = FullContainerName::read($in);
-			$this->dynamicContainerSize = $in->getUnsignedVarInt();
+			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+				$this->storage = $in->getItemStackWrapper();
+			}else{
+				$this->dynamicContainerSize = $in->getUnsignedVarInt();
+			}
 		}elseif($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
 			$this->containerName = new FullContainerName(0, $in->getUnsignedVarInt());
 		}
@@ -63,7 +69,11 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 		}
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
 			$this->containerName->write($out);
-			$out->putUnsignedVarInt($this->dynamicContainerSize);
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+				$out->putItemStackWrapper($this->storage);
+			}else{
+				$out->putUnsignedVarInt($this->dynamicContainerSize);
+			}
 		}elseif($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
 			$out->putUnsignedVarInt($this->containerName->getDynamicId() ?? 0);
 		}

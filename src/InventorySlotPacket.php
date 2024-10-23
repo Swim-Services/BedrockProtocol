@@ -25,17 +25,19 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 	public int $inventorySlot;
 	public FullContainerName $containerName;
 	public int $dynamicContainerSize;
+	public ItemStackWrapper $storage;
 	public ItemStackWrapper $item;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $windowId, int $inventorySlot, FullContainerName $containerName, int $dynamicContainerSize, ItemStackWrapper $item) : self{
+	public static function create(int $windowId, int $inventorySlot, FullContainerName $containerName, int $dynamicContainerSize, ItemStackWrapper $storage, ItemStackWrapper $item) : self{
 		$result = new self;
 		$result->windowId = $windowId;
 		$result->inventorySlot = $inventorySlot;
 		$result->containerName = $containerName;
 		$result->dynamicContainerSize = $dynamicContainerSize;
+		$result->storage = $storage;
 		$result->item = $item;
 		return $result;
 	}
@@ -45,7 +47,11 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 		$this->inventorySlot = $in->getUnsignedVarInt();
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
 			$this->containerName = FullContainerName::read($in);
-			$this->dynamicContainerSize = $in->getUnsignedVarInt();
+			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+				$this->storage = $in->getItemStackWrapper();
+			}else{
+				$this->dynamicContainerSize = $in->getUnsignedVarInt();
+			}
 		}elseif($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
 			$this->containerName = new FullContainerName(0, $in->getUnsignedVarInt());
 		}
@@ -57,7 +63,11 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 		$out->putUnsignedVarInt($this->inventorySlot);
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
 			$this->containerName->write($out);
-			$out->putUnsignedVarInt($this->dynamicContainerSize);
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+				$out->putItemStackWrapper($this->storage);
+			}else{
+				$out->putUnsignedVarInt($this->dynamicContainerSize);
+			}
 		}elseif($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
 			$out->putUnsignedVarInt($this->containerName->getDynamicId() ?? 0);
 		}

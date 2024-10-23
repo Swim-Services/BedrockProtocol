@@ -82,7 +82,7 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			$this->resourcePackEntries[] = ResourcePackInfoEntry::read($in);
 		}
 
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30 && $in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_40){
 			$this->cdnUrls = [];
 			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; $i++){
 				$packId = $in->getString();
@@ -109,7 +109,7 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		foreach($this->resourcePackEntries as $entry){
 			$entry->write($out);
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30 && $out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_40){
 			$out->putUnsignedVarInt(count($this->cdnUrls));
 			foreach($this->cdnUrls as $packId => $cdnUrl){
 				$out->putString($packId);

@@ -36,6 +36,7 @@ final class CameraSetInstruction{
 		private ?CameraSetInstructionRotation $rotation,
 		private ?Vector3 $facingPosition,
 		private ?Vector2 $viewOffset,
+		private ?Vector3 $entityOffset,
 		private ?bool $default
 	){}
 
@@ -51,6 +52,8 @@ final class CameraSetInstruction{
 
 	public function getViewOffset() : ?Vector2{ return $this->viewOffset; }
 
+	public function getEntityOffset() : ?Vector3{ return $this->entityOffset; }
+
 	public function getDefault() : ?bool{ return $this->default; }
 
 	public static function read(PacketSerializer $in) : self{
@@ -62,6 +65,9 @@ final class CameraSetInstruction{
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
 			$viewOffset = $in->readOptional($in->getVector2(...));
 		}
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+			$entityOffset = $in->readOptional($in->getVector3(...));
+		}
 		$default = $in->readOptional($in->getBool(...));
 
 		return new self(
@@ -71,6 +77,7 @@ final class CameraSetInstruction{
 			$rotation,
 			$facingPosition,
 			$viewOffset ?? null,
+			$entityOffset ?? null,
 			$default
 		);
 	}
@@ -100,6 +107,7 @@ final class CameraSetInstruction{
 			$rotation,
 			$facingPosition,
 			null,
+			null,
 			$default
 		);
 	}
@@ -112,6 +120,9 @@ final class CameraSetInstruction{
 		$out->writeOptional($this->facingPosition, $out->putVector3(...));
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
 			$out->writeOptional($this->viewOffset, $out->putVector2(...));
+		}
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+			$out->writeOptional($this->entityOffset, $out->putVector3(...));
 		}
 		$out->writeOptional($this->default, $out->putBool(...));
 	}

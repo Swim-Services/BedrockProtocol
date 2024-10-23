@@ -34,11 +34,15 @@ final class CameraPreset{
 		private ?float $yaw,
 		private ?float $rotationSpeed,
 		private ?bool $snapToTarget,
+		private ?Vector2 $horizontalRotationLimit,
+		private ?Vector2 $verticalRotationLimit,
+		private ?bool $continueTargeting,
 		private ?Vector2 $viewOffset,
 		private ?Vector3 $entityOffset,
 		private ?float $radius,
 		private ?int $audioListenerType,
-		private ?bool $playerEffects
+		private ?bool $playerEffects,
+		private ?bool $alignTargetAndCameraForward
 	){}
 
 	public function getName() : string{ return $this->name; }
@@ -59,6 +63,12 @@ final class CameraPreset{
 
 	public function getSnapToTarget() : ?bool { return $this->snapToTarget; }
 
+	public function getHorizontalRotationLimit() : ?Vector2{ return $this->horizontalRotationLimit; }
+
+	public function getVerticalRotationLimit() : ?Vector2{ return $this->verticalRotationLimit; }
+
+	public function getContinueTargeting() : ?bool{ return $this->continueTargeting; }
+
 	public function getViewOffset() : ?Vector2{ return $this->viewOffset; }
 
 	public function getEntityOffset() : ?Vector3{ return $this->entityOffset; }
@@ -68,6 +78,8 @@ final class CameraPreset{
 	public function getAudioListenerType() : ?int{ return $this->audioListenerType; }
 
 	public function getPlayerEffects() : ?bool{ return $this->playerEffects; }
+
+	public function getAlignTargetAndCameraForward() : ?bool{ return $this->alignTargetAndCameraForward; }
 
 	public static function read(PacketSerializer $in) : self{
 		$name = $in->getString();
@@ -81,6 +93,11 @@ final class CameraPreset{
 			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
 				$rotationSpeed = $in->readOptional($in->getLFloat(...));
 				$snapToTarget = $in->readOptional($in->getBool(...));
+				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+					$horizontalRotationLimit = $in->readOptional($in->getVector2(...));
+					$verticalRotationLimit = $in->readOptional($in->getVector2(...));
+					$continueTargeting = $in->readOptional($in->getBool(...));
+				}
 			}
 			$viewOffset = $in->readOptional($in->getVector2(...));
 			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
@@ -90,6 +107,9 @@ final class CameraPreset{
 		}
 		$audioListenerType = $in->readOptional($in->getByte(...));
 		$playerEffects = $in->readOptional($in->getBool(...));
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+			$alignTargetAndCameraForward = $in->readOptional($in->getBool(...));
+		}
 
 		return new self(
 			$name,
@@ -101,11 +121,15 @@ final class CameraPreset{
 			$yaw,
 			$rotationSpeed ?? null,
 			$snapToTarget ?? null,
+			$horizontalRotationLimit ?? null,
+			$verticalRotationLimit ?? null,
+			$continueTargeting ?? null,
 			$viewOffset ?? null,
 			$entityOffset ?? null,
 			$radius ?? null,
 			$audioListenerType,
-			$playerEffects
+			$playerEffects,
+			$alignTargetAndCameraForward ?? null
 		);
 	}
 
@@ -123,12 +147,16 @@ final class CameraPreset{
 			null,
 			null,
 			null,
+			null,
+			null,
+			null,
 			$nbt->getTag("audio_listener_type") === null ? null : match($nbt->getString("audio_listener_type")){
 				"camera" => self::AUDIO_LISTENER_TYPE_CAMERA,
 				"player" => self::AUDIO_LISTENER_TYPE_PLAYER,
 				default => throw new \InvalidArgumentException("Invalid audio listener type: " . $nbt->getString("audio_listener_type")),
 			},
-			$nbt->getTag("player_effects") === null ? null : $nbt->getByte("player_effects") !== 0
+			$nbt->getTag("player_effects") === null ? null : $nbt->getByte("player_effects") !== 0,
+			null
 		);
 	}
 
@@ -144,6 +172,11 @@ final class CameraPreset{
 			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
 				$out->writeOptional($this->rotationSpeed, $out->putLFloat(...));
 				$out->writeOptional($this->snapToTarget, $out->putBool(...));
+				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+					$out->writeOptional($this->horizontalRotationLimit, $out->putVector2(...));
+					$out->writeOptional($this->verticalRotationLimit, $out->putVector2(...));
+					$out->writeOptional($this->continueTargeting, $out->putBool(...));
+				}
 			}
 			$out->writeOptional($this->viewOffset, $out->putVector2(...));
 			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
@@ -153,6 +186,9 @@ final class CameraPreset{
 		}
 		$out->writeOptional($this->audioListenerType, $out->putByte(...));
 		$out->writeOptional($this->playerEffects, $out->putBool(...));
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+			$out->writeOptional($this->alignTargetAndCameraForward, $out->putBool(...));
+		}
 	}
 
 	public function toNBT(int $protocolId) : CompoundTag{
