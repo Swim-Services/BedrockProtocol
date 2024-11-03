@@ -508,7 +508,7 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 				$out->putString($parameter->paramName);
 				if($parameter->enum !== null){
 					if($parameter->enum->isSoft()){
-						$type = self::ARG_FLAG_SOFT_ENUM | self::ARG_FLAG_VALID | (self::convertArg($out->getProtocolId(), $softEnumIndexes[$parameter->enum->getName()] ?? -1));
+						$type = self::ARG_FLAG_SOFT_ENUM | self::ARG_FLAG_VALID | ($softEnumIndexes[$parameter->enum->getName()] ?? -1);
 					}else{
 						$type = self::ARG_FLAG_ENUM | self::ARG_FLAG_VALID | ($enumIndexes[$parameter->enum->getName()] ?? -1);
 					}
