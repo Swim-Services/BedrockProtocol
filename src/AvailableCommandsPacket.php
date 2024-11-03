@@ -185,7 +185,7 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 			self::ARG_FLAG_VALID | self::ARG_TYPE_STRING => self::ARG_FLAG_VALID | 0x20,
 			self::ARG_FLAG_VALID | self::ARG_TYPE_POSITION => self::ARG_FLAG_VALID | 0x28,
 			self::ARG_FLAG_VALID | self::ARG_TYPE_MESSAGE => self::ARG_FLAG_VALID | 0x2c,
-			self::ARG_FLAG_VALID | self::ARG_TYPE_RAWTEXT => self::ARG_FLAG_VALID  | 0x2e,
+			self::ARG_FLAG_VALID | self::ARG_TYPE_RAWTEXT => self::ARG_FLAG_VALID | 0x2e,
 			self::ARG_FLAG_VALID | self::ARG_TYPE_JSON => self::ARG_FLAG_VALID | 0x32,
 			self::ARG_FLAG_VALID | self::ARG_TYPE_COMMAND => self::ARG_FLAG_VALID | 0x3f,
 			default => $type,
@@ -508,7 +508,7 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 				$out->putString($parameter->paramName);
 				if($parameter->enum !== null){
 					if($parameter->enum->isSoft()){
-						$type = self::ARG_FLAG_SOFT_ENUM | self::ARG_FLAG_VALID | (self::convertArg($softEnumIndexes[$parameter->enum->getName()] ?? -1));
+						$type = self::ARG_FLAG_SOFT_ENUM | self::ARG_FLAG_VALID | (self::convertArg($out->getProtocolId(), $softEnumIndexes[$parameter->enum->getName()] ?? -1));
 					}else{
 						$type = self::ARG_FLAG_ENUM | self::ARG_FLAG_VALID | ($enumIndexes[$parameter->enum->getName()] ?? -1);
 					}
@@ -610,7 +610,7 @@ class AvailableCommandsPacket extends DataPacket implements ClientboundPacket{
 			foreach($commandData->overloads as $overload){
 				foreach($overload->getParameters() as $parameter){
 					$parameter->paramType = self::convertArg($out->getProtocolId(), $parameter->paramType);
-					
+
 					if($parameter->enum !== null){
 						$addEnumFn($parameter->enum);
 					}
