@@ -116,8 +116,8 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			}
 		}
 		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50) {
-			$this->worldTemplateId = $out->getUUID();
-			$this->worldTemplateVersion = $out->getString();
+			$out->putUUID($this->worldTemplateId);
+			$out->putString($this->worldTemplateVersion);
 		}
 		$out->putLShort(count($this->resourcePackEntries));
 		foreach($this->resourcePackEntries as $entry){
