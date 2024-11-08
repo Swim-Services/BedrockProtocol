@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\resourcepacks\BehaviorPackInfoEntry;
 use pocketmine\network\mcpe\protocol\types\resourcepacks\ResourcePackInfoEntry;
+use Ramsey\Uuid\UuidInterface;
 use function count;
 
 class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
@@ -28,6 +29,8 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 	public array $behaviorPackEntries = [];
 	public bool $mustAccept = false; //if true, forces client to choose between accepting packs or being disconnected
 	public bool $hasAddons = false;
+	public UuidInterface $worldTemplateId;
+	public string $worldTemplateVersion;
 	public bool $hasScripts = false; //if true, causes disconnect for any platform that doesn't support scripts yet
 	public bool $forceServerPacks = false;
 	/**
@@ -49,6 +52,8 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		bool $mustAccept,
 		bool $hasAddons,
 		bool $hasScripts,
+		UuidInterface $worldTemplateId,
+		string $worldTemplateVersion,
 		bool $forceServerPacks,
 		array $cdnUrls,
 	) : self{
@@ -58,6 +63,8 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		$result->mustAccept = $mustAccept;
 		$result->hasAddons = $hasAddons;
 		$result->hasScripts = $hasScripts;
+		$result->worldTemplateId = $worldTemplateId;
+		$result->worldTemplateVersion = $worldTemplateVersion;
 		$result->forceServerPacks = $forceServerPacks;
 		$result->cdnUrls = $cdnUrls;
 		return $result;
@@ -76,7 +83,10 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 				$this->behaviorPackEntries[] = BehaviorPackInfoEntry::read($in);
 			}
 		}
-
+		if ($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50) {
+			$in->putUUID(uuid: $this->worldTemplateId);
+			$in->putString($this->worldTemplateVersion);
+		}
 		$resourcePackCount = $in->getLShort();
 		while($resourcePackCount-- > 0){
 			$this->resourcePackEntries[] = ResourcePackInfoEntry::read($in);
@@ -104,6 +114,10 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			foreach($this->behaviorPackEntries as $entry){
 				$entry->write($out);
 			}
+		}
+		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50) {
+			$this->worldTemplateId = $out->getUUID();
+			$this->worldTemplateVersion = $out->getString();
 		}
 		$out->putLShort(count($this->resourcePackEntries));
 		foreach($this->resourcePackEntries as $entry){

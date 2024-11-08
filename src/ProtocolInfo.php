@@ -32,6 +32,7 @@ final class ProtocolInfo{
 	 */
 
 	/** Actual Minecraft: PE protocol version */
+	public const PROTOCOL_1_21_50 = 766;
 	public const PROTOCOL_1_21_40 = 748;
 	public const PROTOCOL_1_21_30 = 729;
 	public const PROTOCOL_1_21_20 = 712;
@@ -88,6 +89,7 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_21_2,
 		self::PROTOCOL_1_21_20,
 		self::PROTOCOL_1_21_30,
+		self::PROTOCOL_1_21_50,
 		self::CURRENT_PROTOCOL
 	];
 
@@ -316,4 +318,5 @@ final class ProtocolInfo{
 	public const CONTAINER_REGISTRY_CLEANUP_PACKET = 0x13d;
 	public const MOVEMENT_EFFECT_PACKET = 0x13e;
 	public const SET_MOVEMENT_AUTHORITY_PACKET = 0x13f;
+	public const CAMERA_AIM_ASSIST_PRESETS_PACKET = 0x140;
 }

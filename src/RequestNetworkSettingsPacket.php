@@ -43,6 +43,9 @@ class RequestNetworkSettingsPacket extends DataPacket implements ServerboundPack
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->protocolVersion = $in->getInt();
+		if ($this->protocolVersion === 765) {
+			$this->protocolVersion = 766; //TODO: latest beta is protocol 765, but it is 766 in the official docs
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{

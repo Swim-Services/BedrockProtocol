@@ -55,6 +55,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 	private float $analogMoveVecX;
 	private float $analogMoveVecZ;
 	private Vector3 $cameraOrientation;
+	private Vector2 $rawMoveVector;
 
 	/**
 	 * @generate-create-func
@@ -82,6 +83,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		float $analogMoveVecX,
 		float $analogMoveVecZ,
 		Vector3 $cameraOrientation,
+		Vector2 $rawMoveVector,
 	) : self{
 		$result = new self;
 		$result->position = $position;
@@ -105,6 +107,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		$result->analogMoveVecX = $analogMoveVecX;
 		$result->analogMoveVecZ = $analogMoveVecZ;
 		$result->cameraOrientation = $cameraOrientation;
+		$result->rawMoveVector = $rawMoveVector;
 		return $result;
 	}
 
@@ -137,7 +140,8 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		?PlayerAuthInputVehicleInfo $vehicleInfo,
 		float $analogMoveVecX,
 		float $analogMoveVecZ,
-		Vector3 $cameraOrientation
+		Vector3 $cameraOrientation,
+		Vector2 $rawMoveVector,
 	) : self{
 		if($playMode === PlayMode::VR and $vrGazeDirection === null){
 			//yuck, can we get a properly written packet just once? ...
@@ -176,7 +180,8 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 			$vehicleInfo,
 			$analogMoveVecX,
 			$analogMoveVecZ,
-			$cameraOrientation
+			$cameraOrientation,
+			$rawMoveVector
 		);
 	}
 
@@ -269,6 +274,8 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 
 	public function getCameraOrientation() : Vector3{ return $this->cameraOrientation; }
 
+	public function getRawMoveVector() : Vector2{ return $this->rawMoveVector; }
+
 	public function hasFlag(int $flag) : bool{
 		return ($this->inputFlags & (1 << $flag)) !== 0;
 	}
@@ -324,6 +331,9 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
 			$this->cameraOrientation = $in->getVector3();
 		}
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
+			$this->rawMoveVector = $in->getVector2();
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
@@ -377,6 +387,9 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		}
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
 			$out->putVector3($this->cameraOrientation);
+		}
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
+			$out->putVector2($this->rawMoveVector);
 		}
 	}
 
