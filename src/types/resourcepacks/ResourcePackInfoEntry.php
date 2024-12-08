@@ -16,9 +16,12 @@ namespace pocketmine\network\mcpe\protocol\types\resourcepacks;
 
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
+
 class ResourcePackInfoEntry{
 	public function __construct(
-		private string $packId,
+		private UuidInterface $packId,
 		private string $version,
 		private int $sizeBytes,
 		private string $encryptionKey = "",
@@ -30,7 +33,7 @@ class ResourcePackInfoEntry{
 		private string $cdnUrl = ""
 	){}
 
-	public function getPackId() : string{
+	public function getPackId() : UuidInterface{
 		return $this->packId;
 	}
 
@@ -65,7 +68,11 @@ class ResourcePackInfoEntry{
 	public function getCdnUrl() : string{ return $this->cdnUrl; }
 
 	public function write(PacketSerializer $out) : void{
-		$out->putString($this->packId);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
+			$out->putUUID($this->packId);
+		}else{
+			$out->putString($this->packId->toString());
+		}
 		$out->putString($this->version);
 		$out->putLLong($this->sizeBytes);
 		$out->putString($this->encryptionKey);
@@ -82,7 +89,11 @@ class ResourcePackInfoEntry{
 	}
 
 	public static function read(PacketSerializer $in) : self{
-		$uuid = $in->getString();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
+			$uuid = $in->getUUID();
+		}else{
+			$uuid = Uuid::fromString($in->getString());
+		}
 		$version = $in->getString();
 		$sizeBytes = $in->getLLong();
 		$encryptionKey = $in->getString();

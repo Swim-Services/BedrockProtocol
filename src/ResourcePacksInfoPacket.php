@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\resourcepacks\BehaviorPackInfoEntry;
 use pocketmine\network\mcpe\protocol\types\resourcepacks\ResourcePackInfoEntry;
+use Ramsey\Uuid\UuidInterface;
 use function count;
 
 class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
@@ -35,6 +36,8 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 	 * @phpstan-var array<string, string>
 	 */
 	public array $cdnUrls = [];
+	private UuidInterface $worldTemplateId;
+	private string $worldTemplateVersion;
 
 	/**
 	 * @generate-create-func
@@ -51,6 +54,8 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		bool $hasScripts,
 		bool $forceServerPacks,
 		array $cdnUrls,
+		UuidInterface $worldTemplateId,
+		string $worldTemplateVersion,
 	) : self{
 		$result = new self;
 		$result->resourcePackEntries = $resourcePackEntries;
@@ -60,6 +65,8 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		$result->hasScripts = $hasScripts;
 		$result->forceServerPacks = $forceServerPacks;
 		$result->cdnUrls = $cdnUrls;
+		$result->worldTemplateId = $worldTemplateId;
+		$result->worldTemplateVersion = $worldTemplateVersion;
 		return $result;
 	}
 
@@ -75,6 +82,10 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			while($behaviorPackCount-- > 0){
 				$this->behaviorPackEntries[] = BehaviorPackInfoEntry::read($in);
 			}
+		}
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
+			$this->worldTemplateId = $in->getUUID();
+			$this->worldTemplateVersion = $in->getString();
 		}
 
 		$resourcePackCount = $in->getLShort();
@@ -104,6 +115,10 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			foreach($this->behaviorPackEntries as $entry){
 				$entry->write($out);
 			}
+		}
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
+			$out->putUUID($this->worldTemplateId);
+			$out->putString($this->worldTemplateVersion);
 		}
 		$out->putLShort(count($this->resourcePackEntries));
 		foreach($this->resourcePackEntries as $entry){
