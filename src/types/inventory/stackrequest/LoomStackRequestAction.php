@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
@@ -26,16 +27,26 @@ final class LoomStackRequestAction extends ItemStackRequestAction{
 	public const ID = ItemStackRequestActionType::CRAFTING_LOOM;
 
 	public function __construct(
-		private string $patternId
+		private string $patternId,
+		private int $repetitions = 1
 	){}
 
 	public function getPatternId() : string{ return $this->patternId; }
 
+	public function getRepetitions() : int{ return $this->repetitions; }
+
 	public static function read(PacketSerializer $in) : self{
-		return new self($in->getString());
+		$patternId = $in->getString();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$repetitions = $in->getVarInt();
+		}
+		return new self($patternId, $repetitions ?? 1);
 	}
 
 	public function write(PacketSerializer $out) : void{
 		$out->putString($this->patternId);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
+			$out->putByte($this->repetitions);
+		}
 	}
 }
