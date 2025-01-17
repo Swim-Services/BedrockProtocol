@@ -16,22 +16,22 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
-use pocketmine\network\mcpe\protocol\types\ItemComponentPacketEntry;
+use pocketmine\network\mcpe\protocol\types\ItemRegistryPacketEntry;
 use function count;
 
-class ItemComponentPacket extends DataPacket implements ClientboundPacket{
+class ItemRegistryPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::ITEM_COMPONENT_PACKET;
 
 	/**
-	 * @var ItemComponentPacketEntry[]
-	 * @phpstan-var list<ItemComponentPacketEntry>
+	 * @var ItemRegistryPacketEntry[]
+	 * @phpstan-var list<ItemRegistryPacketEntry>
 	 */
 	private array $entries;
 
 	/**
 	 * @generate-create-func
-	 * @param ItemComponentPacketEntry[] $entries
-	 * @phpstan-param list<ItemComponentPacketEntry> $entries
+	 * @param ItemRegistryPacketEntry[] $entries
+	 * @phpstan-param list<ItemRegistryPacketEntry> $entries
 	 */
 	public static function create(array $entries) : self{
 		$result = new self;
@@ -40,8 +40,8 @@ class ItemComponentPacket extends DataPacket implements ClientboundPacket{
 	}
 
 	/**
-	 * @return ItemComponentPacketEntry[]
-	 * @phpstan-return list<ItemComponentPacketEntry>
+	 * @return ItemRegistryPacketEntry[]
+	 * @phpstan-return list<ItemRegistryPacketEntry>
 	 */
 	public function getEntries() : array{ return $this->entries; }
 
@@ -49,8 +49,13 @@ class ItemComponentPacket extends DataPacket implements ClientboundPacket{
 		$this->entries = [];
 		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
 			$name = $in->getString();
-			$nbt = $in->getNbtCompoundRoot();
-			$this->entries[] = new ItemComponentPacketEntry($name, new CacheableNbt($nbt));
+			if ($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60) {
+				$id = $in->getLShort();
+				$componentBased = $in->getBool();
+				$version = $in->getVarInt();
+				$nbt = $in->getNbtCompoundRoot();
+			}
+			$this->entries[] = new ItemRegistryPacketEntry($name, $id, $componentBased, $version, new CacheableNbt($nbt));
 		}
 	}
 
@@ -58,6 +63,11 @@ class ItemComponentPacket extends DataPacket implements ClientboundPacket{
 		$out->putUnsignedVarInt(count($this->entries));
 		foreach($this->entries as $entry){
 			$out->putString($entry->getName());
+			if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60) {
+				$out->putLShort($entry->getId());
+				$out->putBool($entry->getComponentBased());
+				$out->putVarInt($entry->getVersion());
+			}
 			$out->put($entry->getComponentNbt()->getEncodedNbt());
 		}
 	}
