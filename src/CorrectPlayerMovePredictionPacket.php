@@ -78,12 +78,12 @@ class CorrectPlayerMovePredictionPacket extends DataPacket implements Clientboun
 	public function getVehicleAngularVelocity() : ?float{ return $this->vehicleAngularVelocity; }
 
 	protected function decodePayload(PacketSerializer $in) : void{
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60){
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80){
 			$this->predictionType = $in->getByte();
 		}
 		$this->position = $in->getVector3();
 		$this->delta = $in->getVector3();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60 && $this->predictionType === self::PREDICTION_TYPE_VEHICLE){
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80 && $this->predictionType === self::PREDICTION_TYPE_VEHICLE){
 			$this->vehicleRotation = new Vector2($in->getFloat(), $in->getFloat());
 			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
 				$this->vehicleAngularVelocity = $in->readOptional($in->getFloat(...));
@@ -91,15 +91,18 @@ class CorrectPlayerMovePredictionPacket extends DataPacket implements Clientboun
 		}
 		$this->onGround = $in->getBool();
 		$this->tick = $in->getUnsignedVarLong();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60 && $in->getProtocolId() < ProtocolInfo::PROTOCOL_1_20_80){
+			$this->predictionType = $in->getByte();
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60){
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80){
 			$out->putByte($this->predictionType);
 		}
 		$out->putVector3($this->position);
 		$out->putVector3($this->delta);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60 && $this->predictionType === self::PREDICTION_TYPE_VEHICLE){
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80 && $this->predictionType === self::PREDICTION_TYPE_VEHICLE){
 			if($this->vehicleRotation === null){ // this should never be the case
 				throw new \LogicException("CorrectPlayerMovePredictionPackets with type VEHICLE require a vehicleRotation to be provided");
 			}
@@ -113,6 +116,9 @@ class CorrectPlayerMovePredictionPacket extends DataPacket implements Clientboun
 		}
 		$out->putBool($this->onGround);
 		$out->putUnsignedVarLong($this->tick);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60 && $out->getProtocolId() < ProtocolInfo::PROTOCOL_1_20_80){
+			$out->putByte($this->predictionType);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

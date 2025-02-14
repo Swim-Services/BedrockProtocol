@@ -26,6 +26,8 @@ final class ShapedRecipe extends RecipeWithTypeId{
 	/**
 	 * @param RecipeIngredient[][] $input
 	 * @param ItemStack[]          $output
+	 * @phpstan-param list<list<RecipeIngredient>> $input
+	 * @phpstan-param list<ItemStack> $output
 	 */
 	public function __construct(
 		int $typeId,
@@ -69,6 +71,7 @@ final class ShapedRecipe extends RecipeWithTypeId{
 
 	/**
 	 * @return RecipeIngredient[][]
+	 * @phpstan-return list<list<RecipeIngredient>>
 	 */
 	public function getInput() : array{
 		return $this->input;
@@ -76,6 +79,7 @@ final class ShapedRecipe extends RecipeWithTypeId{
 
 	/**
 	 * @return ItemStack[]
+	 * @phpstan-return list<ItemStack>
 	 */
 	public function getOutput() : array{
 		return $this->output;

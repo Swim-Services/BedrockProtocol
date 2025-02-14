@@ -120,7 +120,7 @@ class BitSet{
 		return new self($length, array_slice($result, 0, self::getExpectedPartsCount($length)));
 	}
 
-	public function write(PacketSerializer $out, int $length = null) : void{
+	public function write(PacketSerializer $out, ?int $length = null) : void{
 		$parts = $this->parts;
 		$length ??= $this->length;
 

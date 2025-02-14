@@ -137,6 +137,11 @@ final class EntityMetadataFlags{
 	public const HAPPY = 112;
 	public const SEARCHING = 113;
 	public const CRAWLING = 114;
+	public const TIMER_FLAG_1 = 115;
+	public const TIMER_FLAG_2 = 116;
+	public const TIMER_FLAG_3 = 117;
+	public const BODY_ROTATION_BLOCKED = 118;
+	public const RENDER_WHEN_INVISIBLE = 119;
 
 	/**
 	 * Rewrites the MetadataFlags from the latest protocol version to the given protocol version.

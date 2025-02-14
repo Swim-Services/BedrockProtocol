@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use function count;
 
@@ -59,7 +60,9 @@ final class CameraAimAssistPreset{
 
 	public static function read(PacketSerializer $in) : self{
 		$identifier = $in->getString();
-		$categories = $in->getString();
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
+			$categories = $in->getString();
+		}
 
 		$exclusionList = [];
 		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
@@ -81,7 +84,7 @@ final class CameraAimAssistPreset{
 
 		return new self(
 			$identifier,
-			$categories,
+			$categories ?? "",
 			$exclusionList,
 			$liquidTargetingList,
 			$itemSettings,
@@ -92,7 +95,9 @@ final class CameraAimAssistPreset{
 
 	public function write(PacketSerializer $out) : void{
 		$out->putString($this->identifier);
-		$out->putString($this->categories);
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
+			$out->putString($this->categories);
+		}
 
 		$out->putUnsignedVarInt(count($this->exclusionList));
 		foreach($this->exclusionList as $exclusion){

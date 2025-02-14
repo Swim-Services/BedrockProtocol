@@ -24,6 +24,8 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 	/**
 	 * @param RecipeIngredient[] $inputs
 	 * @param ItemStack[]        $outputs
+	 * @phpstan-param list<RecipeIngredient> $inputs
+	 * @phpstan-param list<ItemStack> $outputs
 	 */
 	public function __construct(
 		int $typeId,
@@ -45,6 +47,7 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 
 	/**
 	 * @return RecipeIngredient[]
+	 * @phpstan-return list<RecipeIngredient>
 	 */
 	public function getInputs() : array{
 		return $this->inputs;
@@ -52,6 +55,7 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 
 	/**
 	 * @return ItemStack[]
+	 * @phpstan-return list<ItemStack>
 	 */
 	public function getOutputs() : array{
 		return $this->outputs;
