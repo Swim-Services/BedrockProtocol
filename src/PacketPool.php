@@ -190,6 +190,7 @@ class PacketPool{
 		$this->registerPacket(new PlayerFogPacket());
 		$this->registerPacket(new CorrectPlayerMovePredictionPacket());
 		$this->registerPacket(new ItemRegistryPacket());
+		$this->registerPacket(new FilterTextPacket());
 		$this->registerPacket(new ClientboundDebugRendererPacket());
 		$this->registerPacket(new SyncActorPropertyPacket());
 		$this->registerPacket(new AddVolumeEntityPacket());
