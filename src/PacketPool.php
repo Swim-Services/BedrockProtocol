@@ -246,6 +246,8 @@ class PacketPool{
 		$this->registerPacket(new CameraAimAssistPresetsPacket());
 		$this->registerPacket(new CameraAimAssistInstructionPacket());
 		$this->registerPacket(new MovementPredictionSyncPacket());
+		$this->registerPacket(new UpdateClientOptionsPacket());
+		$this->registerPacket(new PlayerVideoCapturePacket());
 	}
 
 	public function registerPacket(Packet $packet) : void{

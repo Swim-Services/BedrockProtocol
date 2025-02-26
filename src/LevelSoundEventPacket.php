@@ -28,18 +28,20 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 	public string $entityType = ":"; //???
 	public bool $isBabyMob = false; //...
 	public bool $disableRelativeVolume = false;
+	private int $actorRuntimeId = -1;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $sound, Vector3 $position, int $extraData, string $entityType, bool $isBabyMob, bool $disableRelativeVolume) : self{
-		$result = new self;
+	public static function create(int $sound, Vector3 $position, int $extraData, string $entityType, bool $isBabyMob, bool $disableRelativeVolume, int $actorRuntimeId = -1) : self{
+		$result = new self();
 		$result->sound = $sound;
 		$result->position = $position;
 		$result->extraData = $extraData;
 		$result->entityType = $entityType;
 		$result->isBabyMob = $isBabyMob;
 		$result->disableRelativeVolume = $disableRelativeVolume;
+		$result->actorRuntimeId = $actorRuntimeId;
 		return $result;
 	}
 
@@ -54,6 +56,9 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 		$this->entityType = $in->getString();
 		$this->isBabyMob = $in->getBool();
 		$this->disableRelativeVolume = $in->getBool();
+		if ($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70) {
+			$this->actorRuntimeId = $in->getLLong();
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
@@ -63,6 +68,9 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 		$out->putString($this->entityType);
 		$out->putBool($this->isBabyMob);
 		$out->putBool($this->disableRelativeVolume);
+		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70) {
+			$out->putLLong($this->actorRuntimeId);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

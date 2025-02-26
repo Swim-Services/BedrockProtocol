@@ -443,4 +443,8 @@ interface PacketHandlerInterface{
 	public function handleCameraAimAssistInstruction(CameraAimAssistInstructionPacket $packet) : bool;
 
 	public function handleMovementPredictionSync(MovementPredictionSyncPacket $packet) : bool;
+
+	public function handleUpdateClientOptions(UpdateClientOptionsPacket $packet) : bool;
+
+	public function handlePlayerVideoCapture(PlayerVideoCapturePacket $packet) : bool;
 }
