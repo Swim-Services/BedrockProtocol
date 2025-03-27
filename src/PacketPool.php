@@ -244,8 +244,11 @@ class PacketPool{
 		$this->registerPacket(new MovementEffectPacket());
 		$this->registerPacket(new SetMovementAuthorityPacket());
 		$this->registerPacket(new CameraAimAssistPresetsPacket());
-		$this->registerPacket(new CameraAimAssistInstructionPacket());
-		$this->registerPacket(new MovementPredictionSyncPacket());
+		$this->registerPacket(new ClientCameraAimAssistPacket());
+		$this->registerPacket(new ClientMovementPredictionSyncPacket());
+		$this->registerPacket(new UpdateClientOptionsPacket());
+		$this->registerPacket(new PlayerVideoCapturePacket());
+		$this->registerPacket(new PlayerUpdateEntityOverridesPacket());
 	}
 
 	public function registerPacket(Packet $packet) : void{

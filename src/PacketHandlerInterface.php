@@ -440,7 +440,13 @@ interface PacketHandlerInterface{
 
 	public function handleCameraAimAssistPresets(CameraAimAssistPresetsPacket $packet) : bool;
 
-	public function handleCameraAimAssistInstruction(CameraAimAssistInstructionPacket $packet) : bool;
+	public function handleClientCameraAimAssist(ClientCameraAimAssistPacket $packet) : bool;
 
-	public function handleMovementPredictionSync(MovementPredictionSyncPacket $packet) : bool;
+	public function handleClientMovementPredictionSync(ClientMovementPredictionSyncPacket $packet) : bool;
+
+	public function handleUpdateClientOptions(UpdateClientOptionsPacket $packet) : bool;
+
+	public function handlePlayerVideoCapturePacket(PlayerVideoCapturePacket $packet) : bool;
+
+	public function handlePlayerUpdateEntityOverridesPacket(PlayerUpdateEntityOverridesPacket $packet) : bool;
 }

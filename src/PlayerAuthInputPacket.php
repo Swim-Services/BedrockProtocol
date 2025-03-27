@@ -143,6 +143,10 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		Vector3 $cameraOrientation,
 		Vector2 $rawMove
 	) : self{
+		if($inputFlags->getLength() !== 65){
+			throw new \InvalidArgumentException("Input flags must be 65 bits long");
+		}
+
 		if($playMode === PlayMode::VR and $vrGazeDirection === null){
 			//yuck, can we get a properly written packet just once? ...
 			throw new \InvalidArgumentException("Gaze direction must be provided for VR play mode");

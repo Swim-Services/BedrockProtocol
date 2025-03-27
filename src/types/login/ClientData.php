@@ -67,6 +67,9 @@ final class ClientData{
 	/** @required */
 	public string $GameVersion;
 
+	/** >= ProtocolInfo::PROTOCOL_1_21_70 */
+	public int $GraphicsMode;
+
 	/** @required */
 	public int $GuiScale;
 

@@ -865,11 +865,23 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
-	public function handleCameraAimAssistInstruction(CameraAimAssistInstructionPacket $packet) : bool{
+	public function handleClientCameraAimAssist(ClientCameraAimAssistPacket $packet) : bool{
 		return false;
 	}
 
-	public function handleMovementPredictionSync(MovementPredictionSyncPacket $packet) : bool{
+	public function handleClientMovementPredictionSync(ClientMovementPredictionSyncPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleUpdateClientOptions(UpdateClientOptionsPacket $packet) : bool{
+		return false;
+	}
+
+	public function handlePlayerVideoCapturePacket(PlayerVideoCapturePacket $packet) : bool{
+		return false;
+	}
+
+	public function handlePlayerUpdateEntityOverridesPacket(PlayerUpdateEntityOverridesPacket $packet) : bool{
 		return false;
 	}
 }

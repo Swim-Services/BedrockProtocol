@@ -60,7 +60,7 @@ final class CameraAimAssistPreset{
 
 	public static function read(PacketSerializer $in) : self{
 		$identifier = $in->getString();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
+		if($in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_60){
 			$categories = $in->getString();
 		}
 
@@ -95,7 +95,7 @@ final class CameraAimAssistPreset{
 
 	public function write(PacketSerializer $out) : void{
 		$out->putString($this->identifier);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
+		if($out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_60){
 			$out->putString($this->categories);
 		}
 
