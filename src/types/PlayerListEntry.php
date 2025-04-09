@@ -29,6 +29,7 @@ class PlayerListEntry{
 	public bool $isTeacher = false;
 	public bool $isHost = false;
 	public bool $isSubClient = false;
+	public int $color = 0;
 
 	public static function createRemovalEntry(UuidInterface $uuid) : PlayerListEntry{
 		$entry = new PlayerListEntry();
@@ -47,7 +48,8 @@ class PlayerListEntry{
 		int $buildPlatform = -1,
 		bool $isTeacher = false,
 		bool $isHost = false,
-		bool $isSubClient = false
+		bool $isSubClient = false,
+		int $color = 0,
 	) : PlayerListEntry{
 		$entry = new PlayerListEntry();
 		$entry->uuid = $uuid;
@@ -60,6 +62,7 @@ class PlayerListEntry{
 		$entry->isTeacher = $isTeacher;
 		$entry->isHost = $isHost;
 		$entry->isSubClient = $isSubClient;
+		$entry->color = $color;
 
 		return $entry;
 	}

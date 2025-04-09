@@ -23,22 +23,33 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 	/** @phpstan-var CacheableNbt<\pocketmine\nbt\tag\CompoundTag> */
 	public CacheableNbt $definitions;
 
+	public string $rawPayload; // TODO
+
 	/**
 	 * @generate-create-func
 	 * @phpstan-param CacheableNbt<\pocketmine\nbt\tag\CompoundTag> $definitions
 	 */
-	public static function create(CacheableNbt $definitions) : self{
+	public static function create(CacheableNbt $definitions, string $rawPayload) : self{
 		$result = new self;
 		$result->definitions = $definitions;
+		$result->rawPayload = $rawPayload;
 		return $result;
 	}
 
 	protected function decodePayload(PacketSerializer $in) : void{
-		$this->definitions = new CacheableNbt($in->getNbtCompoundRoot());
+		if ($in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_80) {
+			$this->definitions = new CacheableNbt($in->getNbtCompoundRoot());
+		} else {
+			$this->rawPayload = $in->getRemaining();
+		}
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
-		$out->put($this->definitions->getEncodedNbt());
+		if ($out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_80) {
+			$out->put($this->definitions->getEncodedNbt());
+		} else {
+			$out->put($this->rawPayload);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

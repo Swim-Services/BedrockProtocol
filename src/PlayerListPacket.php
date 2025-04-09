@@ -72,6 +72,9 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60){
 					$entry->isSubClient = $in->getBool();
 				}
+				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80){
+					$entry->color = $in->getInt();
+				}
 			}else{
 				$entry->uuid = $in->getUUID();
 			}
@@ -102,6 +105,10 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_60){
 					$out->putBool($entry->isSubClient);
 				}
+				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80){
+					$out->putInt($entry->color);
+				}
+
 			}else{
 				$out->putUUID($entry->uuid);
 			}
