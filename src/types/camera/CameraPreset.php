@@ -19,6 +19,7 @@ use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\types\ControlScheme;
 
 final class CameraPreset{
 	public const AUDIO_LISTENER_TYPE_CAMERA = 0;
@@ -47,6 +48,7 @@ final class CameraPreset{
 		private ?bool $playerEffects,
 		private ?bool $alignTargetAndCameraForward,
 		private ?CameraPresetAimAssist $aimAssist,
+		private ?ControlScheme $controlScheme,
 	){}
 
 	public function getName() : string{ return $this->name; }
@@ -93,6 +95,8 @@ final class CameraPreset{
 
 	public function getAimAssist() : ?CameraPresetAimAssist{ return $this->aimAssist; }
 
+	public function getControlScheme() : ?ControlScheme{ return $this->controlScheme; }
+
 	public static function read(PacketSerializer $in) : self{
 		$name = $in->getString();
 		$parent = $in->getString();
@@ -131,6 +135,9 @@ final class CameraPreset{
 			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
 				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
 					$aimAssist = $in->readOptional(fn() => CameraPresetAimAssist::read($in));
+					if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80){
+						$controlScheme = $in->readOptional(fn() => ControlScheme::fromPacket($in->getByte()));
+					}
 				}else{
 					$aimAssist = $in->readOptional(fn() => $in->getBool() ? new CameraPresetAimAssist(null, null, null, null) : null);
 				}
@@ -159,7 +166,8 @@ final class CameraPreset{
 			$audioListenerType,
 			$playerEffects,
 			$alignTargetAndCameraForward ?? null,
-			$aimAssist ?? null
+			$aimAssist ?? null,
+			$controlScheme ?? null,
 		);
 	}
 
@@ -189,6 +197,7 @@ final class CameraPreset{
 				default => throw new \InvalidArgumentException("Invalid audio listener type: " . $nbt->getString("audio_listener_type")),
 			},
 			$nbt->getTag("player_effects") === null ? null : $nbt->getByte("player_effects") !== 0,
+			null,
 			null,
 			null,
 		);
@@ -232,6 +241,9 @@ final class CameraPreset{
 			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
 				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
 					$out->writeOptional($this->aimAssist, fn(CameraPresetAimAssist $v) => $v->write($out));
+					if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80){
+						$out->writeOptional($this->controlScheme, fn(ControlScheme $v) => $out->putByte($v->value));
+					}
 				}else{
 					$out->writeOptional($this->aimAssist, fn(CameraPresetAimAssist $v) => $out->putBool(true));
 				}

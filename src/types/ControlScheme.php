@@ -14,14 +14,17 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pocketmine\network\mcpe\protocol\ClientboundControlSchemeSetPacket;
+
 /**
- * @see PlayerUpdateEntityOverridesPacket
+ * @see ClientboundControlSchemeSetPacket
  */
-enum OverrideUpdateType : int{
+enum ControlScheme : int{
 	use PacketIntEnumTrait;
 
-	case CLEAR_OVERRIDES = 0;
-	case REMOVE_OVERRIDE = 1;
-	case SET_INT_OVERRIDE = 2;
-	case SET_FLOAT_OVERRIDE = 3;
+	case LOCKED_PLAYER_RELATIVE_STRAFE = 0;
+	case CAMERA_RELATIVE = 1;
+	case CAMERA_RELATIVE_STRAFE = 2;
+	case PLAYER_RELATIVE = 3;
+	case PLAYER_RELATIVE_STRAFE = 4;
 }

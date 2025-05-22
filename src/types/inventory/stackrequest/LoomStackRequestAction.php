@@ -38,7 +38,7 @@ final class LoomStackRequestAction extends ItemStackRequestAction{
 	public static function read(PacketSerializer $in) : self{
 		$patternId = $in->getString();
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-			$repetitions = $in->getVarInt();
+			$repetitions = $in->getByte();
 		}
 		return new self($patternId, $repetitions ?? 1);
 	}

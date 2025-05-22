@@ -16,11 +16,12 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\protocol\serializer\BitSet;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 
 class ClientMovementPredictionSyncPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::CLIENT_MOVEMENT_PREDICTION_SYNC_PACKET;
 
-	public const FLAG_LENGTH = 123;
+	public const FLAG_LENGTH = EntityMetadataFlags::NUMBER_OF_FLAGS;
 
 	private BitSet $flags;
 
@@ -117,7 +118,11 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 	public function getActorFlyingState() : bool{ return $this->actorFlyingState; }
 
 	protected function decodePayload(PacketSerializer $in) : void{
-		$this->flags = BitSet::read($in, $in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 ? self::FLAG_LENGTH : 120);
+		$this->flags = BitSet::read($in, match(true) {
+			$in->getProtocolId() === ProtocolInfo::CURRENT_PROTOCOL => self::FLAG_LENGTH,
+			$in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 => 123,
+			default => 120,
+		});
 		$this->scale = $in->getLFloat();
 		$this->width = $in->getLFloat();
 		$this->height = $in->getLFloat();
@@ -134,7 +139,11 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
-		$this->flags->write($out, $out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 ? self::FLAG_LENGTH : 120);
+		$this->flags->write($out, match(true) {
+			$out->getProtocolId() === ProtocolInfo::CURRENT_PROTOCOL => self::FLAG_LENGTH,
+			$out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 => 123,
+			default => 120,
+		});
 		$out->putLFloat($this->scale);
 		$out->putLFloat($this->width);
 		$out->putLFloat($this->height);

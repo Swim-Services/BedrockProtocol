@@ -877,11 +877,19 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
-	public function handlePlayerVideoCapturePacket(PlayerVideoCapturePacket $packet) : bool{
+	public function handlePlayerVideoCapture(PlayerVideoCapturePacket $packet) : bool{
 		return false;
 	}
 
-	public function handlePlayerUpdateEntityOverridesPacket(PlayerUpdateEntityOverridesPacket $packet) : bool{
+	public function handlePlayerUpdateEntityOverrides(PlayerUpdateEntityOverridesPacket $packet) : bool{
+		return false;
+	}
+
+	public function handlePlayerLocation(PlayerLocationPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleClientboundControlSchemeSet(ClientboundControlSchemeSetPacket $packet) : bool{
 		return false;
 	}
 }

@@ -145,6 +145,8 @@ final class EntityMetadataFlags{
 	public const BODY_ROTATION_AXIS_ALIGNED = 120;
 	public const COLLIDABLE = 121;
 	public const WASD_AIR_CONTROLLED = 122;
+	public const DOES_SERVER_AUTH_ONLY_DISMOUNT = 123;
+	public const NUMBER_OF_FLAGS = 124;
 
 	/**
 	 * Rewrites the MetadataFlags from the latest protocol version to the given protocol version.

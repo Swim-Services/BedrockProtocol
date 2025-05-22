@@ -14,14 +14,14 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pocketmine\network\mcpe\protocol\PlayerLocationPacket;
+
 /**
- * @see PlayerUpdateEntityOverridesPacket
+ * @see PlayerLocationPacket
  */
-enum OverrideUpdateType : int{
+enum PlayerLocationType : int{
 	use PacketIntEnumTrait;
 
-	case CLEAR_OVERRIDES = 0;
-	case REMOVE_OVERRIDE = 1;
-	case SET_INT_OVERRIDE = 2;
-	case SET_FLOAT_OVERRIDE = 3;
+	case PLAYER_LOCATION_COORDINATES = 0;
+	case PLAYER_LOCATION_HIDE = 1;
 }

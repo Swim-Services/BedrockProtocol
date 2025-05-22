@@ -143,8 +143,8 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		Vector3 $cameraOrientation,
 		Vector2 $rawMove
 	) : self{
-		if($inputFlags->getLength() !== 65){
-			throw new \InvalidArgumentException("Input flags must be 65 bits long");
+		if($inputFlags->getLength() !== PlayerAuthInputFlags::NUMBER_OF_FLAGS){
+			throw new \InvalidArgumentException("Input flags must be " . PlayerAuthInputFlags::NUMBER_OF_FLAGS . " bits long");
 		}
 
 		if($playMode === PlayMode::VR and $vrGazeDirection === null){
@@ -277,7 +277,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		$this->moveVecX = $in->getLFloat();
 		$this->moveVecZ = $in->getLFloat();
 		$this->headYaw = $in->getLFloat();
-		$this->inputFlags = BitSet::read($in, $in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50 ? 65 : 64);
+		$this->inputFlags = BitSet::read($in, $in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50 ? PlayerAuthInputFlags::NUMBER_OF_FLAGS : 64);
 		$this->inputMode = $in->getUnsignedVarInt();
 		$this->playMode = $in->getUnsignedVarInt();
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_0){
