@@ -103,7 +103,7 @@ final class ProtocolInfo{
 	];
 
 	/** Version number sent to clients in ping responses. */
-	public const MINECRAFT_VERSION_NETWORK = '1.21.80';
+	public const MINECRAFT_VERSION_NETWORK = '1.21.90';
 	/** Current Minecraft PE version reported by the server. This is usually the earliest currently supported version. */
 	public const MINECRAFT_VERSION = 'v' . self::MINECRAFT_VERSION_NETWORK;
 
