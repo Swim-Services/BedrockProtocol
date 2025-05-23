@@ -49,10 +49,10 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->protocol = $in->getInt();
-		$this->decodeConnectionRequest($in->getString());
+		$this->decodeConnectionRequest($in->getString(), $in);
 	}
 
-	protected function decodeConnectionRequest(string $binary) : void{
+	protected function decodeConnectionRequest(string $binary, PacketSerializer $in) : void{
 		$connRequestReader = new BinaryStream($binary);
 
 		$chainDataJsonLength = $connRequestReader->getLInt();
@@ -65,6 +65,16 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 			$chainDataJson = json_decode($connRequestReader->get($chainDataJsonLength), associative: true, flags: JSON_THROW_ON_ERROR);
 		}catch(\JsonException $e){
 			throw new PacketDecodeException("Failed decoding chain data JSON: " . $e->getMessage());
+		}
+		if ($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90) {
+			if (!isset($chainDataJson["Certificate"]) || !is_string($chainDataJson["Certificate"])) {
+				throw new PacketDecodeException("Certificate data must be a JSON string");
+			}
+			try{
+				$chainDataJson = json_decode($chainDataJson["Certificate"], associative: true, flags: JSON_THROW_ON_ERROR);
+			}catch(\JsonException $e){
+				throw new PacketDecodeException("Failed decoding certificate data JSON: " . $e->getMessage());
+			}
 		}
 		if(!is_array($chainDataJson) || count($chainDataJson) !== 1 || !isset($chainDataJson["chain"])){
 			throw new PacketDecodeException("Chain data must be a JSON object containing only the 'chain' element");

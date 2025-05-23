@@ -156,7 +156,7 @@ final class ClientData{
 	/** @required */
 	public string $ThirdPartyName;
 
-	/** @required */
+	/** < PROTOCOL_1_21_90  */
 	public bool $ThirdPartyNameOnly;
 
 	/** >= PROTOCOL_1_19_20 */

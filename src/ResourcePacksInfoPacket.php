@@ -30,6 +30,7 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 	public bool $mustAccept = false; //if true, forces client to choose between accepting packs or being disconnected
 	public bool $hasAddons = false;
 	public bool $hasScripts = false; //if true, causes disconnect for any platform that doesn't support scripts yet
+	public bool $forceDisableVibrantVisuals = false;
 	public bool $forceServerPacks = false;
 	/**
 	 * @var string[]
@@ -87,6 +88,9 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 				$this->behaviorPackEntries[] = BehaviorPackInfoEntry::read($in);
 			}
 		}
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
+			$this->forceDisableVibrantVisuals = $in->getBool();
+		}
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
 			$this->worldTemplateId = $in->getUUID();
 			$this->worldTemplateVersion = $in->getString();
@@ -119,6 +123,9 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			foreach($this->behaviorPackEntries as $entry){
 				$entry->write($out);
 			}
+		}
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
+			$out->putBool($this->forceDisableVibrantVisuals);
 		}
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
 			$out->putUUID($this->worldTemplateId);
