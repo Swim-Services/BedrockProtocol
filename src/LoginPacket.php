@@ -49,6 +49,9 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->protocol = $in->getInt();
+		if ($this->protocol === 819) {
+			$this->protocol = 818;
+		}
 		$this->decodeConnectionRequest($in->getString(), $in);
 	}
 
