@@ -37,7 +37,8 @@ final class CameraSetInstruction{
 		private ?Vector3 $facingPosition,
 		private ?Vector2 $viewOffset,
 		private ?Vector3 $entityOffset,
-		private ?bool $default
+		private ?bool $default,
+		private bool $ignoreStartingValuesComponent
 	){}
 
 	public function getPreset() : int{ return $this->preset; }
@@ -56,6 +57,8 @@ final class CameraSetInstruction{
 
 	public function getDefault() : ?bool{ return $this->default; }
 
+	public function isIgnoringStartingValuesComponent() : bool{ return $this->ignoreStartingValuesComponent; }
+
 	public static function read(PacketSerializer $in) : self{
 		$preset = $in->getLInt();
 		$ease = $in->readOptional(fn() => CameraSetInstructionEase::read($in));
@@ -69,6 +72,9 @@ final class CameraSetInstruction{
 			$entityOffset = $in->readOptional($in->getVector3(...));
 		}
 		$default = $in->readOptional($in->getBool(...));
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
+			$ignoreStartingValuesComponent = $in->getBool();
+		}
 
 		return new self(
 			$preset,
@@ -78,7 +84,8 @@ final class CameraSetInstruction{
 			$facingPosition,
 			$viewOffset ?? null,
 			$entityOffset ?? null,
-			$default
+			$default,
+			$ignoreStartingValuesComponent ?? false,
 		);
 	}
 
@@ -108,7 +115,8 @@ final class CameraSetInstruction{
 			$facingPosition,
 			null,
 			null,
-			$default
+			$default,
+			false,
 		);
 	}
 
@@ -125,6 +133,9 @@ final class CameraSetInstruction{
 			$out->writeOptional($this->entityOffset, $out->putVector3(...));
 		}
 		$out->writeOptional($this->default, $out->putBool(...));
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
+			$out->putBool($this->ignoreStartingValuesComponent);
+		}
 	}
 
 	public function toNBT() : CompoundTag{

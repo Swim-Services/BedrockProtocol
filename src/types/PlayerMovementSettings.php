@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 
@@ -31,14 +32,20 @@ final class PlayerMovementSettings{
 	public function isServerAuthoritativeBlockBreaking() : bool{ return $this->serverAuthoritativeBlockBreaking; }
 
 	public static function read(PacketSerializer $in) : self{
-		$movementType = ServerAuthMovementMode::fromPacket($in->getVarInt());
+		if($in->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_80){
+			$movementType = ServerAuthMovementMode::fromPacket($in->getVarInt());
+		}
 		$rewindHistorySize = $in->getVarInt();
 		$serverAuthBlockBreaking = $in->getBool();
-		return new self($movementType, $rewindHistorySize, $serverAuthBlockBreaking);
+		return new self($movementType ?? ServerAuthMovementMode::SERVER_AUTHORITATIVE_V3, $rewindHistorySize, $serverAuthBlockBreaking);
 	}
 
 	public function write(PacketSerializer $out) : void{
-		$out->putVarInt($this->movementType->value);
+		if($out->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_80){
+			$out->putVarInt($this->movementType->value);
+		}elseif($this->movementType !== ServerAuthMovementMode::SERVER_AUTHORITATIVE_V3){
+			throw new \InvalidArgumentException("Unsupported movement type for protocol version {$out->getProtocolId()}: {$this->movementType->name}");
+		}
 		$out->putVarInt($this->rewindHistorySize);
 		$out->putBool($this->serverAuthoritativeBlockBreaking);
 	}

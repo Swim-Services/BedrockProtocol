@@ -453,4 +453,6 @@ interface PacketHandlerInterface{
 	public function handlePlayerLocation(PlayerLocationPacket $packet) : bool;
 
 	public function handleClientboundControlSchemeSet(ClientboundControlSchemeSetPacket $packet) : bool;
+
+	public function handleServerScriptDebugDrawer(ServerScriptDebugDrawerPacket $packet) : bool;
 }

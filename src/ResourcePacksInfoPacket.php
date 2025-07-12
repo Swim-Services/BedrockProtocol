@@ -38,6 +38,7 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 	public array $cdnUrls = [];
 	private UuidInterface $worldTemplateId;
 	private string $worldTemplateVersion;
+	private bool $forceDisableVibrantVisuals;
 
 	/**
 	 * @generate-create-func
@@ -56,6 +57,7 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		array $cdnUrls,
 		UuidInterface $worldTemplateId,
 		string $worldTemplateVersion,
+		bool $forceDisableVibrantVisuals,
 	) : self{
 		$result = new self;
 		$result->resourcePackEntries = $resourcePackEntries;
@@ -67,12 +69,15 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 		$result->cdnUrls = $cdnUrls;
 		$result->worldTemplateId = $worldTemplateId;
 		$result->worldTemplateVersion = $worldTemplateVersion;
+		$result->forceDisableVibrantVisuals = $forceDisableVibrantVisuals;
 		return $result;
 	}
 
 	public function getWorldTemplateId() : UuidInterface{ return $this->worldTemplateId; }
 
 	public function getWorldTemplateVersion() : string{ return $this->worldTemplateVersion; }
+
+	public function isForceDisablingVibrantVisuals() : bool{ return $this->forceDisableVibrantVisuals; }
 
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->mustAccept = $in->getBool();
@@ -88,6 +93,9 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			}
 		}
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
+			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
+				$this->forceDisableVibrantVisuals = $in->getBool();
+			}
 			$this->worldTemplateId = $in->getUUID();
 			$this->worldTemplateVersion = $in->getString();
 		}
@@ -121,6 +129,9 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 			}
 		}
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
+				$out->putBool($this->forceDisableVibrantVisuals);
+			}
 			$out->putUUID($this->worldTemplateId);
 			$out->putString($this->worldTemplateVersion);
 		}

@@ -12,13 +12,19 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types;
+namespace pocketmine\network\mcpe\protocol\types\login;
 
-final class SubChunkPacketHeightMapType{
+/**
+ * Model class for LoginPacket JSON data for JsonMapper
+ */
+final class AuthenticationInfo{
 
-	public const NO_DATA = 0;
-	public const DATA = 1;
-	public const ALL_TOO_HIGH = 2;
-	public const ALL_TOO_LOW = 3;
-	public const ALL_COPIED = 4;
+	/** @required */
+	public int $AuthenticationType;
+
+	/** @required */
+	public string $Certificate;
+
+	/** @required */
+	public string $Token;
 }

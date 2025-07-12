@@ -892,4 +892,8 @@ trait PacketHandlerDefaultImplTrait{
 	public function handleClientboundControlSchemeSet(ClientboundControlSchemeSetPacket $packet) : bool{
 		return false;
 	}
+
+	public function handleServerScriptDebugDrawer(ServerScriptDebugDrawerPacket $packet) : bool{
+		return false;
+	}
 }

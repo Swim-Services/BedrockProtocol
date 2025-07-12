@@ -120,6 +120,7 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->flags = BitSet::read($in, match(true) {
 			$in->getProtocolId() === ProtocolInfo::CURRENT_PROTOCOL => self::FLAG_LENGTH,
+			$in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80 => 124,
 			$in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 => 123,
 			default => 120,
 		});
@@ -141,6 +142,7 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 	protected function encodePayload(PacketSerializer $out) : void{
 		$this->flags->write($out, match(true) {
 			$out->getProtocolId() === ProtocolInfo::CURRENT_PROTOCOL => self::FLAG_LENGTH,
+			$out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80 => 124,
 			$out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 => 123,
 			default => 120,
 		});

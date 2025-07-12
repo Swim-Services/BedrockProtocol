@@ -131,7 +131,9 @@ final class CameraPreset{
 		$audioListenerType = $in->readOptional($in->getByte(...));
 		$playerEffects = $in->readOptional($in->getBool(...));
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-			$alignTargetAndCameraForward = $in->readOptional($in->getBool(...));
+			if($in->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_80){
+				$alignTargetAndCameraForward = $in->readOptional($in->getBool(...));
+			}
 			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
 				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
 					$aimAssist = $in->readOptional(fn() => CameraPresetAimAssist::read($in));
@@ -237,7 +239,9 @@ final class CameraPreset{
 		$out->writeOptional($this->audioListenerType, $out->putByte(...));
 		$out->writeOptional($this->playerEffects, $out->putBool(...));
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-			$out->writeOptional($this->alignTargetAndCameraForward, $out->putBool(...));
+			if($out->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_80){
+				$out->writeOptional($this->alignTargetAndCameraForward, $out->putBool(...));
+			}
 			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
 				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
 					$out->writeOptional($this->aimAssist, fn(CameraPresetAimAssist $v) => $v->write($out));

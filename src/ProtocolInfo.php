@@ -33,6 +33,8 @@ final class ProtocolInfo{
 
 	/** Actual Minecraft: PE protocol version */
 
+	public const PROTOCOL_1_21_93 = 819;
+	public const PROTOCOL_1_21_90 = 818;
 	public const PROTOCOL_1_21_80 = 800;
 	public const PROTOCOL_1_21_70 = 786;
 	public const PROTOCOL_1_21_60 = 776;
@@ -66,7 +68,7 @@ final class ProtocolInfo{
 	public const PROTOCOL_1_18_0 = 475;
 	public const PROTOCOL_1_16_100 = 419;
 
-	public const CURRENT_PROTOCOL = self::PROTOCOL_1_21_80;
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_21_93;
 	public const ACCEPTED_PROTOCOL = [
 		self::PROTOCOL_1_18_10,
 		/*self::PROTOCOL_1_18_30,
@@ -97,11 +99,13 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_21_50,
 		self::PROTOCOL_1_21_60,
 		self::PROTOCOL_1_21_70,
+		self::PROTOCOL_1_21_80,
+		self::PROTOCOL_1_21_90,
 		self::CURRENT_PROTOCOL
 	];
 
 	/** Version number sent to clients in ping responses. */
-	public const MINECRAFT_VERSION_NETWORK = '1.21.80';
+	public const MINECRAFT_VERSION_NETWORK = '1.21.93';
 	/** Current Minecraft PE version reported by the server. This is usually the earliest currently supported version. */
 	public const MINECRAFT_VERSION = 'v' . self::MINECRAFT_VERSION_NETWORK;
 
@@ -333,5 +337,6 @@ final class ProtocolInfo{
 	public const PLAYER_UPDATE_ENTITY_OVERRIDES_PACKET = 0x145;
 	public const PLAYER_LOCATION_PACKET = 0x146;
 	public const CLIENTBOUND_CONTROL_SCHEME_SET_PACKET = 0x147;
+	public const SERVER_SCRIPT_DEBUG_DRAWER_PACKET = 0x148;
 
 }
