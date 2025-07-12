@@ -16,7 +16,6 @@ namespace pocketmine\network\mcpe\protocol\types;
 
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
-use pocketmine\network\mcpe\protocol\ProtocolInfo;
 
 final class PlayerMovementSettings{
 	public function __construct(
