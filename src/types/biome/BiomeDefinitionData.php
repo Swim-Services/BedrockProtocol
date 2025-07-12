@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\protocol\types\biome;
 
 use pocketmine\color\Color;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\biome\chunkgen\BiomeDefinitionChunkGenData;
 use function count;
@@ -76,7 +77,11 @@ final class BiomeDefinitionData{
 
 	public static function read(PacketSerializer $in) : self{
 		$nameIndex = $in->getLShort();
-		$id = $in->readOptional($in->getLShort(...));
+		if ($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100) {
+			$id = $in->getShort();
+		} else {
+			$id = $in->readOptional($in->getLShort(...));
+		}
 		$temperature = $in->getLFloat();
 		$downfall = $in->getLFloat();
 		$redSporeDensity = $in->getLFloat();
@@ -118,7 +123,11 @@ final class BiomeDefinitionData{
 
 	public function write(PacketSerializer $out) : void{
 		$out->putLShort($this->nameIndex);
-		$out->writeOptional($this->id, $out->putLShort(...));
+		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100) {
+			$out->putShort($this->id ?? 0);
+		} else {
+			$out->writeOptional($this->id, $out->putLShort(...));
+		}
 		$out->putLFloat($this->temperature);
 		$out->putLFloat($this->downfall);
 		$out->putLFloat($this->redSporeDensity);

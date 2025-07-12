@@ -56,6 +56,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 	public UuidInterface $worldTemplateId; //why is this here twice ??? mojang
 	public bool $enableClientSideChunkGeneration;
 	public bool $blockNetworkIdsAreHashes = false; //new in 1.19.80, possibly useful for multi version
+	public bool $tickDeathSystemsEnabled = false;
 	public NetworkPermissions $networkPermissions;
 
 	/**
@@ -196,6 +197,9 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_80){
 			$this->blockNetworkIdsAreHashes = $in->getBool();
 		}
+		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
+			$this->tickDeathSystemsEnabled = $in->getBool();
+		}
 		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0){
 			$this->networkPermissions = NetworkPermissions::decode($in);
 		}
@@ -254,6 +258,9 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		}
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_80){
 			$out->putBool($this->blockNetworkIdsAreHashes);
+		}
+		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
+			$out->putBool($this->tickDeathSystemsEnabled);
 		}
 		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0) {
 			$this->networkPermissions->encode($out);

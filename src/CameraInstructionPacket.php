@@ -62,6 +62,9 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 				$this->target = $in->readOptional(fn() => CameraTargetInstruction::read($in));
 				$this->removeTarget = $in->readOptional($in->getBool(...));
 			}
+			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
+				$in->getByte(); // TODO: FOV instruction
+			}
 		}else{
 			$this->fromNBT($in->getNbtCompoundRoot());
 		}
@@ -85,6 +88,9 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
 				$out->writeOptional($this->target, fn(CameraTargetInstruction $v) => $v->write($out));
 				$out->writeOptional($this->removeTarget, $out->putBool(...));
+			}
+			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
+				$out->putByte(0); // TODO: FOV instruction
 			}
 		}else{
 			$data = new CacheableNbt($this->toNBT());
