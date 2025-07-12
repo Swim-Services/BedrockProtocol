@@ -78,7 +78,7 @@ final class BiomeDefinitionData{
 	public static function read(PacketSerializer $in) : self{
 		$nameIndex = $in->getLShort();
 		if ($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100) {
-			$id = $in->getShort();
+			$id = $in->getLShort();
 		} else {
 			$id = $in->readOptional($in->getLShort(...));
 		}
@@ -124,7 +124,7 @@ final class BiomeDefinitionData{
 	public function write(PacketSerializer $out) : void{
 		$out->putLShort($this->nameIndex);
 		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100) {
-			$out->putShort($this->id ?? 0);
+			$out->putLShort($this->id ?? 0);
 		} else {
 			$out->writeOptional($this->id, $out->putLShort(...));
 		}
