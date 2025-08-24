@@ -69,7 +69,7 @@ final class ProtocolInfo{
 	public const PROTOCOL_1_18_0 = 475;
 	public const PROTOCOL_1_16_100 = 419;
 
-	public const CURRENT_PROTOCOL = self::PROTOCOL_1_21_93;
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_21_100;
 	public const ACCEPTED_PROTOCOL = [
 		self::PROTOCOL_1_18_10,
 		/*self::PROTOCOL_1_18_30,
