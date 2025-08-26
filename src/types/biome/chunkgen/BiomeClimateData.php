@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\biome\chunkgen;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class BiomeClimateData{
@@ -48,10 +49,12 @@ final class BiomeClimateData{
 	public static function read(PacketSerializer $in) : self{
 		$temperature = $in->getLFloat();
 		$downfall = $in->getLFloat();
-		$redSporeDensity = $in->getLFloat();
-		$blueSporeDensity = $in->getLFloat();
-		$ashDensity = $in->getLFloat();
-		$whiteAshDensity = $in->getLFloat();
+		if ($in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_110) {
+			$redSporeDensity = $in->getLFloat();
+			$blueSporeDensity = $in->getLFloat();
+			$ashDensity = $in->getLFloat();
+			$whiteAshDensity = $in->getLFloat();
+		}
 		$snowAccumulationMin = $in->getLFloat();
 		$snowAccumulationMax = $in->getLFloat();
 
@@ -70,10 +73,12 @@ final class BiomeClimateData{
 	public function write(PacketSerializer $out) : void{
 		$out->putLFloat($this->temperature);
 		$out->putLFloat($this->downfall);
-		$out->putLFloat($this->redSporeDensity);
-		$out->putLFloat($this->blueSporeDensity);
-		$out->putLFloat($this->ashDensity);
-		$out->putLFloat($this->whiteAshDensity);
+		if ($out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_110) {
+			$out->putLFloat($this->redSporeDensity);
+			$out->putLFloat($this->blueSporeDensity);
+			$out->putLFloat($this->ashDensity);
+			$out->putLFloat($this->whiteAshDensity);
+		}
 		$out->putLFloat($this->snowAccumulationMin);
 		$out->putFloat($this->snowAccumulationMax);
 	}

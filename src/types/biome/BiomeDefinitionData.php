@@ -21,6 +21,7 @@ use pocketmine\network\mcpe\protocol\types\biome\chunkgen\BiomeDefinitionChunkGe
 use function count;
 
 final class BiomeDefinitionData{
+	private float $foliageSnow = 0;
 
 	/**
 	 * @param int[]             $tagIndexes
@@ -80,10 +81,14 @@ final class BiomeDefinitionData{
 		$id = $in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100 ? $in->getLShort() : $in->readOptional($in->getLShort(...)) ?? 65535;
 		$temperature = $in->getLFloat();
 		$downfall = $in->getLFloat();
-		$redSporeDensity = $in->getLFloat();
-		$blueSporeDensity = $in->getLFloat();
-		$ashDensity = $in->getLFloat();
-		$whiteAshDensity = $in->getLFloat();
+		if ($in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_110) {
+			$redSporeDensity = $in->getLFloat();
+			$blueSporeDensity = $in->getLFloat();
+			$ashDensity = $in->getLFloat();
+			$whiteAshDensity = $in->getLFloat();
+		} else {
+			$foliageSnow = $in->getLFloat();
+		}
 		$depth = $in->getLFloat();
 		$scale = $in->getLFloat();
 		$mapWaterColor = Color::fromARGB($in->getLInt());
@@ -99,7 +104,7 @@ final class BiomeDefinitionData{
 		});
 		$chunkGenData = $in->readOptional(fn() => BiomeDefinitionChunkGenData::read($in));
 
-		return new self(
+		$a = new self(
 			$nameIndex,
 			$id,
 			$temperature,
@@ -115,6 +120,8 @@ final class BiomeDefinitionData{
 			$tags,
 			$chunkGenData
 		);
+		$a->foliageSnow = $foliageSnow;
+		return $a;
 	}
 
 	public function write(PacketSerializer $out) : void{
@@ -126,10 +133,14 @@ final class BiomeDefinitionData{
 		}
 		$out->putLFloat($this->temperature);
 		$out->putLFloat($this->downfall);
-		$out->putLFloat($this->redSporeDensity);
-		$out->putLFloat($this->blueSporeDensity);
-		$out->putLFloat($this->ashDensity);
-		$out->putLFloat($this->whiteAshDensity);
+		if ($out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_110) {
+			$out->putLFloat($this->redSporeDensity);
+			$out->putLFloat($this->blueSporeDensity);
+			$out->putLFloat($this->ashDensity);
+			$out->putLFloat($this->whiteAshDensity);
+		} else {
+			$out->putLFloat($this->foliageSnow);
+		}
 		$out->putLFloat($this->depth);
 		$out->putLFloat($this->scale);
 		$out->putLInt($this->mapWaterColor->toARGB());

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class IntGameRule extends GameRule{
@@ -33,10 +34,14 @@ final class IntGameRule extends GameRule{
 	}
 
 	public function encode(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt($this->value);
+		if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_110) {
+			$out->putInt($this->value);
+		} else {
+			$out->putUnsignedVarInt($this->value);
+		}
 	}
 
 	public static function decode(PacketSerializer $in, bool $isPlayerModifiable) : self{
-		return new self($in->getUnsignedVarInt(), $isPlayerModifiable);
+		return new self(($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_110) ? $in->getInt() : $in->getUnsignedVarInt(), $isPlayerModifiable);
 	}
 }
