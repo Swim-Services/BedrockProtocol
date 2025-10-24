@@ -51,7 +51,7 @@ final class BiomeClimateData{
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$temperature = LE::readFloat($in);
 		$downfall = LE::readFloat($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_111){
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_111){
 			$redSporeDensity = LE::readFloat($in);
 			$blueSporeDensity = LE::readFloat($in);
 			$ashDensity = LE::readFloat($in);
@@ -75,7 +75,7 @@ final class BiomeClimateData{
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeFloat($out, $this->temperature);
 		LE::writeFloat($out, $this->downfall);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_111){
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_111){
 			LE::writeFloat($out, $this->redSporeDensity);
 			LE::writeFloat($out, $this->blueSporeDensity);
 			LE::writeFloat($out, $this->ashDensity);
