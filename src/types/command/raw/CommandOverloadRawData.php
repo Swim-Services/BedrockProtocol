@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\command\raw;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -39,8 +40,8 @@ final class CommandOverloadRawData{
 	 */
 	public function getParameters() : array{ return $this->parameters; }
 
-	public static function read(ByteBufferReader $in) : self{
-		$chaining = CommonTypes::getBool($in);
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$chaining = $protocolId >= ProtocolInfo::PROTOCOL_1_20_10 && CommonTypes::getBool($in);
 		$parameters = [];
 
 		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
@@ -50,8 +51,10 @@ final class CommandOverloadRawData{
 		return new self($chaining, $parameters);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
-		CommonTypes::putBool($out, $this->chaining);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
+			CommonTypes::putBool($out, $this->chaining);
+		}
 		VarInt::writeUnsignedInt($out, count($this->parameters));
 
 		foreach($this->parameters as $parameter){
