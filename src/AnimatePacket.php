@@ -57,7 +57,9 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->action = VarInt::readSignedInt($in);
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
-		$this->data = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+			$this->data = LE::readFloat($in);
+		}
 		if($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT){
 			$this->rowingTime = LE::readFloat($in);
 		}
@@ -66,7 +68,9 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->action);
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
-		LE::writeFloat($out, $this->data);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+			LE::writeFloat($out, $this->data);
+		}
 		if($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT){
 			LE::writeFloat($out, $this->rowingTime);
 		}

@@ -56,7 +56,7 @@ class GraphicsOverrideParameterPacket extends DataPacket{
 
 	public function isReset() : bool{ return $this->reset; }
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$count = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $count; ++$i){
 			$this->values[] = ParameterKeyframeValue::read($in);
@@ -66,7 +66,7 @@ class GraphicsOverrideParameterPacket extends DataPacket{
 		$this->reset = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->values));
 		foreach($this->values as $value){
 			$value->write($out);
