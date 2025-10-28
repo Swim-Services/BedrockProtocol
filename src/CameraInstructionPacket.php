@@ -16,12 +16,14 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\network\mcpe\protocol\types\camera\CameraFadeInstruction;
 use pocketmine\network\mcpe\protocol\types\camera\CameraFovInstruction;
 use pocketmine\network\mcpe\protocol\types\camera\CameraSetInstruction;
+use pocketmine\network\mcpe\protocol\types\camera\CameraSplineInstruction;
 use pocketmine\network\mcpe\protocol\types\camera\CameraTargetInstruction;
 
 class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
@@ -33,11 +35,24 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 	private ?CameraTargetInstruction $target;
 	private ?bool $removeTarget;
 	private ?CameraFovInstruction $fieldOfView;
+	private ?CameraSplineInstruction $spline;
+	private ?int $attachToEntity;
+	private ?bool $detachFromEntity;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(?CameraSetInstruction $set, ?bool $clear, ?CameraFadeInstruction $fade, ?CameraTargetInstruction $target, ?bool $removeTarget, ?CameraFovInstruction $fieldOfView) : self{
+	public static function create(
+		?CameraSetInstruction $set,
+		?bool $clear,
+		?CameraFadeInstruction $fade,
+		?CameraTargetInstruction $target,
+		?bool $removeTarget,
+		?CameraFovInstruction $fieldOfView,
+		?CameraSplineInstruction $spline,
+		?int $attachToEntity,
+		?bool $detachFromEntity,
+	) : self{
 		$result = new self;
 		$result->set = $set;
 		$result->clear = $clear;
@@ -45,6 +60,9 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 		$result->target = $target;
 		$result->removeTarget = $removeTarget;
 		$result->fieldOfView = $fieldOfView;
+		$result->spline = $spline;
+		$result->attachToEntity = $attachToEntity;
+		$result->detachFromEntity = $detachFromEntity;
 		return $result;
 	}
 
@@ -60,6 +78,12 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 
 	public function getFieldOfView() : ?CameraFovInstruction{ return $this->fieldOfView; }
 
+	public function getSpline() : ?CameraSplineInstruction{ return $this->spline; }
+
+	public function getAttachToEntity() : ?int{ return $this->attachToEntity; }
+
+	public function getDetachFromEntity() : ?bool{ return $this->detachFromEntity; }
+
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
 			$this->set = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => CameraSetInstruction::read($in, $protocolId));
@@ -70,6 +94,11 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 				$this->removeTarget = CommonTypes::readOptional($in, CommonTypes::getBool(...));
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
 					$this->fieldOfView = CommonTypes::readOptional($in, CameraFovInstruction::read(...));
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+						$this->spline = CommonTypes::readOptional($in, CameraSplineInstruction::read(...));
+						$this->attachToEntity = CommonTypes::readOptional($in, LE::readSignedLong(...)); //WHY IS THIS NON-STANDARD?
+						$this->detachFromEntity = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+					}
 				}
 			}
 		}else{
@@ -97,6 +126,11 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 				CommonTypes::writeOptional($out, $this->removeTarget, CommonTypes::putBool(...));
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
 					CommonTypes::writeOptional($out, $this->fieldOfView, fn(ByteBufferWriter $out, CameraFovInstruction $v) => $v->write($out));
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+						CommonTypes::writeOptional($out, $this->spline, fn(ByteBufferWriter $out, CameraSplineInstruction $v) => $v->write($out));
+						CommonTypes::writeOptional($out, $this->attachToEntity, LE::writeSignedLong(...)); //WHY IS THIS NON-STANDARD?
+						CommonTypes::writeOptional($out, $this->detachFromEntity, CommonTypes::putBool(...));
+					}
 				}
 			}
 		}else{
