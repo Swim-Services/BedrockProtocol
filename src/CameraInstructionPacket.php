@@ -97,6 +97,11 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 					$out->writeOptional($this->fieldOfView, fn(CameraFovInstruction $v) => $v->write($out));
 				}
 			}
+			if ($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_120) {
+				$out->putByte(0);
+				$out->putByte(0);
+				$out->putByte(0);
+			}
 		}else{
 			$data = new CacheableNbt($this->toNBT());
 			$out->put($data->getEncodedNbt());
