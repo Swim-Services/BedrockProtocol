@@ -195,7 +195,7 @@ final class LevelSettings{
 		CommonTypes::putBool($out, $this->hasAchievementsDisabled);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
 			VarInt::writeSignedInt($out, $this->editorWorldType);
-		}else{ if($protocolId >= ProtocolInfo::PROTOCOL_1_19_10){
+		}else if($protocolId >= ProtocolInfo::PROTOCOL_1_19_10){
 			CommonTypes::putBool($out, $this->editorWorldType !== EditorWorldType::NON_EDITOR);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
