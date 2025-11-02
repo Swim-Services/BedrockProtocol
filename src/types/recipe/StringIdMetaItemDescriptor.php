@@ -38,14 +38,14 @@ final class StringIdMetaItemDescriptor implements ItemDescriptor{
 
 	public function getMeta() : int{ return $this->meta; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$stringId = CommonTypes::getString($in);
 		$meta = LE::readUnsignedShort($in);
 
 		return new self($stringId, $meta);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->id);
 		LE::writeUnsignedShort($out, $this->meta);
 	}

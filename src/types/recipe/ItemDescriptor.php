@@ -22,5 +22,5 @@ use pmmp\encoding\ByteBufferWriter;
 interface ItemDescriptor{
 	public function getTypeId() : int;
 
-	public function write(ByteBufferWriter $out) : void;
+	public function write(ByteBufferWriter $out, int $protocolId) : void;
 }
