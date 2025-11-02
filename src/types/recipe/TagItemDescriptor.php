@@ -30,7 +30,7 @@ final class TagItemDescriptor implements ItemDescriptor{
 
 	public function getTag() : string{ return $this->tag; }
 
-	public static function read(ByteBufferReader $in, int $protocolId) : self{
+	public static function read(ByteBufferReader $in) : self{
 		$tag = CommonTypes::getString($in);
 
 		return new self($tag);

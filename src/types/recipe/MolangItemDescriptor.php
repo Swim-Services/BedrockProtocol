@@ -34,7 +34,7 @@ final class MolangItemDescriptor implements ItemDescriptor{
 
 	public function getMolangVersion() : int{ return $this->molangVersion; }
 
-	public static function read(ByteBufferReader $in, int $protocolId) : self{
+	public static function read(ByteBufferReader $in) : self{
 		$expression = CommonTypes::getString($in);
 		$version = Byte::readUnsigned($in);
 

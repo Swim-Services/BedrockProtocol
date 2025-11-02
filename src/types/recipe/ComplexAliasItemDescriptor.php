@@ -30,7 +30,7 @@ final class ComplexAliasItemDescriptor implements ItemDescriptor{
 
 	public function getAlias() : string{ return $this->alias; }
 
-	public static function read(ByteBufferReader $in, int $protocolId) : self{
+	public static function read(ByteBufferReader $in) : self{
 		$alias = CommonTypes::getString($in);
 
 		return new self($alias);

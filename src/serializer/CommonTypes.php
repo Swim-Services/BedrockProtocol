@@ -336,10 +336,10 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	public static function getRecipeIngredient(ByteBufferReader $in) : RecipeIngredient{
+	public static function getRecipeIngredient(ByteBufferReader $in, int $protocolId) : RecipeIngredient{
 		$descriptorType = Byte::readUnsigned($in);
 		$descriptor = match($descriptorType){
-			ItemDescriptorType::INT_ID_META => IntIdMetaItemDescriptor::read($in),
+			ItemDescriptorType::INT_ID_META => IntIdMetaItemDescriptor::read($in, $protocolId),
 			ItemDescriptorType::STRING_ID_META => StringIdMetaItemDescriptor::read($in),
 			ItemDescriptorType::TAG => TagItemDescriptor::read($in),
 			ItemDescriptorType::MOLANG => MolangItemDescriptor::read($in),
@@ -351,11 +351,11 @@ final class CommonTypes{
 		return new RecipeIngredient($descriptor, $count);
 	}
 
-	public static function putRecipeIngredient(ByteBufferWriter $out, RecipeIngredient $ingredient) : void{
+	public static function putRecipeIngredient(ByteBufferWriter $out, RecipeIngredient $ingredient, int $protocolId) : void{
 		$type = $ingredient->getDescriptor();
 
 		Byte::writeUnsigned($out, $type?->getTypeId() ?? 0);
-		$type?->write($out);
+		$type?->write($out, $protocolId);
 
 		VarInt::writeSignedInt($out, $ingredient->getCount());
 	}

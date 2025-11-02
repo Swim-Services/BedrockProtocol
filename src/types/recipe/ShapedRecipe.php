@@ -115,7 +115,7 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		$input = [];
 		for($row = 0; $row < $height; ++$row){
 			for($column = 0; $column < $width; ++$column){
-				$input[$row][$column] = CommonTypes::getRecipeIngredient($in);
+				$input[$row][$column] = CommonTypes::getRecipeIngredient($in, $protocolId);
 			}
 		}
 
@@ -130,7 +130,7 @@ final class ShapedRecipe extends RecipeWithTypeId{
 			$symmetric = CommonTypes::getBool($in);
 
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
-				$unlockingRequirement = RecipeUnlockingRequirement::read($in);
+				$unlockingRequirement = RecipeUnlockingRequirement::read($in, $protocolId);
 			}
 		}
 
@@ -145,7 +145,7 @@ final class ShapedRecipe extends RecipeWithTypeId{
 		VarInt::writeSignedInt($out, $this->getHeight());
 		foreach($this->input as $row){
 			foreach($row as $ingredient){
-				CommonTypes::putRecipeIngredient($out, $ingredient);
+				CommonTypes::putRecipeIngredient($out, $ingredient, $protocolId);
 			}
 		}
 
@@ -161,7 +161,7 @@ final class ShapedRecipe extends RecipeWithTypeId{
 			CommonTypes::putBool($out, $this->symmetric);
 
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
-				$this->unlockingRequirement->write($out);
+				$this->unlockingRequirement->write($out, $protocolId);
 			}
 		}
 
