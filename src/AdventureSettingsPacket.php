@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\command\CommandPermissions;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
 
@@ -69,22 +72,22 @@ class AdventureSettingsPacket extends DataPacket implements ClientboundPacket, S
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->flags = $in->getUnsignedVarInt();
-		$this->commandPermission = $in->getUnsignedVarInt();
-		$this->flags2 = $in->getUnsignedVarInt();
-		$this->playerPermission = $in->getUnsignedVarInt();
-		$this->customFlags = $in->getUnsignedVarInt();
-		$this->targetActorUniqueId = $in->getLLong();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->flags = VarInt::readUnsignedInt($in);
+		$this->commandPermission = VarInt::readUnsignedInt($in);
+		$this->flags2 = VarInt::readUnsignedInt($in);
+		$this->playerPermission = VarInt::readUnsignedInt($in);
+		$this->customFlags = VarInt::readUnsignedInt($in);
+		$this->targetActorUniqueId = LE::readUnsignedLong($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt($this->flags);
-		$out->putUnsignedVarInt($this->commandPermission);
-		$out->putUnsignedVarInt($this->flags2);
-		$out->putUnsignedVarInt($this->playerPermission);
-		$out->putUnsignedVarInt($this->customFlags);
-		$out->putLLong($this->targetActorUniqueId);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, $this->flags);
+		VarInt::writeUnsignedInt($out,$this->commandPermission);
+		VarInt::writeUnsignedInt($out,$this->flags2);
+		VarInt::writeUnsignedInt($out,$this->playerPermission);
+		VarInt::writeUnsignedInt($out,$this->customFlags);
+		LE::writeUnsignedLong($out, $this->targetActorUniqueId);
 	}
 
 	public function getFlag(int $flag) : bool{

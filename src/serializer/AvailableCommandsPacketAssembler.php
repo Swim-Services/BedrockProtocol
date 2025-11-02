@@ -120,11 +120,12 @@ final class AvailableCommandsPacketAssembler{
 	public static function assemble(
 		array $commandData,
 		array $hardcodedEnums,
-		array $hardcodedSoftEnums
+		array $hardcodedSoftEnums,
+		int $protocolId,
 	) : AvailableCommandsPacket{
 		$builder = new self();
 		foreach($commandData as $data){
-			$builder->addCommandData($data);
+			$builder->addCommandData($data, $protocolId);
 		}
 		foreach($hardcodedEnums as $enum){
 			$builder->addHardEnum($enum);
@@ -224,7 +225,7 @@ final class AvailableCommandsPacketAssembler{
 		return $this->chainedSubCommandDataIndexes[$key];
 	}
 
-	private function addCommandData(CommandData $commandData) : void{
+	private function addCommandData(CommandData $commandData, int $protocolId) : void{
 		$aliasesIndex = $commandData->aliases !== null ? $this->addHardEnum($commandData->aliases) : -1;
 
 		$chainedSubCommandDataIndexes = [];
@@ -250,7 +251,7 @@ final class AvailableCommandsPacketAssembler{
 					$typeInfo = AvailableCommandsPacket::ARG_FLAG_POSTFIX | $postfixIndex;
 				}else{
 					//mask this to prevent unwanted flags sneaking in
-					$typeInfo = AvailableCommandsPacket::ARG_FLAG_VALID | ($parameter->paramType & AvailableCommandsPacket::ARG_FLAG_VALID - 1);
+					$typeInfo = AvailableCommandsPacket::ARG_FLAG_VALID | (AvailableCommandsPacket::convertArg($protocolId, $parameter->paramType) & AvailableCommandsPacket::ARG_FLAG_VALID - 1);
 				}
 
 				$rawParameterData[] = new CommandParameterRawData($parameter->paramName, $typeInfo, $parameter->isOptional, $parameter->flags);
