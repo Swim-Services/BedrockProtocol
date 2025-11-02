@@ -14,8 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
 final class CameraAimAssistPreset{
@@ -58,29 +61,29 @@ final class CameraAimAssistPreset{
 
 	public function getDefaultHandSettings() : ?string{ return $this->defaultHandSettings; }
 
-	public static function read(PacketSerializer $in) : self{
-		$identifier = $in->getString();
-		if($in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_60){
-			$categories = $in->getString();
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$identifier = CommonTypes::getString($in);
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_60){
+			$categories = CommonTypes::getString($in);
 		}
 
 		$exclusionList = [];
-		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
-			$exclusionList[] = $in->getString();
+		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+			$exclusionList[] = CommonTypes::getString($in);
 		}
 
 		$liquidTargetingList = [];
-		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
-			$liquidTargetingList[] = $in->getString();
+		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+			$liquidTargetingList[] = CommonTypes::getString($in);
 		}
 
 		$itemSettings = [];
-		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
+		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$itemSettings[] = CameraAimAssistPresetItemSettings::read($in);
 		}
 
-		$defaultItemSettings = $in->readOptional(fn() => $in->getString());
-		$defaultHandSettings = $in->readOptional(fn() => $in->getString());
+		$defaultItemSettings = CommonTypes::readOptional($in, fn() => CommonTypes::getString($in));
+		$defaultHandSettings = CommonTypes::readOptional($in, fn() => CommonTypes::getString($in));
 
 		return new self(
 			$identifier,
@@ -93,28 +96,28 @@ final class CameraAimAssistPreset{
 		);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putString($this->identifier);
-		if($out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_60){
-			$out->putString($this->categories);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putString($out, $this->identifier);
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_60){
+			CommonTypes::putString($out, $this->categories);
 		}
 
-		$out->putUnsignedVarInt(count($this->exclusionList));
+		VarInt::writeUnsignedInt($out, count($this->exclusionList));
 		foreach($this->exclusionList as $exclusion){
-			$out->putString($exclusion);
+			CommonTypes::putString($out, $exclusion);
 		}
 
-		$out->putUnsignedVarInt(count($this->liquidTargetingList));
+		VarInt::writeUnsignedInt($out, count($this->liquidTargetingList));
 		foreach($this->liquidTargetingList as $liquidTargeting){
-			$out->putString($liquidTargeting);
+			CommonTypes::putString($out, $liquidTargeting);
 		}
 
-		$out->putUnsignedVarInt(count($this->itemSettings));
+		VarInt::writeUnsignedInt($out, count($this->itemSettings));
 		foreach($this->itemSettings as $itemSetting){
 			$itemSetting->write($out);
 		}
 
-		$out->writeOptional($this->defaultItemSettings, fn(string $v) => $out->putString($v));
-		$out->writeOptional($this->defaultHandSettings, fn(string $v) => $out->putString($v));
+		CommonTypes::writeOptional($out, $this->defaultItemSettings, CommonTypes::putString(...));
+		CommonTypes::writeOptional($out, $this->defaultHandSettings, CommonTypes::putString(...));
 	}
 }

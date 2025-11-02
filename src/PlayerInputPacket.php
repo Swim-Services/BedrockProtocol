@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class PlayerInputPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::PLAYER_INPUT_PACKET;
@@ -36,18 +39,18 @@ class PlayerInputPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->motionX = $in->getLFloat();
-		$this->motionY = $in->getLFloat();
-		$this->jumping = $in->getBool();
-		$this->sneaking = $in->getBool();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->motionX = LE::readFloat($in);
+		$this->motionY = LE::readFloat($in);
+		$this->jumping = CommonTypes::getBool($in);
+		$this->sneaking = CommonTypes::getBool($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putLFloat($this->motionX);
-		$out->putLFloat($this->motionY);
-		$out->putBool($this->jumping);
-		$out->putBool($this->sneaking);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		LE::writeFloat($out, $this->motionX);
+		LE::writeFloat($out, $this->motionY);
+		CommonTypes::putBool($out, $this->jumping);
+		CommonTypes::putBool($out, $this->sneaking);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -14,7 +14,8 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 
 class AddEntityPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::ADD_ENTITY_PACKET;
@@ -34,12 +35,12 @@ class AddEntityPacket extends DataPacket implements ClientboundPacket{
 		return $this->entityNetId;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->entityNetId = $in->getUnsignedVarInt();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		//NOOP
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt($this->entityNetId);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		//NOOP
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

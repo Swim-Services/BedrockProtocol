@@ -32,6 +32,7 @@ final class BiomeDefinitionEntry{
 		private float $blueSporeDensity,
 		private float $ashDensity,
 		private float $whiteAshDensity,
+		private float $foliageSnow,
 		private float $depth,
 		private float $scale,
 		private Color $mapWaterColor,
@@ -55,6 +56,8 @@ final class BiomeDefinitionEntry{
 	public function getAshDensity() : float{ return $this->ashDensity; }
 
 	public function getWhiteAshDensity() : float{ return $this->whiteAshDensity; }
+
+	public function getFoliageSnow() : float{ return $this->foliageSnow; }
 
 	public function getDepth() : float{ return $this->depth; }
 

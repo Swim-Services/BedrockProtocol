@@ -14,7 +14,12 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class MobEffectPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::MOB_EFFECT_PACKET;
@@ -62,31 +67,31 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		return self::create($actorRuntimeId, self::EVENT_REMOVE, $effectId, 0, false, 0, $tick);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->actorRuntimeId = $in->getActorRuntimeId();
-		$this->eventId = $in->getByte();
-		$this->effectId = $in->getVarInt();
-		$this->amplifier = $in->getVarInt();
-		$this->particles = $in->getBool();
-		$this->duration = $in->getVarInt();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-			$this->tick = $in->getUnsignedVarLong();
-		}elseif($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
-			$this->tick = $in->getLLong();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		$this->eventId = Byte::readUnsigned($in);
+		$this->effectId = VarInt::readSignedInt($in);
+		$this->amplifier = VarInt::readSignedInt($in);
+		$this->particles = CommonTypes::getBool($in);
+		$this->duration = VarInt::readSignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			$this->tick = VarInt::readUnsignedLong($in);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			$this->tick = LE::readSignedLong($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putActorRuntimeId($this->actorRuntimeId);
-		$out->putByte($this->eventId);
-		$out->putVarInt($this->effectId);
-		$out->putVarInt($this->amplifier);
-		$out->putBool($this->particles);
-		$out->putVarInt($this->duration);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-			$out->putUnsignedVarLong($this->tick);
-		}elseif($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
-			$out->putLLong($this->tick);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		Byte::writeUnsigned($out, $this->eventId);
+		VarInt::writeSignedInt($out, $this->effectId);
+		VarInt::writeSignedInt($out, $this->amplifier);
+		CommonTypes::putBool($out, $this->particles);
+		VarInt::writeSignedInt($out, $this->duration);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			VarInt::writeUnsignedLong($out, $this->tick);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			LE::writeSignedLong($out, $this->tick);
 		}
 	}
 

@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\recipe;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
 
 final class SmithingTransformRecipe extends RecipeWithTypeId{
@@ -47,16 +49,16 @@ final class SmithingTransformRecipe extends RecipeWithTypeId{
 
 	public function getRecipeNetId() : int{ return $this->recipeNetId; }
 
-	public static function decode(int $typeId, PacketSerializer $in) : self{
-		$recipeId = $in->getString();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_80){
-			$template = $in->getRecipeIngredient();
+	public static function decode(int $typeId, ByteBufferReader $in, int $protocolId) : self{
+		$recipeId = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
+			$template = CommonTypes::getRecipeIngredient($in);
 		}
-		$input = $in->getRecipeIngredient();
-		$addition = $in->getRecipeIngredient();
-		$output = $in->getItemStackWithoutStackId();
-		$blockName = $in->getString();
-		$recipeNetId = $in->readRecipeNetId();
+		$input = CommonTypes::getRecipeIngredient($in);
+		$addition = CommonTypes::getRecipeIngredient($in);
+		$output = CommonTypes::getItemStackWithoutStackId($in);
+		$blockName = CommonTypes::getString($in);
+		$recipeNetId = CommonTypes::readRecipeNetId($in);
 
 		return new self(
 			$typeId,
@@ -70,18 +72,15 @@ final class SmithingTransformRecipe extends RecipeWithTypeId{
 		);
 	}
 
-	public function encode(PacketSerializer $out) : void{
-		$out->putString($this->recipeId);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_80){
-			if ($this->template === null) {
-				throw new \InvalidArgumentException("SmithingTransformRecipe template cannot be null");
-			}
-			$out->putRecipeIngredient($this->template);
+	public function encode(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putString($out, $this->recipeId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
+			CommonTypes::putRecipeIngredient($out, $this->template);
 		}
-		$out->putRecipeIngredient($this->input);
-		$out->putRecipeIngredient($this->addition);
-		$out->putItemStackWithoutStackId($this->output);
-		$out->putString($this->blockName);
-		$out->writeRecipeNetId($this->recipeNetId);
+		CommonTypes::putRecipeIngredient($out, $this->input);
+		CommonTypes::putRecipeIngredient($out, $this->addition);
+		CommonTypes::putItemStackWithoutStackId($out, $this->output);
+		CommonTypes::putString($out, $this->blockName);
+		CommonTypes::writeRecipeNetId($out, $this->recipeNetId);
 	}
 }

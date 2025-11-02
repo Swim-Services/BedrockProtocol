@@ -14,12 +14,16 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\network\mcpe\protocol\types\camera\CameraFadeInstruction;
 use pocketmine\network\mcpe\protocol\types\camera\CameraFovInstruction;
 use pocketmine\network\mcpe\protocol\types\camera\CameraSetInstruction;
+use pocketmine\network\mcpe\protocol\types\camera\CameraSplineInstruction;
 use pocketmine\network\mcpe\protocol\types\camera\CameraTargetInstruction;
 
 class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
@@ -31,11 +35,24 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 	private ?CameraTargetInstruction $target;
 	private ?bool $removeTarget;
 	private ?CameraFovInstruction $fieldOfView;
+	private ?CameraSplineInstruction $spline;
+	private ?int $attachToEntity;
+	private ?bool $detachFromEntity;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(?CameraSetInstruction $set, ?bool $clear, ?CameraFadeInstruction $fade, ?CameraTargetInstruction $target, ?bool $removeTarget, ?CameraFovInstruction $fieldOfView) : self{
+	public static function create(
+		?CameraSetInstruction $set,
+		?bool $clear,
+		?CameraFadeInstruction $fade,
+		?CameraTargetInstruction $target,
+		?bool $removeTarget,
+		?CameraFovInstruction $fieldOfView,
+		?CameraSplineInstruction $spline,
+		?int $attachToEntity,
+		?bool $detachFromEntity,
+	) : self{
 		$result = new self;
 		$result->set = $set;
 		$result->clear = $clear;
@@ -43,6 +60,9 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 		$result->target = $target;
 		$result->removeTarget = $removeTarget;
 		$result->fieldOfView = $fieldOfView;
+		$result->spline = $spline;
+		$result->attachToEntity = $attachToEntity;
+		$result->detachFromEntity = $detachFromEntity;
 		return $result;
 	}
 
@@ -58,20 +78,31 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 
 	public function getFieldOfView() : ?CameraFovInstruction{ return $this->fieldOfView; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
-			$this->set = $in->readOptional(fn() => CameraSetInstruction::read($in));
-			$this->clear = $in->readOptional($in->getBool(...));
-			$this->fade = $in->readOptional(fn() => CameraFadeInstruction::read($in));
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-				$this->target = $in->readOptional(fn() => CameraTargetInstruction::read($in));
-				$this->removeTarget = $in->readOptional($in->getBool(...));
-				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
-					$this->fieldOfView = $in->readOptional(fn() => CameraFovInstruction::read($in));
+	public function getSpline() : ?CameraSplineInstruction{ return $this->spline; }
+
+	public function getAttachToEntity() : ?int{ return $this->attachToEntity; }
+
+	public function getDetachFromEntity() : ?bool{ return $this->detachFromEntity; }
+
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
+			$this->set = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => CameraSetInstruction::read($in, $protocolId));
+			$this->clear = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+			$this->fade = CommonTypes::readOptional($in, CameraFadeInstruction::read(...));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+				$this->target = CommonTypes::readOptional($in, CameraTargetInstruction::read(...));
+				$this->removeTarget = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+					$this->fieldOfView = CommonTypes::readOptional($in, CameraFovInstruction::read(...));
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+						$this->spline = CommonTypes::readOptional($in, CameraSplineInstruction::read(...));
+						$this->attachToEntity = CommonTypes::readOptional($in, LE::readSignedLong(...)); //WHY IS THIS NON-STANDARD?
+						$this->detachFromEntity = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+					}
 				}
 			}
 		}else{
-			$this->fromNBT($in->getNbtCompoundRoot());
+			$this->fromNBT(CommonTypes::getNbtCompoundRoot($in));
 		}
 	}
 
@@ -85,21 +116,26 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 		$this->fade = $fadeTag === null ? null : CameraFadeInstruction::fromNBT($fadeTag);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
-			$out->writeOptional($this->set, fn(CameraSetInstruction $v) => $v->write($out));
-			$out->writeOptional($this->clear, $out->putBool(...));
-			$out->writeOptional($this->fade, fn(CameraFadeInstruction $v) => $v->write($out));
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-				$out->writeOptional($this->target, fn(CameraTargetInstruction $v) => $v->write($out));
-				$out->writeOptional($this->removeTarget, $out->putBool(...));
-				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
-					$out->writeOptional($this->fieldOfView, fn(CameraFovInstruction $v) => $v->write($out));
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
+			CommonTypes::writeOptional($out, $this->set, fn(ByteBufferWriter $out, CameraSetInstruction $v) => $v->write($out, $protocolId));
+			CommonTypes::writeOptional($out, $this->clear, CommonTypes::putBool(...));
+			CommonTypes::writeOptional($out, $this->fade, fn(ByteBufferWriter $out, CameraFadeInstruction $v) => $v->write($out));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+				CommonTypes::writeOptional($out, $this->target, fn(ByteBufferWriter $out, CameraTargetInstruction $v) => $v->write($out));
+				CommonTypes::writeOptional($out, $this->removeTarget, CommonTypes::putBool(...));
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+					CommonTypes::writeOptional($out, $this->fieldOfView, fn(ByteBufferWriter $out, CameraFovInstruction $v) => $v->write($out));
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+						CommonTypes::writeOptional($out, $this->spline, fn(ByteBufferWriter $out, CameraSplineInstruction $v) => $v->write($out));
+						CommonTypes::writeOptional($out, $this->attachToEntity, LE::writeSignedLong(...)); //WHY IS THIS NON-STANDARD?
+						CommonTypes::writeOptional($out, $this->detachFromEntity, CommonTypes::putBool(...));
+					}
 				}
 			}
 		}else{
 			$data = new CacheableNbt($this->toNBT());
-			$out->put($data->getEncodedNbt());
+			$out->writeByteArray($data->getEncodedNbt());
 		}
 	}
 

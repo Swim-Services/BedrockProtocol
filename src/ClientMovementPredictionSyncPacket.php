@@ -14,8 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pocketmine\network\mcpe\protocol\serializer\BitSet;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 
 class ClientMovementPredictionSyncPacket extends DataPacket implements ServerboundPacket{
@@ -117,47 +120,49 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 
 	public function getActorFlyingState() : bool{ return $this->actorFlyingState; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->flags = BitSet::read($in, match(true) {
-			$in->getProtocolId() === ProtocolInfo::CURRENT_PROTOCOL => self::FLAG_LENGTH,
-			$in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80 => 124,
-			$in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 => 123,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_111 => self::FLAG_LENGTH,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_90 => 125,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_80 => 124,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_70 => 123,
 			default => 120,
 		});
-		$this->scale = $in->getLFloat();
-		$this->width = $in->getLFloat();
-		$this->height = $in->getLFloat();
-		$this->movementSpeed = $in->getLFloat();
-		$this->underwaterMovementSpeed = $in->getLFloat();
-		$this->lavaMovementSpeed = $in->getLFloat();
-		$this->jumpStrength = $in->getLFloat();
-		$this->health = $in->getLFloat();
-		$this->hunger = $in->getLFloat();
-		$this->actorUniqueId = $in->getActorUniqueId();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70){
-			$this->actorFlyingState = $in->getBool();
+		$this->scale = LE::readFloat($in);
+		$this->width = LE::readFloat($in);
+		$this->height = LE::readFloat($in);
+		$this->movementSpeed = LE::readFloat($in);
+		$this->underwaterMovementSpeed = LE::readFloat($in);
+		$this->lavaMovementSpeed = LE::readFloat($in);
+		$this->jumpStrength = LE::readFloat($in);
+		$this->health = LE::readFloat($in);
+		$this->hunger = LE::readFloat($in);
+		$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
+			$this->actorFlyingState = CommonTypes::getBool($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		$this->flags->write($out, match(true) {
-			$out->getProtocolId() === ProtocolInfo::CURRENT_PROTOCOL => self::FLAG_LENGTH,
-			$out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80 => 124,
-			$out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 => 123,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_111 => self::FLAG_LENGTH,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_90 => 125,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_80 => 124,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_70 => 123,
 			default => 120,
 		});
-		$out->putLFloat($this->scale);
-		$out->putLFloat($this->width);
-		$out->putLFloat($this->height);
-		$out->putLFloat($this->movementSpeed);
-		$out->putLFloat($this->underwaterMovementSpeed);
-		$out->putLFloat($this->lavaMovementSpeed);
-		$out->putLFloat($this->jumpStrength);
-		$out->putLFloat($this->health);
-		$out->putLFloat($this->hunger);
-		$out->putActorUniqueId($this->actorUniqueId);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70){
-			$out->putBool($this->actorFlyingState);
+		LE::writeFloat($out, $this->scale);
+		LE::writeFloat($out, $this->width);
+		LE::writeFloat($out, $this->height);
+		LE::writeFloat($out, $this->movementSpeed);
+		LE::writeFloat($out, $this->underwaterMovementSpeed);
+		LE::writeFloat($out, $this->lavaMovementSpeed);
+		LE::writeFloat($out, $this->jumpStrength);
+		LE::writeFloat($out, $this->health);
+		LE::writeFloat($out, $this->hunger);
+		CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
+			CommonTypes::putBool($out, $this->actorFlyingState);
 		}
 	}
 

@@ -14,8 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class CameraSetInstructionEase{
 
@@ -34,9 +37,9 @@ final class CameraSetInstructionEase{
 
 	public function getDuration() : float{ return $this->duration; }
 
-	public static function read(PacketSerializer $in) : self{
-		$type = $in->getByte();
-		$duration = $in->getLFloat();
+	public static function read(ByteBufferReader $in) : self{
+		$type = Byte::readUnsigned($in);
+		$duration = LE::readFloat($in);
 		return new self($type, $duration);
 	}
 
@@ -47,9 +50,9 @@ final class CameraSetInstructionEase{
 		return new self($type, $duration);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putByte($this->type);
-		$out->putLFloat($this->duration);
+	public function write(ByteBufferWriter $out) : void{
+		Byte::writeUnsigned($out, $this->type);
+		LE::writeFloat($out, $this->duration);
 	}
 
 	public function toNBT() : CompoundTag{

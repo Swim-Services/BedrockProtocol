@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 
 class TickSyncPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::TICK_SYNC_PACKET;
@@ -48,14 +50,14 @@ class TickSyncPacket extends DataPacket implements ClientboundPacket, Serverboun
 		return $this->serverReceiveTime;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->clientSendTime = $in->getLLong();
-		$this->serverReceiveTime = $in->getLLong();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->clientSendTime = LE::readSignedLong($in);
+		$this->serverReceiveTime = LE::readSignedLong($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putLLong($this->clientSendTime);
-		$out->putLLong($this->serverReceiveTime);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		LE::writeSignedLong($out, $this->clientSendTime);
+		LE::writeSignedLong($out, $this->serverReceiveTime);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

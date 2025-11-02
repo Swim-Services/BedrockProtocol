@@ -27,10 +27,14 @@ final class PlayMode{
 	public const TEASER = 1;
 	public const SCREEN = 2;
 	public const VIEWER = 3;
+	/** @deprecated 1.21.120 */
 	public const VR = 4;
+	/** @deprecated 1.21.120 */
 	public const PLACEMENT = 5;
+	/** @deprecated 1.21.120 */
 	public const LIVING_ROOM = 6;
 	public const EXIT_LEVEL = 7;
+	/** @deprecated 1.21.120 */
 	public const EXIT_LEVEL_LIVING_ROOM = 8;
 
 }

@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class DisconnectPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::DISCONNECT_PACKET;
@@ -38,26 +41,26 @@ class DisconnectPacket extends DataPacket implements ClientboundPacket, Serverbo
 		return true;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_40){
-			$this->reason = $in->getVarInt();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_40){
+			$this->reason = VarInt::readSignedInt($in);
 		}
-		$skipMessage = $in->getBool();
-		$this->message = $skipMessage ? null : $in->getString();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-			$this->filteredMessage = $skipMessage ? null : $in->getString();
+		$skipMessage = CommonTypes::getBool($in);
+		$this->message = $skipMessage ? null : CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->filteredMessage = $skipMessage ? null : CommonTypes::getString($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_40){
-			$out->putVarInt($this->reason);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_40){
+			VarInt::writeSignedInt($out, $this->reason);
 		}
-		$out->putBool($skipMessage = $this->message === null && $this->filteredMessage === null);
+		CommonTypes::putBool($out, $skipMessage = $this->message === null && $this->filteredMessage === null);
 		if(!$skipMessage){
-			$out->putString($this->message ?? "");
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-				$out->putString($this->filteredMessage ?? "");
+			CommonTypes::putString($out, $this->message ?? "");
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+				CommonTypes::putString($out, $this->filteredMessage ?? "");
 			}
 		}
 	}

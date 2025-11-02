@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\SubChunkPacketEntryWithCache as EntryWithBlobHash;
 use pocketmine\network\mcpe\protocol\types\SubChunkPacketEntryWithCacheList as ListWithBlobHashes;
 use pocketmine\network\mcpe\protocol\types\SubChunkPacketEntryWithoutCache as EntryWithoutBlobHash;
@@ -48,36 +52,36 @@ class SubChunkPacket extends DataPacket implements ClientboundPacket{
 
 	public function getEntries() : ListWithBlobHashes|ListWithoutBlobHashes{ return $this->entries; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$cacheEnabled = $in->getBool();
-		$this->dimension = $in->getVarInt();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$cacheEnabled = CommonTypes::getBool($in);
+		$this->dimension = VarInt::readSignedInt($in);
 		$this->baseSubChunkPosition = SubChunkPosition::read($in);
 
-		$count = $in->getLInt();
+		$count = LE::readUnsignedInt($in);
 		if($cacheEnabled){
 			$entries = [];
 			for($i = 0; $i < $count; $i++){
-				$entries[] = EntryWithBlobHash::read($in);
+				$entries[] = EntryWithBlobHash::read($in, $protocolId);
 			}
 			$this->entries = new ListWithBlobHashes($entries);
 		}else{
 			$entries = [];
 			for($i = 0; $i < $count; $i++){
-				$entries[] = EntryWithoutBlobHash::read($in);
+				$entries[] = EntryWithoutBlobHash::read($in, $protocolId);
 			}
 			$this->entries = new ListWithoutBlobHashes($entries);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putBool($this->entries instanceof ListWithBlobHashes);
-		$out->putVarInt($this->dimension);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putBool($out, $this->entries instanceof ListWithBlobHashes);
+		VarInt::writeSignedInt($out, $this->dimension);
 		$this->baseSubChunkPosition->write($out);
 
-		$out->putLInt(count($this->entries->getEntries()));
+		LE::writeUnsignedInt($out, count($this->entries->getEntries()));
 
 		foreach($this->entries->getEntries() as $entry){
-			$entry->write($out);
+			$entry->write($out, $protocolId);
 		}
 	}
 

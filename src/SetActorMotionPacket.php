@@ -14,8 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class SetActorMotionPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::SET_ACTOR_MOTION_PACKET;
@@ -35,19 +38,19 @@ class SetActorMotionPacket extends DataPacket implements ClientboundPacket, Serv
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->actorRuntimeId = $in->getActorRuntimeId();
-		$this->motion = $in->getVector3();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
-			$this->tick = $in->getUnsignedVarLong();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		$this->motion = CommonTypes::getVector3($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			$this->tick = VarInt::readUnsignedLong($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putActorRuntimeId($this->actorRuntimeId);
-		$out->putVector3($this->motion);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
-			$out->putUnsignedVarLong($this->tick);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		CommonTypes::putVector3($out, $this->motion);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			VarInt::writeUnsignedLong($out, $this->tick);
 		}
 	}
 

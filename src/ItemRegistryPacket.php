@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\network\mcpe\protocol\types\ItemTypeEntry;
 use function count;
@@ -45,30 +49,30 @@ class ItemRegistryPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getEntries() : array{ return $this->entries; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->entries = [];
-		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
-			$stringId = $in->getString();
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-				$numericId = $in->getSignedLShort();
-				$isComponentBased = $in->getBool();
-				$version = $in->getVarInt();
+		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+			$stringId = CommonTypes::getString($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+				$numericId = LE::readSignedShort($in);
+				$isComponentBased = CommonTypes::getBool($in);
+				$version = VarInt::readSignedInt($in);
 			}
-			$nbt = $in->getNbtCompoundRoot();
+			$nbt = CommonTypes::getNbtCompoundRoot($in);
 			$this->entries[] = new ItemTypeEntry($stringId, $numericId ?? -1, $isComponentBased ?? false, $version ?? -1, new CacheableNbt($nbt));
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt(count($this->entries));
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, count($this->entries));
 		foreach($this->entries as $entry){
-			$out->putString($entry->getStringId());
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-				$out->putLShort($entry->getNumericId());
-				$out->putBool($entry->isComponentBased());
-				$out->putVarInt($entry->getVersion());
+			CommonTypes::putString($out, $entry->getStringId());
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+				LE::writeSignedShort($out, $entry->getNumericId());
+				CommonTypes::putBool($out, $entry->isComponentBased());
+				VarInt::writeSignedInt($out, $entry->getVersion());
 			}
-			$out->put($entry->getComponentNbt()->getEncodedNbt());
+			$out->writeByteArray($entry->getComponentNbt()->getEncodedNbt());
 		}
 	}
 

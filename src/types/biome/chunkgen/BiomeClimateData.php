@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\biome\chunkgen;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 
 final class BiomeClimateData{
 
@@ -45,36 +48,40 @@ final class BiomeClimateData{
 
 	public function getSnowAccumulationMax() : float{ return $this->snowAccumulationMax; }
 
-	public static function read(PacketSerializer $in) : self{
-		$temperature = $in->getLFloat();
-		$downfall = $in->getLFloat();
-		$redSporeDensity = $in->getLFloat();
-		$blueSporeDensity = $in->getLFloat();
-		$ashDensity = $in->getLFloat();
-		$whiteAshDensity = $in->getLFloat();
-		$snowAccumulationMin = $in->getLFloat();
-		$snowAccumulationMax = $in->getLFloat();
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$temperature = LE::readFloat($in);
+		$downfall = LE::readFloat($in);
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_111){
+			$redSporeDensity = LE::readFloat($in);
+			$blueSporeDensity = LE::readFloat($in);
+			$ashDensity = LE::readFloat($in);
+			$whiteAshDensity = LE::readFloat($in);
+		}
+		$snowAccumulationMin = LE::readFloat($in);
+		$snowAccumulationMax = LE::readFloat($in);
 
 		return new self(
 			$temperature,
 			$downfall,
-			$redSporeDensity,
-			$blueSporeDensity,
-			$ashDensity,
-			$whiteAshDensity,
+			$redSporeDensity ?? 0.0,
+			$blueSporeDensity ?? 0.0,
+			$ashDensity ?? 0.0,
+			$whiteAshDensity ?? 0.0,
 			$snowAccumulationMin,
 			$snowAccumulationMax
 		);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putLFloat($this->temperature);
-		$out->putLFloat($this->downfall);
-		$out->putLFloat($this->redSporeDensity);
-		$out->putLFloat($this->blueSporeDensity);
-		$out->putLFloat($this->ashDensity);
-		$out->putLFloat($this->whiteAshDensity);
-		$out->putLFloat($this->snowAccumulationMin);
-		$out->putFloat($this->snowAccumulationMax);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		LE::writeFloat($out, $this->temperature);
+		LE::writeFloat($out, $this->downfall);
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_111){
+			LE::writeFloat($out, $this->redSporeDensity);
+			LE::writeFloat($out, $this->blueSporeDensity);
+			LE::writeFloat($out, $this->ashDensity);
+			LE::writeFloat($out, $this->whiteAshDensity);
+		}
+		LE::writeFloat($out, $this->snowAccumulationMin);
+		LE::writeFloat($out, $this->snowAccumulationMax);
 	}
 }

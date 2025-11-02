@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\types\PlayerAction;
 
@@ -41,24 +44,24 @@ class PlayerActionPacket extends DataPacket implements ClientboundPacket, Server
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->actorRuntimeId = $in->getActorRuntimeId();
-		$this->action = $in->getVarInt();
-		$this->blockPosition = $in->getBlockPosition();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_0){
-			$this->resultPosition = $in->getBlockPosition();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		$this->action = VarInt::readSignedInt($in);
+		$this->blockPosition = CommonTypes::getBlockPosition($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_0){
+			$this->resultPosition = CommonTypes::getBlockPosition($in);
 		}
-		$this->face = $in->getVarInt();
+		$this->face = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putActorRuntimeId($this->actorRuntimeId);
-		$out->putVarInt($this->action);
-		$out->putBlockPosition($this->blockPosition);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_0){
-			$out->putBlockPosition($this->resultPosition);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		VarInt::writeSignedInt($out, $this->action);
+		CommonTypes::putBlockPosition($out, $this->blockPosition);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_0){
+			CommonTypes::putBlockPosition($out, $this->resultPosition);
 		}
-		$out->putVarInt($this->face);
+		VarInt::writeSignedInt($out, $this->face);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

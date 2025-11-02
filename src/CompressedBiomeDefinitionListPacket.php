@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 /**
  * One of the most cursed packets to ever exist in Minecraft Bedrock Edition.
@@ -42,12 +44,12 @@ class CompressedBiomeDefinitionListPacket extends DataPacket implements Clientbo
 
 	public function getPayload() : string{ return $this->payload; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->payload = $in->getString();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->payload = CommonTypes::getString($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putString($this->payload);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putString($out, $this->payload);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

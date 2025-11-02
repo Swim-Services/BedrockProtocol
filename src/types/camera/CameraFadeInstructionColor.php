@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class CameraFadeInstructionColor{
 
@@ -31,10 +33,10 @@ final class CameraFadeInstructionColor{
 
 	public function getBlue() : float{ return $this->blue; }
 
-	public static function read(PacketSerializer $in) : self{
-		$red = $in->getLFloat();
-		$green = $in->getLFloat();
-		$blue = $in->getLFloat();
+	public static function read(ByteBufferReader $in) : self{
+		$red = LE::readFloat($in);
+		$green = LE::readFloat($in);
+		$blue = LE::readFloat($in);
 		return new self($red, $green, $blue);
 	}
 
@@ -45,10 +47,10 @@ final class CameraFadeInstructionColor{
 		return new self($red, $green, $blue);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putLFloat($this->red);
-		$out->putLFloat($this->green);
-		$out->putLFloat($this->blue);
+	public function write(ByteBufferWriter $out) : void{
+		LE::writeFloat($out, $this->red);
+		LE::writeFloat($out, $this->green);
+		LE::writeFloat($out, $this->blue);
 	}
 
 	public function toNBT() : CompoundTag{

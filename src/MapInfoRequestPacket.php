@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\MapImage;
 use pocketmine\network\mcpe\protocol\types\MapInfoRequestPacketClientPixel;
 use function count;
@@ -37,12 +40,12 @@ class MapInfoRequestPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->mapId = $in->getActorUniqueId();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->mapId = CommonTypes::getActorUniqueId($in);
 
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
 			$this->clientPixels = [];
-			$count = $in->getLInt();
+			$count = LE::readUnsignedInt($in);
 			if($count > MapImage::MAX_HEIGHT * MapImage::MAX_WIDTH){
 				throw new PacketDecodeException("Too many pixels");
 			}
@@ -52,15 +55,15 @@ class MapInfoRequestPacket extends DataPacket implements ServerboundPacket{
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putActorUniqueId($this->mapId);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putActorUniqueId($out, $this->mapId);
 
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
-			$out->putLInt(count($this->clientPixels));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
+			LE::writeUnsignedInt($out, count($this->clientPixels));
 			foreach($this->clientPixels as $pixel){
 				$pixel->write($out);
-			}
 		}
+	}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

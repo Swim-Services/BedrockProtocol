@@ -14,9 +14,12 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
 class ReleaseItemTransactionData extends TransactionData{
@@ -48,31 +51,38 @@ class ReleaseItemTransactionData extends TransactionData{
 		return $this->headPosition;
 	}
 
-	protected function decodeData(PacketSerializer $stream) : void{
-		$this->actionType = $stream->getUnsignedVarInt();
-		$this->hotbarSlot = $stream->getVarInt();
-		$this->itemInHand = $stream->getItemStackWrapper();
-		$this->headPosition = $stream->getVector3();
+	protected function decodeData(ByteBufferReader $in, int $protocolId) : void{
+		$this->actionType = VarInt::readUnsignedInt($in);
+		$this->hotbarSlot = VarInt::readSignedInt($in);
+		$this->itemInHand = CommonTypes::getItemStackWrapper($in);
+		$this->headPosition = CommonTypes::getVector3($in);
 	}
 
-	protected function encodeData(PacketSerializer $stream) : void{
-		$stream->putUnsignedVarInt($this->actionType);
-		$stream->putVarInt($this->hotbarSlot);
-		$stream->putItemStackWrapper($this->itemInHand);
-		$stream->putVector3($this->headPosition);
+	protected function encodeData(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, $this->actionType);
+		VarInt::writeSignedInt($out, $this->hotbarSlot);
+		CommonTypes::putItemStackWrapper($out, $this->itemInHand);
+		CommonTypes::putVector3($out, $this->headPosition);
+	}
+
+	/**
+	 * @generate-create-func
+	 */
+	private static function initSelf(int $actionType, int $hotbarSlot, ItemStackWrapper $itemInHand, Vector3 $headPosition) : self{
+		$result = new self;
+		$result->actionType = $actionType;
+		$result->hotbarSlot = $hotbarSlot;
+		$result->itemInHand = $itemInHand;
+		$result->headPosition = $headPosition;
+		return $result;
 	}
 
 	/**
 	 * @param NetworkInventoryAction[] $actions
 	 */
 	public static function new(array $actions, int $actionType, int $hotbarSlot, ItemStackWrapper $itemInHand, Vector3 $headPosition) : self{
-		$result = new self;
+		$result = self::initSelf($actionType, $hotbarSlot, $itemInHand, $headPosition);
 		$result->actions = $actions;
-		$result->actionType = $actionType;
-		$result->hotbarSlot = $hotbarSlot;
-		$result->itemInHand = $itemInHand;
-		$result->headPosition = $headPosition;
-
 		return $result;
 	}
 }

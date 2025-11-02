@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class CodeBuilderSourcePacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::CODE_BUILDER_SOURCE_PACKET;
@@ -44,23 +47,23 @@ class CodeBuilderSourcePacket extends DataPacket implements ServerboundPacket{
 
 	public function getCodeStatus() : int{ return $this->codeStatus; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->operation = $in->getByte();
-		$this->category = $in->getByte();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_0){
-			$this->codeStatus = $in->getByte();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->operation = Byte::readUnsigned($in);
+		$this->category = Byte::readUnsigned($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+			$this->codeStatus = Byte::readUnsigned($in);
 		}else{
-			$this->value = $in->getString();
+			$this->value = CommonTypes::getString($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putByte($this->operation);
-		$out->putByte($this->category);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_0){
-			$out->putByte($this->codeStatus);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		Byte::writeUnsigned($out, $this->operation);
+		Byte::writeUnsigned($out, $this->category);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+			Byte::writeUnsigned($out, $this->codeStatus);
 		}else{
-			$out->putString($this->value);
+			CommonTypes::putString($out, $this->value);
 		}
 	}
 

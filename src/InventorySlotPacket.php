@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\FullContainerName;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 
@@ -42,36 +45,36 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->windowId = $in->getUnsignedVarInt();
-		$this->inventorySlot = $in->getUnsignedVarInt();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-			$this->containerName = FullContainerName::read($in);
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-				$this->storage = $in->getItemStackWrapper();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->windowId = VarInt::readUnsignedInt($in);
+		$this->inventorySlot = VarInt::readUnsignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->containerName = FullContainerName::read($in, $protocolId);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+				$this->storage = CommonTypes::getItemStackWrapper($in);
 			}else{
-				$this->dynamicContainerSize = $in->getUnsignedVarInt();
+				$this->dynamicContainerSize = VarInt::readUnsignedInt($in);
 			}
-		}elseif($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-			$this->containerName = new FullContainerName(0, $in->getUnsignedVarInt());
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->containerName = new FullContainerName(0, VarInt::readUnsignedInt($in));
 		}
-		$this->item = $in->getItemStackWrapper();
+		$this->item = CommonTypes::getItemStackWrapper($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt($this->windowId);
-		$out->putUnsignedVarInt($this->inventorySlot);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-			$this->containerName->write($out);
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-				$out->putItemStackWrapper($this->storage);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, $this->windowId);
+		VarInt::writeUnsignedInt($out, $this->inventorySlot);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->containerName->write($out, $protocolId);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+				CommonTypes::putItemStackWrapper($out, $this->storage);
 			}else{
-				$out->putUnsignedVarInt($this->dynamicContainerSize);
+				VarInt::writeUnsignedInt($out, $this->dynamicContainerSize);
 			}
-		}elseif($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-			$out->putUnsignedVarInt($this->containerName->getDynamicId() ?? 0);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			VarInt::writeUnsignedInt($out, $this->containerName->getDynamicId() ?? 0);
 		}
-		$out->putItemStackWrapper($this->item);
+		CommonTypes::putItemStackWrapper($out, $this->item);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

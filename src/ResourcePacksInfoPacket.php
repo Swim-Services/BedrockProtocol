@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\resourcepacks\BehaviorPackInfoEntry;
 use pocketmine\network\mcpe\protocol\types\resourcepacks\ResourcePackInfoEntry;
 use Ramsey\Uuid\UuidInterface;
@@ -79,71 +83,71 @@ class ResourcePacksInfoPacket extends DataPacket implements ClientboundPacket{
 
 	public function isForceDisablingVibrantVisuals() : bool{ return $this->forceDisableVibrantVisuals; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->mustAccept = $in->getBool();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
-			$this->hasAddons = $in->getBool();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->mustAccept = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			$this->hasAddons = CommonTypes::getBool($in);
 		}
-		$this->hasScripts = $in->getBool();
-		if($in->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_20){
-			$this->forceServerPacks = $in->getBool();
-			$behaviorPackCount = $in->getLShort();
+		$this->hasScripts = CommonTypes::getBool($in);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_20){
+			$this->forceServerPacks = CommonTypes::getBool($in);
+			$behaviorPackCount = LE::readUnsignedShort($in);
 			while($behaviorPackCount-- > 0){
-				$this->behaviorPackEntries[] = BehaviorPackInfoEntry::read($in);
+				$this->behaviorPackEntries[] = BehaviorPackInfoEntry::read($in, $protocolId);
 			}
 		}
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
-				$this->forceDisableVibrantVisuals = $in->getBool();
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_90){
+				$this->forceDisableVibrantVisuals = CommonTypes::getBool($in);
 			}
-			$this->worldTemplateId = $in->getUUID();
-			$this->worldTemplateVersion = $in->getString();
+			$this->worldTemplateId = CommonTypes::getUUID($in);
+			$this->worldTemplateVersion = CommonTypes::getString($in);
 		}
 
-		$resourcePackCount = $in->getLShort();
+		$resourcePackCount = LE::readUnsignedShort($in);
 		while($resourcePackCount-- > 0){
-			$this->resourcePackEntries[] = ResourcePackInfoEntry::read($in);
+			$this->resourcePackEntries[] = ResourcePackInfoEntry::read($in, $protocolId);
 		}
 
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30 && $in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_40){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30 && $protocolId < ProtocolInfo::PROTOCOL_1_21_40){
 			$this->cdnUrls = [];
-			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; $i++){
-				$packId = $in->getString();
-				$cdnUrl = $in->getString();
+			for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
+				$packId = CommonTypes::getString($in);
+				$cdnUrl = CommonTypes::getString($in);
 				$this->cdnUrls[$packId] = $cdnUrl;
 			}
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putBool($this->mustAccept);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_70){
-			$out->putBool($this->hasAddons);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putBool($out, $this->mustAccept);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
+			CommonTypes::putBool($out, $this->hasAddons);
 		}
-		$out->putBool($this->hasScripts);
-		if($out->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_20){
-			$out->putBool($this->forceServerPacks);
-			$out->putLShort(count($this->behaviorPackEntries));
+		CommonTypes::putBool($out, $this->hasScripts);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_20){
+			CommonTypes::putBool($out, $this->forceServerPacks);
+			LE::writeUnsignedShort($out, count($this->behaviorPackEntries));
 			foreach($this->behaviorPackEntries as $entry){
-				$entry->write($out);
+				$entry->write($out, $protocolId);
 			}
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
-				$out->putBool($this->forceDisableVibrantVisuals);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_90){
+				CommonTypes::putBool($out, $this->forceDisableVibrantVisuals);
 			}
-			$out->putUUID($this->worldTemplateId);
-			$out->putString($this->worldTemplateVersion);
+			CommonTypes::putUUID($out, $this->worldTemplateId);
+			CommonTypes::putString($out, $this->worldTemplateVersion);
 		}
-		$out->putLShort(count($this->resourcePackEntries));
+		LE::writeUnsignedShort($out, count($this->resourcePackEntries));
 		foreach($this->resourcePackEntries as $entry){
-			$entry->write($out);
+			$entry->write($out, $protocolId);
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30 && $out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_40){
-			$out->putUnsignedVarInt(count($this->cdnUrls));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30 && $protocolId < ProtocolInfo::PROTOCOL_1_21_40){
+			VarInt::writeUnsignedInt($out, count($this->cdnUrls));
 			foreach($this->cdnUrls as $packId => $cdnUrl){
-				$out->putString($packId);
-				$out->putString($cdnUrl);
+				CommonTypes::putString($out, $packId);
+				CommonTypes::putString($out, $cdnUrl);
 			}
 		}
 	}

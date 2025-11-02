@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 
 class PassengerJumpPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::PASSENGER_JUMP_PACKET;
@@ -30,12 +32,12 @@ class PassengerJumpPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->jumpStrength = $in->getVarInt();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->jumpStrength = VarInt::readSignedInt($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putVarInt($this->jumpStrength);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeSignedInt($out, $this->jumpStrength);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\entity\MetadataProperty;
 use pocketmine\network\mcpe\protocol\types\entity\PropertySyncData;
 
@@ -44,22 +47,22 @@ class SetActorDataPacket extends DataPacket implements ClientboundPacket, Server
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->actorRuntimeId = $in->getActorRuntimeId();
-		$this->metadata = $in->getEntityMetadata();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_40){
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		$this->metadata = CommonTypes::getEntityMetadata($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
 			$this->syncedProperties = PropertySyncData::read($in);
 		}
-		$this->tick = $in->getUnsignedVarLong();
+		$this->tick = VarInt::readUnsignedLong($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putActorRuntimeId($this->actorRuntimeId);
-		$out->putEntityMetadata($this->metadata);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_40){
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		CommonTypes::putEntityMetadata($out, $this->metadata);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
 			$this->syncedProperties->write($out);
 		}
-		$out->putUnsignedVarLong($this->tick);
+		VarInt::writeUnsignedLong($out, $this->tick);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

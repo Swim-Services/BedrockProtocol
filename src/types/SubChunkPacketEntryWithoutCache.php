@@ -14,7 +14,8 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 
 final class SubChunkPacketEntryWithoutCache{
 
@@ -24,11 +25,11 @@ final class SubChunkPacketEntryWithoutCache{
 
 	public function getBase() : SubChunkPacketEntryCommon{ return $this->base; }
 
-	public static function read(PacketSerializer $in) : self{
-		return new self(SubChunkPacketEntryCommon::read($in, false));
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		return new self(SubChunkPacketEntryCommon::read($in, $protocolId, false));
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$this->base->write($out, false);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		$this->base->write($out, $protocolId, false);
 	}
 }

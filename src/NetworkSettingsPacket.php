@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\CompressionAlgorithm;
 
 /**
@@ -66,23 +70,23 @@ class NetworkSettingsPacket extends DataPacket implements ClientboundPacket{
 
 	public function getClientThrottleScalar() : float{ return $this->clientThrottleScalar; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->compressionThreshold = $in->getLShort();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30){
-			$this->compressionAlgorithm = $in->getLShort();
-			$this->enableClientThrottling = $in->getBool();
-			$this->clientThrottleThreshold = $in->getByte();
-			$this->clientThrottleScalar = $in->getLFloat();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->compressionThreshold = LE::readUnsignedShort($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
+			$this->compressionAlgorithm = LE::readUnsignedShort($in);
+			$this->enableClientThrottling = CommonTypes::getBool($in);
+			$this->clientThrottleThreshold = Byte::readUnsigned($in);
+			$this->clientThrottleScalar = LE::readFloat($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putLShort($this->compressionThreshold);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30){
-			$out->putLShort($this->compressionAlgorithm);
-			$out->putBool($this->enableClientThrottling);
-			$out->putByte($this->clientThrottleThreshold);
-			$out->putLFloat($this->clientThrottleScalar);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		LE::writeUnsignedShort($out, $this->compressionThreshold);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
+			LE::writeUnsignedShort($out, $this->compressionAlgorithm);
+			CommonTypes::putBool($out, $this->enableClientThrottling);
+			Byte::writeUnsigned($out, $this->clientThrottleThreshold);
+			LE::writeFloat($out, $this->clientThrottleScalar);
 		}
 	}
 

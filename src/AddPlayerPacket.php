@@ -14,8 +14,12 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\AbilitiesData;
 use pocketmine\network\mcpe\protocol\types\DeviceOS;
 use pocketmine\network\mcpe\protocol\types\entity\EntityLink;
@@ -99,34 +103,34 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->uuid = $in->getUUID();
-		$this->username = $in->getString();
-		if($in->getProtocolId() <= ProtocolInfo::PROTOCOL_1_19_0){
-			$in->getActorUniqueId();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->uuid = CommonTypes::getUUID($in);
+		$this->username = CommonTypes::getString($in);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_19_0){
+			CommonTypes::getActorUniqueId($in);
 		}
-		$this->actorRuntimeId = $in->getActorRuntimeId();
-		$this->platformChatId = $in->getString();
-		$this->position = $in->getVector3();
-		$this->motion = $in->getVector3();
-		$this->pitch = $in->getLFloat();
-		$this->yaw = $in->getLFloat();
-		$this->headYaw = $in->getLFloat();
-		$this->item = $in->getItemStackWrapper();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_30){
-			$this->gameMode = $in->getVarInt();
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		$this->platformChatId = CommonTypes::getString($in);
+		$this->position = CommonTypes::getVector3($in);
+		$this->motion = CommonTypes::getVector3($in);
+		$this->pitch = LE::readFloat($in);
+		$this->yaw = LE::readFloat($in);
+		$this->headYaw = LE::readFloat($in);
+		$this->item = CommonTypes::getItemStackWrapper($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
+			$this->gameMode = VarInt::readSignedInt($in);
 		}
-		$this->metadata = $in->getEntityMetadata(); // TODO: convert back?
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_40){
+		$this->metadata = CommonTypes::getEntityMetadata($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
 			$this->syncedProperties = PropertySyncData::read($in);
 		}
 
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_10){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_10){
 			$this->abilitiesPacket = new UpdateAbilitiesPacket();
-			$this->abilitiesPacket->decodePayload($in);
+			$this->abilitiesPacket->decodePayload($in, $protocolId);
 		}else{
 			$packet = new AdventureSettingsPacket();
-			$packet->decodePayload($in);
+			$packet->decodePayload($in, $protocolId);
 
 			$abilityData = new AbilitiesData(
 				$packet->commandPermission,
@@ -138,39 +142,39 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 			$this->abilitiesPacket = UpdateAbilitiesPacket::create($abilityData);
 		}
 
-		$linkCount = $in->getUnsignedVarInt();
+		$linkCount = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $linkCount; ++$i){
-			$this->links[$i] = $in->getEntityLink();
+			$this->links[$i] = CommonTypes::getEntityLink($in, $protocolId);
 		}
 
-		$this->deviceId = $in->getString();
-		$this->buildPlatform = $in->getLInt();
+		$this->deviceId = CommonTypes::getString($in);
+		$this->buildPlatform = LE::readSignedInt($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUUID($this->uuid);
-		$out->putString($this->username);
-		if($out->getProtocolId() <= ProtocolInfo::PROTOCOL_1_19_0){
-			$out->putActorUniqueId($this->abilitiesPacket->getData()->getTargetActorUniqueId());
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putUUID($out, $this->uuid);
+		CommonTypes::putString($out, $this->username);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_19_0){
+			CommonTypes::putActorUniqueId($out, $this->abilitiesPacket->getData()->getTargetActorUniqueId());
 		}
-		$out->putActorRuntimeId($this->actorRuntimeId);
-		$out->putString($this->platformChatId);
-		$out->putVector3($this->position);
-		$out->putVector3Nullable($this->motion);
-		$out->putLFloat($this->pitch);
-		$out->putLFloat($this->yaw);
-		$out->putLFloat($this->headYaw);
-		$out->putItemStackWrapper($this->item);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_30){
-			$out->putVarInt($this->gameMode);
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		CommonTypes::putString($out, $this->platformChatId);
+		CommonTypes::putVector3($out, $this->position);
+		CommonTypes::putVector3Nullable($out, $this->motion);
+		LE::writeFloat($out, $this->pitch);
+		LE::writeFloat($out, $this->yaw);
+		LE::writeFloat($out, $this->headYaw);
+		CommonTypes::putItemStackWrapper($out, $this->item);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
+			VarInt::writeSignedInt($out, $this->gameMode);
 		}
-		$out->putEntityMetadata($this->metadata);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_40){
+		CommonTypes::putEntityMetadata($out, $this->metadata);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
 			$this->syncedProperties->write($out);
 		}
 
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_10){
-			$this->abilitiesPacket->encodePayload($out);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_10){
+			$this->abilitiesPacket->encodePayload($out, $protocolId);
 		}else{
 			$packet = AdventureSettingsPacket::create(
 				0,
@@ -180,16 +184,16 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 				0,
 				$this->abilitiesPacket->getData()->getTargetActorUniqueId()
 			);
-			$packet->encodePayload($out);
+			$packet->encodePayload($out, $protocolId);
 		}
 
-		$out->putUnsignedVarInt(count($this->links));
+		VarInt::writeUnsignedInt($out, count($this->links));
 		foreach($this->links as $link){
-			$out->putEntityLink($link);
+			CommonTypes::putEntityLink($out, $protocolId, $link);
 		}
 
-		$out->putString($this->deviceId);
-		$out->putLInt($this->buildPlatform);
+		CommonTypes::putString($out, $this->deviceId);
+		LE::writeSignedInt($out, $this->buildPlatform);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

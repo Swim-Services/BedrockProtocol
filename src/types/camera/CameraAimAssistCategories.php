@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
 final class CameraAimAssistCategories{
@@ -34,11 +37,11 @@ final class CameraAimAssistCategories{
 	 */
 	public function getCategories() : array{ return $this->categories; }
 
-	public static function read(PacketSerializer $in) : self{
-		$identifier = $in->getString();
+	public static function read(ByteBufferReader $in) : self{
+		$identifier = CommonTypes::getString($in);
 
 		$categories = [];
-		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
+		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$categories[] = CameraAimAssistCategory::read($in);
 		}
 
@@ -48,9 +51,9 @@ final class CameraAimAssistCategories{
 		);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putString($this->identifier);
-		$out->putUnsignedVarInt(count($this->categories));
+	public function write(ByteBufferWriter $out) : void{
+		CommonTypes::putString($out, $this->identifier);
+		VarInt::writeUnsignedInt($out, count($this->categories));
 		foreach($this->categories as $category){
 			$category->write($out);
 		}

@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 final class CameraFadeInstructionTime{
 
@@ -31,10 +33,10 @@ final class CameraFadeInstructionTime{
 
 	public function getFadeOutTime() : float{ return $this->fadeOutTime; }
 
-	public static function read(PacketSerializer $in) : self{
-		$fadeInTime = $in->getLFloat();
-		$stayTime = $in->getLFloat();
-		$fadeOutTime = $in->getLFloat();
+	public static function read(ByteBufferReader $in) : self{
+		$fadeInTime = LE::readFloat($in);
+		$stayTime = LE::readFloat($in);
+		$fadeOutTime = LE::readFloat($in);
 		return new self($fadeInTime, $stayTime, $fadeOutTime);
 	}
 
@@ -45,10 +47,10 @@ final class CameraFadeInstructionTime{
 		return new self($fadeInTime, $stayTime, $fadeOutTime);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putLFloat($this->fadeInTime);
-		$out->putLFloat($this->stayTime);
-		$out->putLFloat($this->fadeOutTime);
+	public function write(ByteBufferWriter $out) : void{
+		LE::writeFloat($out, $this->fadeInTime);
+		LE::writeFloat($out, $this->stayTime);
+		LE::writeFloat($out, $this->fadeOutTime);
 	}
 
 	public function toNBT() : CompoundTag{

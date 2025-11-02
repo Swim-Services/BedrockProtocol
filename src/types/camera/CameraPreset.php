@@ -14,11 +14,15 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\ControlScheme;
 
 final class CameraPreset{
@@ -97,51 +101,51 @@ final class CameraPreset{
 
 	public function getControlScheme() : ?ControlScheme{ return $this->controlScheme; }
 
-	public static function read(PacketSerializer $in) : self{
-		$name = $in->getString();
-		$parent = $in->getString();
-		$xPosition = $in->readOptional($in->getLFloat(...));
-		$yPosition = $in->readOptional($in->getLFloat(...));
-		$zPosition = $in->readOptional($in->getLFloat(...));
-		$pitch = $in->readOptional($in->getLFloat(...));
-		$yaw = $in->readOptional($in->getLFloat(...));
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-				$rotationSpeed = $in->readOptional($in->getLFloat(...));
-				$snapToTarget = $in->readOptional($in->getBool(...));
-				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-					$horizontalRotationLimit = $in->readOptional($in->getVector2(...));
-					$verticalRotationLimit = $in->readOptional($in->getVector2(...));
-					$continueTargeting = $in->readOptional($in->getBool(...));
-					if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
-						$blockListeningRadius = $in->readOptional($in->getLFloat(...));
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$name = CommonTypes::getString($in);
+		$parent = CommonTypes::getString($in);
+		$xPosition = CommonTypes::readOptional($in, LE::readFloat(...));
+		$yPosition = CommonTypes::readOptional($in, LE::readFloat(...));
+		$zPosition = CommonTypes::readOptional($in, LE::readFloat(...));
+		$pitch = CommonTypes::readOptional($in, LE::readFloat(...));
+		$yaw = CommonTypes::readOptional($in, LE::readFloat(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+				$rotationSpeed = CommonTypes::readOptional($in, LE::readFloat(...));
+				$snapToTarget = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+					$horizontalRotationLimit = CommonTypes::readOptional($in, CommonTypes::getVector2(...));
+					$verticalRotationLimit = CommonTypes::readOptional($in, CommonTypes::getVector2(...));
+					$continueTargeting = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+						$blockListeningRadius = CommonTypes::readOptional($in, LE::readFloat(...));
 					}
 				}
 			}
-			$viewOffset = $in->readOptional($in->getVector2(...));
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-				$entityOffset = $in->readOptional($in->getVector3(...));
+			$viewOffset = CommonTypes::readOptional($in, CommonTypes::getVector2(...));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+				$entityOffset = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
 			}
-			$radius = $in->readOptional($in->getLFloat(...));
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-				$yawLimitMin = $in->readOptional($in->getLFloat(...));
-				$yawLimitMax = $in->readOptional($in->getLFloat(...));
+			$radius = CommonTypes::readOptional($in, LE::readFloat(...));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+				$yawLimitMin = CommonTypes::readOptional($in, LE::readFloat(...));
+				$yawLimitMax = CommonTypes::readOptional($in, LE::readFloat(...));
 			}
 		}
-		$audioListenerType = $in->readOptional($in->getByte(...));
-		$playerEffects = $in->readOptional($in->getBool(...));
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-			if($in->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_80){
-				$alignTargetAndCameraForward = $in->readOptional($in->getBool(...));
+		$audioListenerType = CommonTypes::readOptional($in, Byte::readUnsigned(...));
+		$playerEffects = CommonTypes::readOptional($in, CommonTypes::getBool(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			if($protocolId <= ProtocolInfo::PROTOCOL_1_21_80){
+				$alignTargetAndCameraForward = CommonTypes::readOptional($in, CommonTypes::getBool(...));
 			}
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
-				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-					$aimAssist = $in->readOptional(fn() => CameraPresetAimAssist::read($in));
-					if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80){
-						$controlScheme = $in->readOptional(fn() => ControlScheme::fromPacket($in->getByte()));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+					$aimAssist = CommonTypes::readOptional($in, fn() => CameraPresetAimAssist::read($in));
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
+						$controlScheme = CommonTypes::readOptional($in, fn() => ControlScheme::fromPacket(Byte::readUnsigned($in)));
 					}
 				}else{
-					$aimAssist = $in->readOptional(fn() => $in->getBool() ? new CameraPresetAimAssist(null, null, null, null) : null);
+					$aimAssist = CommonTypes::readOptional($in, fn() => CommonTypes::getBool($in) ? new CameraPresetAimAssist(null, null, null, null) : null);
 				}
 			}
 		}
@@ -205,51 +209,51 @@ final class CameraPreset{
 		);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putString($this->name);
-		$out->putString($this->parent);
-		$out->writeOptional($this->xPosition, $out->putLFloat(...));
-		$out->writeOptional($this->yPosition, $out->putLFloat(...));
-		$out->writeOptional($this->zPosition, $out->putLFloat(...));
-		$out->writeOptional($this->pitch, $out->putLFloat(...));
-		$out->writeOptional($this->yaw, $out->putLFloat(...));
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_20){
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-				$out->writeOptional($this->rotationSpeed, $out->putLFloat(...));
-				$out->writeOptional($this->snapToTarget, $out->putBool(...));
-				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-					$out->writeOptional($this->horizontalRotationLimit, $out->putVector2(...));
-					$out->writeOptional($this->verticalRotationLimit, $out->putVector2(...));
-					$out->writeOptional($this->continueTargeting, $out->putBool(...));
-					if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
-						$out->writeOptional($this->blockListeningRadius, $out->putLFloat(...));
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putString($out, $this->name);
+		CommonTypes::putString($out, $this->parent);
+		CommonTypes::writeOptional($out, $this->xPosition, LE::writeFloat(...));
+		CommonTypes::writeOptional($out, $this->yPosition, LE::writeFloat(...));
+		CommonTypes::writeOptional($out, $this->zPosition, LE::writeFloat(...));
+		CommonTypes::writeOptional($out, $this->pitch, LE::writeFloat(...));
+		CommonTypes::writeOptional($out, $this->yaw, LE::writeFloat(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+				CommonTypes::writeOptional($out, $this->rotationSpeed, LE::writeFloat(...));
+				CommonTypes::writeOptional($out, $this->snapToTarget, CommonTypes::putBool(...));
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+					CommonTypes::writeOptional($out, $this->horizontalRotationLimit, CommonTypes::putVector2(...));
+					CommonTypes::writeOptional($out, $this->verticalRotationLimit, CommonTypes::putVector2(...));
+					CommonTypes::writeOptional($out, $this->continueTargeting, CommonTypes::putBool(...));
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+						CommonTypes::writeOptional($out, $this->blockListeningRadius, LE::writeFloat(...));
 					}
 				}
 			}
-			$out->writeOptional($this->viewOffset, $out->putVector2(...));
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-				$out->writeOptional($this->entityOffset, $out->putVector3(...));
+			CommonTypes::writeOptional($out, $this->viewOffset, CommonTypes::putVector2(...));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+				CommonTypes::writeOptional($out, $this->entityOffset, CommonTypes::putVector3(...));
 			}
-			$out->writeOptional($this->radius, $out->putLFloat(...));
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-				$out->writeOptional($this->yawLimitMin, $out->putLFloat(...));
-				$out->writeOptional($this->yawLimitMax, $out->putLFloat(...));
+			CommonTypes::writeOptional($out, $this->radius, LE::writeFloat(...));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+				CommonTypes::writeOptional($out, $this->yawLimitMin, LE::writeFloat(...));
+				CommonTypes::writeOptional($out, $this->yawLimitMax, LE::writeFloat(...));
 			}
 		}
-		$out->writeOptional($this->audioListenerType, $out->putByte(...));
-		$out->writeOptional($this->playerEffects, $out->putBool(...));
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-			if($out->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_80){
-				$out->writeOptional($this->alignTargetAndCameraForward, $out->putBool(...));
+		CommonTypes::writeOptional($out, $this->audioListenerType, Byte::writeUnsigned(...));
+		CommonTypes::writeOptional($out, $this->playerEffects, CommonTypes::putBool(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			if($protocolId <= ProtocolInfo::PROTOCOL_1_21_80){
+				CommonTypes::writeOptional($out, $this->alignTargetAndCameraForward, CommonTypes::putBool(...));
 			}
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_50){
-				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-					$out->writeOptional($this->aimAssist, fn(CameraPresetAimAssist $v) => $v->write($out));
-					if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80){
-						$out->writeOptional($this->controlScheme, fn(ControlScheme $v) => $out->putByte($v->value));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_50){
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+					CommonTypes::writeOptional($out, $this->aimAssist, fn(ByteBufferWriter $out, CameraPresetAimAssist $v) => $v->write($out));
+					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
+						CommonTypes::writeOptional($out, $this->controlScheme, fn(ByteBufferWriter $out, ControlScheme $v) => Byte::writeUnsigned($out, $v->value));
 					}
 				}else{
-					$out->writeOptional($this->aimAssist, fn(CameraPresetAimAssist $v) => $out->putBool(true));
+					CommonTypes::writeOptional($out, $this->aimAssist, fn(ByteBufferWriter $out, CameraPresetAimAssist $v) => $v->write($out));
 				}
 			}
 		}

@@ -18,6 +18,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           ini-values: xdebug.max_nesting_level=3000
+          extensions: encoding-pmmp/ext-encoding@1.0.0
 
       - name: Load Composer package cache
         uses: actions/cache@v3
@@ -44,11 +45,12 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.32.0
+        uses: shivammathur/setup-php@2.35.5
         with:
-          php-version: 8.1
+          php-version: 8.2
           ini-values: xdebug.max_nesting_level=3000
           tools: php-cs-fixer:3
+          extensions: encoding-pmmp/ext-encoding@1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -77,7 +79,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.32.0
+        uses: shivammathur/setup-php@2.35.5
         with:
           php-version: 8.1
           ini-values: xdebug.max_nesting_level=3000

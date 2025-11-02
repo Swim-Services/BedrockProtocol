@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\BossBarColor;
 
 class BossEventPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
@@ -111,40 +115,40 @@ class BossEventPacket extends DataPacket implements ClientboundPacket, Serverbou
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->bossActorUniqueId = $in->getActorUniqueId();
-		$this->eventType = $in->getUnsignedVarInt();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->bossActorUniqueId = CommonTypes::getActorUniqueId($in);
+		$this->eventType = VarInt::readUnsignedInt($in);
 		switch($this->eventType){
 			case self::TYPE_REGISTER_PLAYER:
 			case self::TYPE_UNREGISTER_PLAYER:
 			case self::TYPE_QUERY:
-				$this->playerActorUniqueId = $in->getActorUniqueId();
+				$this->playerActorUniqueId = CommonTypes::getActorUniqueId($in);
 				break;
 			/** @noinspection PhpMissingBreakStatementInspection */
 			case self::TYPE_SHOW:
-				$this->title = $in->getString();
-				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-					$this->filteredTitle = $in->getString();
+				$this->title = CommonTypes::getString($in);
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+					$this->filteredTitle = CommonTypes::getString($in);
 				}
-				$this->healthPercent = $in->getLFloat();
+				$this->healthPercent = LE::readFloat($in);
 			/** @noinspection PhpMissingBreakStatementInspection */
 			case self::TYPE_PROPERTIES:
-				$this->darkenScreen = match($raw = $in->getLShort()){
+				$this->darkenScreen = match($raw = LE::readUnsignedShort($in)){
 					0 => false,
 					1 => true,
 					default => throw new PacketDecodeException("Invalid darkenScreen value $raw"),
 				};
 			case self::TYPE_TEXTURE:
-				$this->color = $in->getUnsignedVarInt();
-				$this->overlay = $in->getUnsignedVarInt();
+				$this->color = VarInt::readUnsignedInt($in);
+				$this->overlay = VarInt::readUnsignedInt($in);
 				break;
 			case self::TYPE_HEALTH_PERCENT:
-				$this->healthPercent = $in->getLFloat();
+				$this->healthPercent = LE::readFloat($in);
 				break;
 			case self::TYPE_TITLE:
-				$this->title = $in->getString();
-				if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-					$this->filteredTitle = $in->getString();
+				$this->title = CommonTypes::getString($in);
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+					$this->filteredTitle = CommonTypes::getString($in);
 				}
 				break;
 			default:
@@ -152,36 +156,36 @@ class BossEventPacket extends DataPacket implements ClientboundPacket, Serverbou
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putActorUniqueId($this->bossActorUniqueId);
-		$out->putUnsignedVarInt($this->eventType);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putActorUniqueId($out, $this->bossActorUniqueId);
+		VarInt::writeUnsignedInt($out, $this->eventType);
 		switch($this->eventType){
 			case self::TYPE_REGISTER_PLAYER:
 			case self::TYPE_UNREGISTER_PLAYER:
 			case self::TYPE_QUERY:
-				$out->putActorUniqueId($this->playerActorUniqueId);
+				CommonTypes::putActorUniqueId($out, $this->playerActorUniqueId);
 				break;
 			/** @noinspection PhpMissingBreakStatementInspection */
 			case self::TYPE_SHOW:
-				$out->putString($this->title);
-				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-					$out->putString($this->filteredTitle);
+				CommonTypes::putString($out, $this->title);
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+					CommonTypes::putString($out, $this->filteredTitle);
 				}
-				$out->putLFloat($this->healthPercent);
+				LE::writeFloat($out, $this->healthPercent);
 			/** @noinspection PhpMissingBreakStatementInspection */
 			case self::TYPE_PROPERTIES:
-				$out->putLShort($this->darkenScreen ? 1 : 0);
+				LE::writeUnsignedShort($out, $this->darkenScreen ? 1 : 0);
 			case self::TYPE_TEXTURE:
-				$out->putUnsignedVarInt($this->color);
-				$out->putUnsignedVarInt($this->overlay);
+				VarInt::writeUnsignedInt($out, $this->color);
+				VarInt::writeUnsignedInt($out, $this->overlay);
 				break;
 			case self::TYPE_HEALTH_PERCENT:
-				$out->putLFloat($this->healthPercent);
+				LE::writeFloat($out, $this->healthPercent);
 				break;
 			case self::TYPE_TITLE:
-				$out->putString($this->title);
-				if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-					$out->putString($this->filteredTitle);
+				CommonTypes::putString($out, $this->title);
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+					CommonTypes::putString($out, $this->filteredTitle);
 				}
 				break;
 			default:

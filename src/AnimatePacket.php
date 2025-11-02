@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class AnimatePacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::ANIMATE_PACKET;
@@ -24,37 +28,51 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 	public const ACTION_STOP_SLEEP = 3;
 	public const ACTION_CRITICAL_HIT = 4;
 	public const ACTION_MAGICAL_CRITICAL_HIT = 5;
+	public const ACTION_ROW_RIGHT = 128;
+	public const ACTION_ROW_LEFT = 129;
 
 	public int $action;
 	public int $actorRuntimeId;
-	public float $float = 0.0; //TODO (Boat rowing time?)
+	public float $data = 0.0;
+	public float $rowingTime = 0.0;
 
-	public static function create(int $actorRuntimeId, int $actionId) : self{
+	public static function create(int $actorRuntimeId, int $actionId, float $data = 0.0) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
 		$result->action = $actionId;
+		$result->data = $data;
 		return $result;
 	}
 
-	public static function boatHack(int $actorRuntimeId, int $actionId, float $data) : self{
+	public static function boatHack(int $actorRuntimeId, int $actionId, float $rowingTime) : self{
+		if($actionId !== self::ACTION_ROW_LEFT && $actionId !== self::ACTION_ROW_RIGHT){
+			throw new \InvalidArgumentException("Invalid actionId for boatHack: $actionId");
+		}
+
 		$result = self::create($actorRuntimeId, $actionId);
-		$result->float = $data;
+		$result->rowingTime = $rowingTime;
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->action = $in->getVarInt();
-		$this->actorRuntimeId = $in->getActorRuntimeId();
-		if(($this->action & 0x80) !== 0){
-			$this->float = $in->getLFloat();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->action = VarInt::readSignedInt($in);
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+			$this->data = LE::readFloat($in);
+		}
+		if($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT){
+			$this->rowingTime = LE::readFloat($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putVarInt($this->action);
-		$out->putActorRuntimeId($this->actorRuntimeId);
-		if(($this->action & 0x80) !== 0){
-			$out->putLFloat($this->float);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeSignedInt($out, $this->action);
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+			LE::writeFloat($out, $this->data);
+		}
+		if($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT){
+			LE::writeFloat($out, $this->rowingTime);
 		}
 	}
 

@@ -14,9 +14,12 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 final class SubChunkPacketEntryCommon{
 
@@ -38,14 +41,14 @@ final class SubChunkPacketEntryCommon{
 
 	public function getRenderHeightMap() : ?SubChunkPacketHeightMapInfo{ return $this->renderHeightMap; }
 
-	public static function read(PacketSerializer $in, bool $cacheEnabled) : self{
+	public static function read(ByteBufferReader $in, int $protocolId, bool $cacheEnabled) : self{
 		$offset = SubChunkPositionOffset::read($in);
 
-		$requestResult = $in->getByte();
+		$requestResult = Byte::readUnsigned($in);
 
-		$data = !$cacheEnabled || $requestResult !== SubChunkRequestResult::SUCCESS_ALL_AIR ? $in->getString() : "";
+		$data = !$cacheEnabled || $requestResult !== SubChunkRequestResult::SUCCESS_ALL_AIR ? CommonTypes::getString($in) : "";
 
-		$heightMapDataType = $in->getByte();
+		$heightMapDataType = Byte::readUnsigned($in);
 		$heightMapData = match ($heightMapDataType) {
 			SubChunkPacketHeightMapType::NO_DATA => null,
 			SubChunkPacketHeightMapType::DATA => SubChunkPacketHeightMapInfo::read($in),
@@ -54,8 +57,8 @@ final class SubChunkPacketEntryCommon{
 			default => throw new PacketDecodeException("Unknown heightmap data type $heightMapDataType")
 		};
 
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
-			$renderHeightMapDataType = $in->getByte();
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_90){
+			$renderHeightMapDataType = Byte::readUnsigned($in);
 			$renderHeightMapData = match ($renderHeightMapDataType) {
 				SubChunkPacketHeightMapType::NO_DATA => null,
 				SubChunkPacketHeightMapType::DATA => SubChunkPacketHeightMapInfo::read($in),
@@ -75,37 +78,37 @@ final class SubChunkPacketEntryCommon{
 		);
 	}
 
-	public function write(PacketSerializer $out, bool $cacheEnabled) : void{
+	public function write(ByteBufferWriter $out, int $protocolId, bool $cacheEnabled) : void{
 		$this->offset->write($out);
 
-		$out->putByte($this->requestResult);
+		Byte::writeUnsigned($out, $this->requestResult);
 
 		if(!$cacheEnabled || $this->requestResult !== SubChunkRequestResult::SUCCESS_ALL_AIR){
-			$out->putString($this->terrainData);
+			CommonTypes::putString($out, $this->terrainData);
 		}
 
 		if($this->heightMap === null){
-			$out->putByte(SubChunkPacketHeightMapType::NO_DATA);
+			Byte::writeUnsigned($out, SubChunkPacketHeightMapType::NO_DATA);
 		}elseif($this->heightMap->isAllTooLow()){
-			$out->putByte(SubChunkPacketHeightMapType::ALL_TOO_LOW);
+			Byte::writeUnsigned($out, SubChunkPacketHeightMapType::ALL_TOO_LOW);
 		}elseif($this->heightMap->isAllTooHigh()){
-			$out->putByte(SubChunkPacketHeightMapType::ALL_TOO_HIGH);
+			Byte::writeUnsigned($out, SubChunkPacketHeightMapType::ALL_TOO_HIGH);
 		}else{
 			$heightMapData = $this->heightMap; //avoid PHPStan purity issue
-			$out->putByte(SubChunkPacketHeightMapType::DATA);
+			Byte::writeUnsigned($out, SubChunkPacketHeightMapType::DATA);
 			$heightMapData->write($out);
 		}
 
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_90){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_90){
 			if($this->renderHeightMap === null){
-				$out->putByte(SubChunkPacketHeightMapType::ALL_COPIED);
+				Byte::writeUnsigned($out, SubChunkPacketHeightMapType::ALL_COPIED);
 			}elseif($this->renderHeightMap->isAllTooLow()){
-				$out->putByte(SubChunkPacketHeightMapType::ALL_TOO_LOW);
+				Byte::writeUnsigned($out, SubChunkPacketHeightMapType::ALL_TOO_LOW);
 			}elseif($this->renderHeightMap->isAllTooHigh()){
-				$out->putByte(SubChunkPacketHeightMapType::ALL_TOO_HIGH);
+				Byte::writeUnsigned($out, SubChunkPacketHeightMapType::ALL_TOO_HIGH);
 			}else{
 				$renderHeightMapData = $this->renderHeightMap; //avoid PHPStan purity issue
-				$out->putByte(SubChunkPacketHeightMapType::DATA);
+				Byte::writeUnsigned($out, SubChunkPacketHeightMapType::DATA);
 				$renderHeightMapData->write($out);
 			}
 		}

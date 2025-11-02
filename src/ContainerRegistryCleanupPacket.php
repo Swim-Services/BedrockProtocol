@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\inventory\FullContainerName;
 use function count;
 
@@ -39,17 +41,17 @@ class ContainerRegistryCleanupPacket extends DataPacket implements ClientboundPa
 	 */
 	public function getRemovedContainers() : array{ return $this->removedContainers; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->removedContainers = [];
-		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
-			$this->removedContainers[] = FullContainerName::read($in);
+		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+			$this->removedContainers[] = FullContainerName::read($in, $protocolId);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt(count($this->removedContainers));
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, count($this->removedContainers));
 		foreach($this->removedContainers as $container){
-			$container->write($out);
+			$container->write($out, $protocolId);
 		}
 	}
 

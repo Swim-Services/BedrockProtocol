@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\hud\HudElement;
 use pocketmine\network\mcpe\protocol\types\hud\HudVisibility;
 use function count;
@@ -42,27 +45,27 @@ class SetHudPacket extends DataPacket implements ClientboundPacket{
 
 	public function getVisibility() : HudVisibility{ return $this->visibility; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->hudElements = [];
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			$this->hudElements[] = HudElement::fromPacket($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 ? $in->getVarInt() : $in->getByte());
+		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+			$this->hudElements[] = HudElement::fromPacket($protocolId >= ProtocolInfo::PROTOCOL_1_21_70 ? VarInt::readSignedInt($in) : Byte::readUnsigned($in));
 		}
-		$this->visibility = HudVisibility::fromPacket($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70 ? $in->getVarInt() : $in->getByte());
+		$this->visibility = HudVisibility::fromPacket($protocolId >= ProtocolInfo::PROTOCOL_1_21_70 ? VarInt::readSignedInt($in) : Byte::readUnsigned($in));
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt(count($this->hudElements));
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, count($this->hudElements));
 		foreach($this->hudElements as $element){
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70){
-				$out->putVarInt($element->value);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
+				VarInt::writeSignedInt($out, $element->value);
 			}else{
-				$out->putByte($element->value);
+				Byte::writeUnsigned($out, $element->value);
 			}
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_70){
-			$out->putVarInt($this->visibility->value);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
+			VarInt::writeSignedInt($out, $this->visibility->value);
 		}else{
-			$out->putByte($this->visibility->value);
+			Byte::writeUnsigned($out, $this->visibility->value);
 		}
 	}
 

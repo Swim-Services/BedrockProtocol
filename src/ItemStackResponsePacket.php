@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\inventory\stackresponse\ItemStackResponse;
 use function count;
 
@@ -37,17 +39,17 @@ class ItemStackResponsePacket extends DataPacket implements ClientboundPacket{
 	/** @return ItemStackResponse[] */
 	public function getResponses() : array{ return $this->responses; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->responses = [];
-		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
-			$this->responses[] = ItemStackResponse::read($in);
+		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+			$this->responses[] = ItemStackResponse::read($in, $protocolId);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt(count($this->responses));
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, count($this->responses));
 		foreach($this->responses as $response){
-			$response->write($out);
+			$response->write($out, $protocolId);
 		}
 	}
 

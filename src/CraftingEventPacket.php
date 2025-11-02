@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use Ramsey\Uuid\UuidInterface;
 use function count;
@@ -45,35 +49,35 @@ class CraftingEventPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->windowId = $in->getByte();
-		$this->windowType = $in->getVarInt();
-		$this->recipeUUID = $in->getUUID();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->windowId = Byte::readUnsigned($in);
+		$this->windowType = VarInt::readSignedInt($in);
+		$this->recipeUUID = CommonTypes::getUUID($in);
 
-		$size = $in->getUnsignedVarInt();
+		$size = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $size and $i < 128; ++$i){
-			$this->input[] = $in->getItemStackWrapper();
+			$this->input[] = CommonTypes::getItemStackWrapper($in);
 		}
 
-		$size = $in->getUnsignedVarInt();
+		$size = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $size and $i < 128; ++$i){
-			$this->output[] = $in->getItemStackWrapper();
+			$this->output[] = CommonTypes::getItemStackWrapper($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putByte($this->windowId);
-		$out->putVarInt($this->windowType);
-		$out->putUUID($this->recipeUUID);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		Byte::writeUnsigned($out, $this->windowId);
+		VarInt::writeSignedInt($out, $this->windowType);
+		CommonTypes::putUUID($out, $this->recipeUUID);
 
-		$out->putUnsignedVarInt(count($this->input));
+		VarInt::writeUnsignedInt($out, count($this->input));
 		foreach($this->input as $item){
-			$out->putItemStackWrapper($item);
+			CommonTypes::putItemStackWrapper($out, $item);
 		}
 
-		$out->putUnsignedVarInt(count($this->output));
+		VarInt::writeUnsignedInt($out, count($this->output));
 		foreach($this->output as $item){
-			$out->putItemStackWrapper($item);
+			CommonTypes::putItemStackWrapper($out, $item);
 		}
 	}
 

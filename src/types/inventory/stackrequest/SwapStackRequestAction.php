@@ -14,7 +14,8 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
 /**
@@ -34,14 +35,14 @@ final class SwapStackRequestAction extends ItemStackRequestAction{
 
 	public function getSlot2() : ItemStackRequestSlotInfo{ return $this->slot2; }
 
-	public static function read(PacketSerializer $in) : self{
-		$slot1 = ItemStackRequestSlotInfo::read($in);
-		$slot2 = ItemStackRequestSlotInfo::read($in);
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$slot1 = ItemStackRequestSlotInfo::read($in, $protocolId);
+		$slot2 = ItemStackRequestSlotInfo::read($in, $protocolId);
 		return new self($slot1, $slot2);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$this->slot1->write($out);
-		$this->slot2->write($out);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		$this->slot1->write($out, $protocolId);
+		$this->slot2->write($out, $protocolId);
 	}
 }

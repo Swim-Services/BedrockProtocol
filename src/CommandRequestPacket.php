@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\command\CommandOriginData;
 
 class CommandRequestPacket extends DataPacket implements ServerboundPacket{
@@ -37,21 +40,21 @@ class CommandRequestPacket extends DataPacket implements ServerboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->command = $in->getString();
-		$this->originData = $in->getCommandOriginData();
-		$this->isInternal = $in->getBool();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_60){
-			$this->version = $in->getVarInt();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->command = CommonTypes::getString($in);
+		$this->originData = CommonTypes::getCommandOriginData($in);
+		$this->isInternal = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_60){
+			$this->version = VarInt::readSignedInt($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putString($this->command);
-		$out->putCommandOriginData($this->originData);
-		$out->putBool($this->isInternal);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_60){
-			$out->putVarInt($this->version);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putString($out, $this->command);
+		CommonTypes::putCommandOriginData($out, $this->originData);
+		CommonTypes::putBool($out, $this->isInternal);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_60){
+			VarInt::writeSignedInt($out, $this->version);
 		}
 	}
 

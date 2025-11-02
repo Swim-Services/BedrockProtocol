@@ -14,7 +14,8 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\types\AbilitiesData;
 
 /**
@@ -37,12 +38,12 @@ class UpdateAbilitiesPacket extends DataPacket implements ClientboundPacket{
 
 	public function getData() : AbilitiesData{ return $this->data; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->data = AbilitiesData::decode($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->data = AbilitiesData::decode($in, $protocolId);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$this->data->encode($out);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		$this->data->encode($out, $protocolId);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

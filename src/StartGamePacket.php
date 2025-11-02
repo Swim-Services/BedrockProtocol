@@ -14,9 +14,13 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\BlockPaletteEntry;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\network\mcpe\protocol\types\ItemTypeEntry;
@@ -144,127 +148,125 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->actorUniqueId = $in->getActorUniqueId();
-		$this->actorRuntimeId = $in->getActorRuntimeId();
-		$this->playerGamemode = $in->getVarInt();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		$this->playerGamemode = VarInt::readSignedInt($in);
 
-		$this->playerPosition = $in->getVector3();
+		$this->playerPosition = CommonTypes::getVector3($in);
 
-		$this->pitch = $in->getLFloat();
-		$this->yaw = $in->getLFloat();
+		$this->pitch = LE::readFloat($in);
+		$this->yaw = LE::readFloat($in);
 
-		$this->levelSettings = LevelSettings::read($in);
+		$this->levelSettings = LevelSettings::read($in, $protocolId);
 
-		$this->levelId = $in->getString();
-		$this->worldName = $in->getString();
-		$this->premiumWorldTemplateId = $in->getString();
-		$this->isTrial = $in->getBool();
-		$this->playerMovementSettings = PlayerMovementSettings::read($in);
-		$this->currentTick = $in->getLLong();
+		$this->levelId = CommonTypes::getString($in);
+		$this->worldName = CommonTypes::getString($in);
+		$this->premiumWorldTemplateId = CommonTypes::getString($in);
+		$this->isTrial = CommonTypes::getBool($in);
+		$this->playerMovementSettings = PlayerMovementSettings::read($in, $protocolId);
+		$this->currentTick = LE::readUnsignedLong($in);
 
-		$this->enchantmentSeed = $in->getVarInt();
+		$this->enchantmentSeed = VarInt::readSignedInt($in);
 
 		$this->blockPalette = [];
-		for($i = 0, $len = $in->getUnsignedVarInt(); $i < $len; ++$i){
-			$blockName = $in->getString();
-			$state = $in->getNbtCompoundRoot();
+		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+			$blockName = CommonTypes::getString($in);
+			$state = CommonTypes::getNbtCompoundRoot($in);
 			$this->blockPalette[] = new BlockPaletteEntry($blockName, new CacheableNbt($state));
 		}
 
-		if($in->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_50){
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_50){
 			$this->itemTable = [];
-			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-				$stringId = $in->getString();
-				$numericId = $in->getSignedLShort();
-				$isComponentBased = $in->getBool();
+			for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+				$stringId = CommonTypes::getString($in);
+				$numericId = LE::readSignedShort($in);
+				$isComponentBased = CommonTypes::getBool($in);
 
 				$this->itemTable[] = new ItemTypeEntry($stringId, $numericId, $isComponentBased, -1, new CacheableNbt(new CompoundTag()));
 			}
 		}
 
-		$this->multiplayerCorrelationId = $in->getString();
-		$this->enableNewInventorySystem = $in->getBool();
-		$this->serverSoftwareVersion = $in->getString();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_0){
-			$this->playerActorProperties = new CacheableNbt($in->getNbtCompoundRoot());
-			$this->blockPaletteChecksum = $in->getLLong();
-			$this->worldTemplateId = $in->getUUID();
-		}elseif($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_0){
-			$this->blockPaletteChecksum = $in->getLLong();
+		$this->multiplayerCorrelationId = CommonTypes::getString($in);
+		$this->enableNewInventorySystem = CommonTypes::getBool($in);
+		$this->serverSoftwareVersion = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_0){
+			$this->playerActorProperties = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
+			$this->blockPaletteChecksum = LE::readUnsignedLong($in);
+			$this->worldTemplateId = CommonTypes::getUUID($in);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_18_0){
+			$this->blockPaletteChecksum = LE::readUnsignedLong($in);
 		}
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
-			$this->enableClientSideChunkGeneration = $in->getBool();
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
+			$this->enableClientSideChunkGeneration = CommonTypes::getBool($in);
 		}
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_80){
-			$this->blockNetworkIdsAreHashes = $in->getBool();
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
+			$this->blockNetworkIdsAreHashes = CommonTypes::getBool($in);
 		}
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
-			$this->enableTickDeathSystems = $in->getBool();
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+			$this->enableTickDeathSystems = CommonTypes::getBool($in);
 		}
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0){
 			$this->networkPermissions = NetworkPermissions::decode($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putActorUniqueId($this->actorUniqueId);
-		$out->putActorRuntimeId($this->actorRuntimeId);
-		$out->putVarInt($this->playerGamemode);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		VarInt::writeSignedInt($out, $this->playerGamemode);
 
-		$out->putVector3($this->playerPosition);
+		CommonTypes::putVector3($out, $this->playerPosition);
 
-		$out->putLFloat($this->pitch);
-		$out->putLFloat($this->yaw);
+		LE::writeFloat($out, $this->pitch);
+		LE::writeFloat($out, $this->yaw);
 
-		$this->levelSettings->write($out);
+		$this->levelSettings->write($out, $protocolId);
 
-		$out->putString($this->levelId);
-		$out->putString($this->worldName);
-		$out->putString($this->premiumWorldTemplateId);
-		$out->putBool($this->isTrial);
-		$this->playerMovementSettings->write($out);
-		$out->putLLong($this->currentTick);
+		CommonTypes::putString($out, $this->levelId);
+		CommonTypes::putString($out, $this->worldName);
+		CommonTypes::putString($out, $this->premiumWorldTemplateId);
+		CommonTypes::putBool($out, $this->isTrial);
+		$this->playerMovementSettings->write($out, $protocolId);
+		LE::writeUnsignedLong($out, $this->currentTick);
 
-		$out->putVarInt($this->enchantmentSeed);
+		VarInt::writeSignedInt($out, $this->enchantmentSeed);
 
-		$out->putUnsignedVarInt(count($this->blockPalette));
+		VarInt::writeUnsignedInt($out, count($this->blockPalette));
 		foreach($this->blockPalette as $entry){
-			$out->putString($entry->getName());
-			$out->put($entry->getStates()->getEncodedNbt());
+			CommonTypes::putString($out, $entry->getName());
+			$out->writeByteArray($entry->getStates()->getEncodedNbt());
 		}
 
-		if($out->getProtocolId() <= ProtocolInfo::PROTOCOL_1_21_50){
-			$out->putUnsignedVarInt(count($this->itemTable));
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_50){
+			VarInt::writeUnsignedInt($out, count($this->itemTable));
 			foreach($this->itemTable as $entry){
-				$out->putString($entry->getStringId());
-				$out->putLShort($entry->getNumericId());
-				$out->putBool($entry->isComponentBased());
+				CommonTypes::putString($out, $entry->getStringId());
+				LE::writeSignedShort($out, $entry->getNumericId());
+				CommonTypes::putBool($out, $entry->isComponentBased());
 			}
 		}
 
-		$out->putString($this->multiplayerCorrelationId);
-		$out->putBool($this->enableNewInventorySystem);
-		if($out->getProtocolId() > ProtocolInfo::PROTOCOL_1_16_100){
-			$out->putString($this->serverSoftwareVersion);
+		CommonTypes::putString($out, $this->multiplayerCorrelationId);
+		CommonTypes::putBool($out, $this->enableNewInventorySystem);
+		CommonTypes::putString($out, $this->serverSoftwareVersion);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_0){
+			$out->writeByteArray($this->playerActorProperties->getEncodedNbt());
+			LE::writeUnsignedLong($out, $this->blockPaletteChecksum);
+			CommonTypes::putUUID($out, $this->worldTemplateId);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_18_0){
+			LE::writeUnsignedLong($out, $this->blockPaletteChecksum);
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_0){
-			$out->put($this->playerActorProperties->getEncodedNbt());
-			$out->putLLong($this->blockPaletteChecksum);
-			$out->putUUID($this->worldTemplateId);
-		}elseif($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_18_0){
-			$out->putLLong($this->blockPaletteChecksum);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
+			CommonTypes::putBool($out, $this->enableClientSideChunkGeneration);
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
-			$out->putBool($this->enableClientSideChunkGeneration);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
+			CommonTypes::putBool($out, $this->blockNetworkIdsAreHashes);
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_80){
-			$out->putBool($this->blockNetworkIdsAreHashes);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+			CommonTypes::putBool($out, $this->enableTickDeathSystems);
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
-			$out->putBool($this->enableTickDeathSystems);
-		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0) {
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0) {
 			$this->networkPermissions->encode($out);
 		}
 	}

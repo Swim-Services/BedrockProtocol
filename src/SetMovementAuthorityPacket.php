@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\types\ServerAuthMovementMode;
 
 class SetMovementAuthorityPacket extends DataPacket implements ClientboundPacket{
@@ -33,12 +35,12 @@ class SetMovementAuthorityPacket extends DataPacket implements ClientboundPacket
 
 	public function getMode() : ServerAuthMovementMode{ return $this->mode; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->mode = ServerAuthMovementMode::fromPacket($in->getByte());
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->mode = ServerAuthMovementMode::fromPacket(Byte::readUnsigned($in));
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putByte($this->mode->value);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		Byte::writeUnsigned($out, $this->mode->value);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

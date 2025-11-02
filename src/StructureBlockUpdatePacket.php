@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
 use pocketmine\network\mcpe\protocol\types\StructureEditorData;
 
@@ -38,21 +40,21 @@ class StructureBlockUpdatePacket extends DataPacket implements ServerboundPacket
 		return $result;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->blockPosition = $in->getBlockPosition();
-		$this->structureEditorData = $in->getStructureEditorData($in->getProtocolId());
-		$this->isPowered = $in->getBool();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30){
-			$this->waterlogged = $in->getBool();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->blockPosition = CommonTypes::getBlockPosition($in);
+		$this->structureEditorData = CommonTypes::getStructureEditorData($in, $protocolId);
+		$this->isPowered = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
+			$this->waterlogged = CommonTypes::getBool($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putBlockPosition($this->blockPosition);
-		$out->putStructureEditorData($this->structureEditorData, $out->getProtocolId());
-		$out->putBool($this->isPowered);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_30){
-			$out->putBool($this->waterlogged);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putBlockPosition($out, $this->blockPosition);
+		CommonTypes::putStructureEditorData($out, $protocolId, $this->structureEditorData);
+		CommonTypes::putBool($out, $this->isPowered);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
+			CommonTypes::putBool($out, $this->waterlogged);
 		}
 	}
 

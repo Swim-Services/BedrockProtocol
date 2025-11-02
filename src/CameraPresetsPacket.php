@@ -14,9 +14,12 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\network\mcpe\protocol\types\camera\CameraPreset;
 use function array_map;
@@ -43,14 +46,14 @@ class CameraPresetsPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getPresets() : array{ return $this->presets; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
 			$this->presets = [];
-			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; $i++){
-				$this->presets[] = CameraPreset::read($in);
+			for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; $i++){
+				$this->presets[] = CameraPreset::read($in, $protocolId);
 			}
 		}else{
-			$this->fromNBT($in->getNbtCompoundRoot());
+			$this->fromNBT(CommonTypes::getNbtCompoundRoot($in));
 		}
 	}
 
@@ -67,15 +70,15 @@ class CameraPresetsPacket extends DataPacket implements ClientboundPacket{
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_30){
-			$out->putUnsignedVarInt(count($this->presets));
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
+			VarInt::writeUnsignedInt($out, count($this->presets));
 			foreach($this->presets as $preset){
-				$preset->write($out);
+				$preset->write($out, $protocolId);
 			}
 		}else{
-			$data = new CacheableNbt($this->toNBT($out->getProtocolId()));
-			$out->put($data->getEncodedNbt());
+			$data = new CacheableNbt($this->toNBT($protocolId));
+			$out->writeByteArray($data->getEncodedNbt());
 		}
 	}
 

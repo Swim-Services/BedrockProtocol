@@ -21,7 +21,7 @@ namespace pocketmine\network\mcpe\protocol\types\login;
 class JwtBodyRfc7519{
 	public string $iss;
 	public string $sub;
-	/** @var string|string[] */
+	/** @var mixed */
 	public $aud;
 	public int $exp;
 	public int $nbf;

@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
 
 trait TakeOrPlaceStackRequestActionTrait{
 	final public function __construct(
@@ -29,16 +31,16 @@ trait TakeOrPlaceStackRequestActionTrait{
 
 	final public function getDestination() : ItemStackRequestSlotInfo{ return $this->destination; }
 
-	public static function read(PacketSerializer $in) : self{
-		$count = $in->getByte();
-		$src = ItemStackRequestSlotInfo::read($in);
-		$dst = ItemStackRequestSlotInfo::read($in);
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$count = Byte::readUnsigned($in);
+		$src = ItemStackRequestSlotInfo::read($in, $protocolId);
+		$dst = ItemStackRequestSlotInfo::read($in, $protocolId);
 		return new self($count, $src, $dst);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putByte($this->count);
-		$this->source->write($out);
-		$this->destination->write($out);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		Byte::writeUnsigned($out, $this->count);
+		$this->source->write($out, $protocolId);
+		$this->destination->write($out, $protocolId);
 	}
 }

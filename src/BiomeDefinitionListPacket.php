@@ -14,8 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\biome\BiomeDefinitionData;
 use pocketmine\network\mcpe\protocol\types\biome\BiomeDefinitionEntry;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
@@ -101,6 +104,7 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 			$entry->getBlueSporeDensity(),
 			$entry->getAshDensity(),
 			$entry->getWhiteAshDensity(),
+			$entry->getFoliageSnow(),
 			$entry->getDepth(),
 			$entry->getScale(),
 			$entry->getMapWaterColor(),
@@ -137,6 +141,7 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 			$data->getBlueSporeDensity(),
 			$data->getAshDensity(),
 			$data->getWhiteAshDensity(),
+			$data->getFoliageSnow(),
 			$data->getDepth(),
 			$data->getScale(),
 			$data->getMapWaterColor(),
@@ -146,30 +151,30 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 		), $this->definitionData ?? throw new PacketDecodeException("No definition data available"));
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		if($in->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_80){
-			$this->legacyDefinitions = new CacheableNbt($in->getNbtCompoundRoot());
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_80){
+			$this->legacyDefinitions = new CacheableNbt(CommonTypes::getNbtCompoundRoot($in));
 			$this->definitionData = null;
 			$this->strings = null;
 			return;
 		}
 
 		$this->legacyDefinitions = null;
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			$this->definitionData[] = BiomeDefinitionData::read($in);
+		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+			$this->definitionData[] = BiomeDefinitionData::read($in, $protocolId);
 		}
 
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			$this->strings[] = $in->getString();
+		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+			$this->strings[] = CommonTypes::getString($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		if($out->getProtocolId() < ProtocolInfo::PROTOCOL_1_21_80){
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId < ProtocolInfo::PROTOCOL_1_21_80){
 			if($this->legacyDefinitions === null){
 				throw new \LogicException("Legacy definitions not set");
 			}
-			$out->put($this->legacyDefinitions->getEncodedNbt());
+			$out->writeByteArray($this->legacyDefinitions->getEncodedNbt());
 			return;
 		}
 
@@ -177,14 +182,14 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 			throw new \LogicException("Definition data not set");
 		}
 
-		$out->putUnsignedVarInt(count($this->definitionData));
+		VarInt::writeUnsignedInt($out, count($this->definitionData));
 		foreach($this->definitionData as $data){
-			$data->write($out);
+			$data->write($out, $protocolId);
 		}
 
-		$out->putUnsignedVarInt(count($this->strings));
+		VarInt::writeUnsignedInt($out, count($this->strings));
 		foreach($this->strings as $string){
-			$out->putString($string);
+			CommonTypes::putString($out, $string);
 		}
 	}
 

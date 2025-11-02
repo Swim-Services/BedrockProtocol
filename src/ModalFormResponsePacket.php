@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class ModalFormResponsePacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::MODAL_FORM_RESPONSE_PACKET;
@@ -46,28 +50,25 @@ class ModalFormResponsePacket extends DataPacket implements ServerboundPacket{
 		return self::create($formId, null, $cancelReason);
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->formId = $in->getUnsignedVarInt();
-
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
-			$this->formData = $in->readOptional(\Closure::fromCallable([$in, 'getString']));
-			$this->cancelReason = $in->readOptional(\Closure::fromCallable([$in, 'getByte']));
-		}else{
-			$this->formData = $in->getString();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->formId = VarInt::readUnsignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
+			$this->formData = CommonTypes::readOptional($in, CommonTypes::getString(...));
+			$this->cancelReason = CommonTypes::readOptional($in, Byte::readUnsigned(...));
+		} else {
+			$this->formData = CommonTypes::getString($in);
 			$this->cancelReason = null;
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt($this->formId);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, $this->formId);
 
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
-			$out->writeOptional($this->formData, \Closure::fromCallable([$out, 'putString']));
-			$out->writeOptional($this->cancelReason, \Closure::fromCallable([$out, 'putByte']));
-		}elseif($this->formData !== null){
-			$out->putString($this->formData);
-		}else{
-			throw new \InvalidArgumentException("Cancel reason is only available on protocol 1.19.20+");
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
+		CommonTypes::writeOptional($out, $this->formData, CommonTypes::putString(...));
+		CommonTypes::writeOptional($out, $this->cancelReason, Byte::writeUnsigned(...));
+		} else {
+			 CommonTypes::putString($out, $this->formData);
 		}
 	}
 

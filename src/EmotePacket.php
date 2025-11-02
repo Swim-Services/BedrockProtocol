@@ -14,7 +14,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::EMOTE_PACKET;
@@ -61,30 +65,30 @@ class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPa
 		return $this->flags;
 	}
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->actorRuntimeId = $in->getActorRuntimeId();
-		$this->emoteId = $in->getString();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-			$this->emoteLengthTicks = $in->getUnsignedVarInt();
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
+		$this->emoteId = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			$this->emoteLengthTicks = VarInt::readUnsignedInt($in);
 		}
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0){
-			$this->xboxUserId = $in->getString();
-			$this->platformChatId = $in->getString();
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0){
+			$this->xboxUserId = CommonTypes::getString($in);
+			$this->platformChatId = CommonTypes::getString($in);
 		}
-		$this->flags = $in->getByte();
+		$this->flags = Byte::readUnsigned($in);
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putActorRuntimeId($this->actorRuntimeId);
-		$out->putString($this->emoteId);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-			$out->putUnsignedVarInt($this->emoteLengthTicks);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
+		CommonTypes::putString($out, $this->emoteId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			VarInt::writeUnsignedInt($out, $this->emoteLengthTicks);
 		}
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_0){
-			$out->putString($this->xboxUserId);
-			$out->putString($this->platformChatId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0){
+			CommonTypes::putString($out, $this->xboxUserId);
+			CommonTypes::putString($out, $this->platformChatId);
 		}
-		$out->putByte($this->flags);
+		Byte::writeUnsigned($out, $this->flags);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

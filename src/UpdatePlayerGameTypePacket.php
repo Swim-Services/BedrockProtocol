@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\GameMode;
 
 class UpdatePlayerGameTypePacket extends DataPacket implements ClientboundPacket{
@@ -40,23 +43,25 @@ class UpdatePlayerGameTypePacket extends DataPacket implements ClientboundPacket
 
 	public function getPlayerActorUniqueId() : int{ return $this->playerActorUniqueId; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
-		$this->gameMode = $in->getVarInt();
-		$this->playerActorUniqueId = $in->getActorUniqueId();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-			$this->tick = $in->getUnsignedVarLong();
-		}elseif($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80){
-			$this->tick = $in->getUnsignedVarInt();
+	public function getTick() : int{ return $this->tick; }
+
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->gameMode = VarInt::readSignedInt($in);
+		$this->playerActorUniqueId = CommonTypes::getActorUniqueId($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			$this->tick = VarInt::readUnsignedLong($in);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			$this->tick = VarInt::readUnsignedInt($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putVarInt($this->gameMode);
-		$out->putActorUniqueId($this->playerActorUniqueId);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_40){
-			$out->putUnsignedVarLong($this->tick);
-		}elseif($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_20_80){
-			$out->putUnsignedVarInt($this->tick);
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeSignedInt($out, $this->gameMode);
+		CommonTypes::putActorUniqueId($out, $this->playerActorUniqueId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
+			VarInt::writeUnsignedLong($out, $this->tick);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_80){
+			VarInt::writeUnsignedInt($out, $this->tick);
 		}
 	}
 

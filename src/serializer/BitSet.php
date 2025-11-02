@@ -14,11 +14,14 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\serializer;
 
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;use pmmp\encoding\ByteBufferWriter;
 use function array_pad;
 use function array_slice;
 use function array_values;
 use function count;
 use function intdiv;
+use const PHP_INT_SIZE;
 
 class BitSet{
 	private const INT_BITS = PHP_INT_SIZE * 8;
@@ -93,14 +96,14 @@ class BitSet{
 		return intdiv($length + self::INT_BITS - 1, self::INT_BITS);
 	}
 
-	public static function read(PacketSerializer $in, int $length) : self{
+	public static function read(ByteBufferReader $in, int $length) : self{
 		$result = [0];
 
 		$currentIndex = 0;
 		$currentShift = 0;
 
 		for($i = 0; $i < $length; $i += self::SHIFT){
-			$b = $in->getByte();
+			$b = Byte::readUnsigned($in);
 			$bits = $b & 0x7f;
 
 			$result[$currentIndex] |= $bits << $currentShift; //extra bits will be discarded
@@ -120,7 +123,7 @@ class BitSet{
 		return new self($length, array_slice($result, 0, self::getExpectedPartsCount($length)));
 	}
 
-	public function write(PacketSerializer $out, ?int $length = null) : void{
+	public function write(ByteBufferWriter $out, ?int $length = null) : void{
 		$parts = $this->parts;
 		$length ??= $this->length;
 
@@ -143,7 +146,7 @@ class BitSet{
 			$last = $i + self::SHIFT >= $length;
 			$bits |= $last ? 0 : 0x80;
 
-			$out->putByte($bits);
+			Byte::writeUnsigned($out, $bits);
 			if($last){
 				break;
 			}

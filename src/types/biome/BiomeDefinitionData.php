@@ -14,9 +14,13 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\biome;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 use pocketmine\color\Color;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\biome\chunkgen\BiomeDefinitionChunkGenData;
 use function count;
 
@@ -35,6 +39,7 @@ final class BiomeDefinitionData{
 		private float $blueSporeDensity,
 		private float $ashDensity,
 		private float $whiteAshDensity,
+		private float $foliageSnow,
 		private float $depth,
 		private float $scale,
 		private Color $mapWaterColor,
@@ -59,6 +64,8 @@ final class BiomeDefinitionData{
 
 	public function getWhiteAshDensity() : float{ return $this->whiteAshDensity; }
 
+	public function getFoliageSnow() : float{ return $this->foliageSnow; }
+
 	public function getDepth() : float{ return $this->depth; }
 
 	public function getScale() : float{ return $this->scale; }
@@ -75,39 +82,44 @@ final class BiomeDefinitionData{
 
 	public function getChunkGenData() : ?BiomeDefinitionChunkGenData{ return $this->chunkGenData; }
 
-	public static function read(PacketSerializer $in) : self{
-		$nameIndex = $in->getLShort();
-		$id = $in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100 ? $in->getLShort() : $in->readOptional($in->getLShort(...)) ?? 65535;
-		$temperature = $in->getLFloat();
-		$downfall = $in->getLFloat();
-		$redSporeDensity = $in->getLFloat();
-		$blueSporeDensity = $in->getLFloat();
-		$ashDensity = $in->getLFloat();
-		$whiteAshDensity = $in->getLFloat();
-		$depth = $in->getLFloat();
-		$scale = $in->getLFloat();
-		$mapWaterColor = Color::fromARGB($in->getLInt());
-		$rain = $in->getBool();
-		$tags = $in->readOptional(function() use ($in) : array{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$nameIndex = LE::readUnsignedShort($in);
+		$id = $protocolId >= ProtocolInfo::PROTOCOL_1_21_100 ? LE::readUnsignedShort($in) : CommonTypes::readOptional($in, LE::readUnsignedShort(...)) ?? 65535;
+		$temperature = LE::readFloat($in);
+		$downfall = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_111){
+			$foliageSnow = LE::readFloat($in);
+		}else{
+			$redSporeDensity = LE::readFloat($in);
+			$blueSporeDensity = LE::readFloat($in);
+			$ashDensity = LE::readFloat($in);
+			$whiteAshDensity = LE::readFloat($in);
+		}
+		$depth = LE::readFloat($in);
+		$scale = LE::readFloat($in);
+		$mapWaterColor = Color::fromARGB(LE::readUnsignedInt($in));
+		$rain = CommonTypes::getBool($in);
+		$tags = CommonTypes::readOptional($in, function() use ($in) : array{
 			$tagIndexes = [];
 
-			for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-				$tagIndexes[] = $in->getLShort();
+			for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+				$tagIndexes[] = LE::readUnsignedShort($in);
 			}
 
 			return $tagIndexes;
 		});
-		$chunkGenData = $in->readOptional(fn() => BiomeDefinitionChunkGenData::read($in));
+		$chunkGenData = CommonTypes::readOptional($in, fn() => BiomeDefinitionChunkGenData::read($in, $protocolId));
 
 		return new self(
 			$nameIndex,
 			$id,
 			$temperature,
 			$downfall,
-			$redSporeDensity,
-			$blueSporeDensity,
-			$ashDensity,
-			$whiteAshDensity,
+			$redSporeDensity ?? 0.0,
+			$blueSporeDensity ?? 0.0,
+			$ashDensity ?? 0.0,
+			$whiteAshDensity ?? 0.0,
+			$foliageSnow ?? 0.0,
 			$depth,
 			$scale,
 			$mapWaterColor,
@@ -117,29 +129,33 @@ final class BiomeDefinitionData{
 		);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putLShort($this->nameIndex);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_100){
-			$out->putLShort($this->id);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		LE::writeUnsignedShort($out, $this->nameIndex);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+			LE::writeUnsignedShort($out, $this->id);
 		}else{
-			$out->writeOptional($this->id === 65535 ? null : $this->id, $out->putLShort(...));
+			CommonTypes::writeOptional($out, $this->id === 65535 ? null : $this->id, LE::writeUnsignedShort(...));
 		}
-		$out->putLFloat($this->temperature);
-		$out->putLFloat($this->downfall);
-		$out->putLFloat($this->redSporeDensity);
-		$out->putLFloat($this->blueSporeDensity);
-		$out->putLFloat($this->ashDensity);
-		$out->putLFloat($this->whiteAshDensity);
-		$out->putLFloat($this->depth);
-		$out->putLFloat($this->scale);
-		$out->putLInt($this->mapWaterColor->toARGB());
-		$out->putBool($this->rain);
-		$out->writeOptional($this->tagIndexes, function(array $tagIndexes) use ($out) : void{
-			$out->putUnsignedVarInt(count($tagIndexes));
+		LE::writeFloat($out, $this->temperature);
+		LE::writeFloat($out, $this->downfall);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_111){
+			LE::writeFloat($out, $this->foliageSnow);
+		}else{
+			LE::writeFloat($out, $this->redSporeDensity);
+			LE::writeFloat($out, $this->blueSporeDensity);
+			LE::writeFloat($out, $this->ashDensity);
+			LE::writeFloat($out, $this->whiteAshDensity);
+		}
+		LE::writeFloat($out, $this->depth);
+		LE::writeFloat($out, $this->scale);
+		LE::writeUnsignedInt($out, $this->mapWaterColor->toARGB());
+		CommonTypes::putBool($out, $this->rain);
+		CommonTypes::writeOptional($out, $this->tagIndexes, function(ByteBufferWriter $out, array $tagIndexes) : void{
+			VarInt::writeUnsignedInt($out, count($tagIndexes));
 			foreach($tagIndexes as $tag){
-				$out->putLShort($tag);
+				LE::writeUnsignedShort($out, $tag);
 			}
 		});
-		$out->writeOptional($this->chunkGenData, fn(BiomeDefinitionChunkGenData $chunkGenData) => $chunkGenData->write($out));
+		CommonTypes::writeOptional($out, $this->chunkGenData, fn(ByteBufferWriter $out, BiomeDefinitionChunkGenData $v) => $v->write($out, $protocolId));
 	}
 }

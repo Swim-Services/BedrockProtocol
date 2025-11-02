@@ -14,8 +14,12 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\entity;
 
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
 final class UpdateAttribute{
@@ -52,20 +56,20 @@ final class UpdateAttribute{
 	 */
 	public function getModifiers() : array{ return $this->modifiers; }
 
-	public static function read(PacketSerializer $in) : self{
-		$min = $in->getLFloat();
-		$max = $in->getLFloat();
-		$current = $in->getLFloat();
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-			$defaultMin = $in->getLFloat();
-			$defaultMax = $in->getLFloat();
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$min = LE::readFloat($in);
+		$max = LE::readFloat($in);
+		$current = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			$defaultMin = LE::readFloat($in);
+			$defaultMax = LE::readFloat($in);
 		}
-		$default = $in->getLFloat();
-		$id = $in->getString();
+		$default = LE::readFloat($in);
+		$id = CommonTypes::getString($in);
 
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
 			$modifiers = [];
-			for($j = 0, $modifierCount = $in->getUnsignedVarInt(); $j < $modifierCount; $j++){
+			for($j = 0, $modifierCount = VarInt::readUnsignedInt($in); $j < $modifierCount; $j++){
 				$modifiers[] = AttributeModifier::read($in);
 			}
 		}
@@ -73,19 +77,19 @@ final class UpdateAttribute{
 		return new self($id, $min, $max, $current, $defaultMin ?? $min, $defaultMax ?? $max, $default, $modifiers);
 	}
 
-	public function write(PacketSerializer $out) : void{
-		$out->putLFloat($this->min);
-		$out->putLFloat($this->max);
-		$out->putLFloat($this->current);
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_30){
-			$out->putLFloat($this->defaultMin);
-			$out->putLFloat($this->defaultMax);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		LE::writeFloat($out, $this->min);
+		LE::writeFloat($out, $this->max);
+		LE::writeFloat($out, $this->current);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+			LE::writeFloat($out, $this->defaultMin);
+			LE::writeFloat($out, $this->defaultMax);
 		}
-		$out->putLFloat($this->default);
-		$out->putString($this->id);
+		LE::writeFloat($out, $this->default);
+		CommonTypes::putString($out, $this->id);
 
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_19_20){
-			$out->putUnsignedVarInt(count($this->modifiers));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
+			VarInt::writeUnsignedInt($out, count($this->modifiers));
 			foreach($this->modifiers as $modifier){
 				$modifier->write($out);
 			}

@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pmmp\encoding\Byte;
+use pmmp\encoding\ByteBufferReader;
+use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistCategories;
 use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistCategory;
 use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistPreset;
@@ -54,10 +57,10 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 
 	public function getOperation() : int{ return $this->operation; }
 
-	protected function decodePayload(PacketSerializer $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->categories = [];
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80){
+		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
 				$this->categories[] = CameraAimAssistCategory::read($in);
 			}else{
 				$categories = CameraAimAssistCategories::read($in);
@@ -68,19 +71,19 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 		}
 
 		$this->presets = [];
-		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			$this->presets[] = CameraAimAssistPreset::read($in);
+		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+			$this->presets[] = CameraAimAssistPreset::read($in, $protocolId);
 		}
 
-		if($in->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-			$this->operation = $in->getByte();
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			$this->operation = Byte::readUnsigned($in);
 		}
 	}
 
-	protected function encodePayload(PacketSerializer $out) : void{
-		$out->putUnsignedVarInt(count($this->categories));
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		VarInt::writeUnsignedInt($out, count($this->categories));
 		foreach($this->categories as $category){
-			if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_80){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
 				$category->write($out);
 			}else{
 				$categories = new CameraAimAssistCategories($category->getName(), [$category]);
@@ -88,13 +91,13 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 			}
 		}
 
-		$out->putUnsignedVarInt(count($this->presets));
+		VarInt::writeUnsignedInt($out, count($this->presets));
 		foreach($this->presets as $preset){
-			$preset->write($out);
+			$preset->write($out, $protocolId);
 		}
 
-		if($out->getProtocolId() >= ProtocolInfo::PROTOCOL_1_21_60){
-			$out->putByte($this->operation);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
+			Byte::writeUnsigned($out, $this->operation);
 		}
 	}
 
