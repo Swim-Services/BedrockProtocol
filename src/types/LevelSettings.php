@@ -182,7 +182,7 @@ final class LevelSettings{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
 			LE::writeUnsignedLong($out, $this->seed);
 		} else {
-			VarInt::writeSigned($out, $this->seed);
+			VarInt::writeSignedInt($out, $this->seed);
 		}
 		$this->spawnSettings->write($out);
 		VarInt::writeSignedInt($out, $this->generator);
