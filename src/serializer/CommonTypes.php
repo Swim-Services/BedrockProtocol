@@ -108,7 +108,7 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	public static function getSkin(ByteBufferReader $in) : SkinData{
+	public static function getSkin(ByteBufferReader $in, int $protocolId) : SkinData{
 		$skinId = self::getString($in);
 		$skinPlayFabId = self::getString($in);
 		$skinResourcePatch = self::getString($in);
@@ -159,7 +159,10 @@ final class CommonTypes{
 		$persona = self::getBool($in);
 		$capeOnClassic = self::getBool($in);
 		$isPrimaryUser = self::getBool($in);
-		$override = self::getBool($in);
+		$override = false;
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_63){
+			$override = self::getBool($in);
+		}
 
 		return new SkinData(
 			$skinId,
@@ -186,7 +189,7 @@ final class CommonTypes{
 		);
 	}
 
-	public static function putSkin(ByteBufferWriter $out, SkinData $skin) : void{
+	public static function putSkin(ByteBufferWriter $out, SkinData $skin, int $protocolId) : void{
 		self::putString($out, $skin->getSkinId());
 		self::putString($out, $skin->getPlayFabId());
 		self::putString($out, $skin->getResourcePatch());
@@ -226,7 +229,9 @@ final class CommonTypes{
 		self::putBool($out, $skin->isPersona());
 		self::putBool($out, $skin->isPersonaCapeOnClassic());
 		self::putBool($out, $skin->isPrimaryUser());
-		self::putBool($out, $skin->isOverride());
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_63){
+			self::putBool($out, $skin->isOverride());
+		}
 	}
 
 	/** @throws DataDecodeException */
@@ -337,16 +342,21 @@ final class CommonTypes{
 
 	/** @throws DataDecodeException */
 	public static function getRecipeIngredient(ByteBufferReader $in, int $protocolId) : RecipeIngredient{
-		$descriptorType = Byte::readUnsigned($in);
-		$descriptor = match($descriptorType){
-			ItemDescriptorType::INT_ID_META => IntIdMetaItemDescriptor::read($in, $protocolId),
-			ItemDescriptorType::STRING_ID_META => StringIdMetaItemDescriptor::read($in),
-			ItemDescriptorType::TAG => TagItemDescriptor::read($in),
-			ItemDescriptorType::MOLANG => MolangItemDescriptor::read($in),
-			ItemDescriptorType::COMPLEX_ALIAS => ComplexAliasItemDescriptor::read($in),
-			default => null
-		};
-		$count = VarInt::readSignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
+			$descriptorType = Byte::readUnsigned($in);
+			$descriptor = match($descriptorType){
+				ItemDescriptorType::INT_ID_META => IntIdMetaItemDescriptor::read($in, $protocolId),
+				ItemDescriptorType::STRING_ID_META => StringIdMetaItemDescriptor::read($in),
+				ItemDescriptorType::TAG => TagItemDescriptor::read($in),
+				ItemDescriptorType::MOLANG => MolangItemDescriptor::read($in),
+				ItemDescriptorType::COMPLEX_ALIAS => ComplexAliasItemDescriptor::read($in),
+				default => null
+			};
+			$count = VarInt::readSignedInt($in);
+		} else {
+			$descriptor = IntIdMetaItemDescriptor::read($in, $protocolId);
+			$count = $descriptor->getId() === 0 ? 0 : VarInt::readSignedInt($in);
+		}
 
 		return new RecipeIngredient($descriptor, $count);
 	}
@@ -354,10 +364,18 @@ final class CommonTypes{
 	public static function putRecipeIngredient(ByteBufferWriter $out, RecipeIngredient $ingredient, int $protocolId) : void{
 		$type = $ingredient->getDescriptor();
 
-		Byte::writeUnsigned($out, $type?->getTypeId() ?? 0);
-		$type?->write($out, $protocolId);
-
-		VarInt::writeSignedInt($out, $ingredient->getCount());
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
+			Byte::writeUnsigned($out, $type?->getTypeId() ?? 0);
+			$type?->write($out, $protocolId);
+			VarInt::writeSignedInt($out, $ingredient->getCount());
+		}elseif($type instanceof IntIdMetaItemDescriptor){
+			$type->write($out, $protocolId);
+			if($type->getId() !== 0){
+				VarInt::writeSignedInt($out, $ingredient->getCount());
+			}
+		} else {
+			VarInt::writeSignedInt($out, 0);
+		}
 	}
 
 	/**
@@ -639,14 +657,19 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	public static function getStructureSettings(ByteBufferReader $in) : StructureSettings{
+	public static function getStructureSettings(ByteBufferReader $in, int $protocolId) : StructureSettings{
 		$result = new StructureSettings();
 
 		$result->paletteName = self::getString($in);
 
 		$result->ignoreEntities = self::getBool($in);
 		$result->ignoreBlocks = self::getBool($in);
-		$result->allowNonTickingChunks = self::getBool($in);
+
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_18_30) {
+			$result->allowNonTickingChunks = self::getBool($in);
+		} else {
+			$result->allowNonTickingChunks = false;
+		}
 
 		$result->dimensions = self::getBlockPosition($in);
 		$result->offset = self::getBlockPosition($in);
@@ -663,12 +686,15 @@ final class CommonTypes{
 		return $result;
 	}
 
-	public static function putStructureSettings(ByteBufferWriter $out, StructureSettings $structureSettings) : void{
+	public static function putStructureSettings(ByteBufferWriter $out, StructureSettings $structureSettings, int $protocolId) : void{
 		self::putString($out, $structureSettings->paletteName);
 
 		self::putBool($out, $structureSettings->ignoreEntities);
 		self::putBool($out, $structureSettings->ignoreBlocks);
-		self::putBool($out, $structureSettings->allowNonTickingChunks);
+
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_18_30) {
+			self::putBool($out, $structureSettings->allowNonTickingChunks);
+		}
 
 		self::putBlockPosition($out, $structureSettings->dimensions);
 		self::putBlockPosition($out, $structureSettings->offset);
