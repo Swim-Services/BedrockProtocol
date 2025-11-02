@@ -155,7 +155,6 @@ class PacketPool{
 		$this->registerPacket(new LevelEventGenericPacket());
 		$this->registerPacket(new LecternUpdatePacket());
 		$this->registerPacket(new AddEntityPacket());
-		$this->registerPacket(new RemoveEntityPacket());
 		$this->registerPacket(new ClientCacheStatusPacket());
 		$this->registerPacket(new OnScreenTextureAnimationPacket());
 		$this->registerPacket(new MapCreateLockedCopyPacket());

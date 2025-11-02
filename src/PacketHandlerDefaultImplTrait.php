@@ -521,10 +521,6 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
-	public function handleRemoveEntity(RemoveEntityPacket $packet) : bool{
-		return false;
-	}
-
 	public function handleClientCacheStatus(ClientCacheStatusPacket $packet) : bool{
 		return false;
 	}

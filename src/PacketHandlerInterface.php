@@ -266,8 +266,6 @@ interface PacketHandlerInterface{
 
 	public function handleAddEntity(AddEntityPacket $packet) : bool;
 
-	public function handleRemoveEntity(RemoveEntityPacket $packet) : bool;
-
 	public function handleClientCacheStatus(ClientCacheStatusPacket $packet) : bool;
 
 	public function handleOnScreenTextureAnimation(OnScreenTextureAnimationPacket $packet) : bool;
