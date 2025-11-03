@@ -251,7 +251,7 @@ final class AvailableCommandsPacketAssembler{
 					$typeInfo = AvailableCommandsPacket::ARG_FLAG_POSTFIX | $postfixIndex;
 				}else{
 					//mask this to prevent unwanted flags sneaking in
-					$typeInfo = AvailableCommandsPacket::ARG_FLAG_VALID | (AvailableCommandsPacket::convertArg($protocolId, $parameter->paramType) & AvailableCommandsPacket::ARG_FLAG_VALID - 1);
+					$typeInfo = AvailableCommandsPacket::convertArg($protocolId, AvailableCommandsPacket::ARG_FLAG_VALID | ($parameter->paramType & AvailableCommandsPacket::ARG_FLAG_VALID - 1));
 				}
 
 				$rawParameterData[] = new CommandParameterRawData($parameter->paramName, $typeInfo, $parameter->isOptional, $parameter->flags);
