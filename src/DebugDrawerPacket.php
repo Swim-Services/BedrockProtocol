@@ -49,14 +49,14 @@ class DebugDrawerPacket extends DataPacket implements ClientboundPacket{
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->shapes = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$this->shapes[] = PacketShapeData::read($in);
+			$this->shapes[] = PacketShapeData::read($in, $protocolId);
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->shapes));
 		foreach($this->shapes as $shape){
-			$shape->write($out);
+			$shape->write($out, $protocolId);
 		}
 	}
 
