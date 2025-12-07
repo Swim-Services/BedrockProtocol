@@ -40,7 +40,7 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 	public string $unknownString;
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->originData = CommonTypes::getCommandOriginData($in);
+		$this->originData = CommonTypes::getCommandOriginData($in, $protocolId);
 		$this->outputType = Byte::readUnsigned($in);
 		$this->successCount = VarInt::readUnsignedInt($in);
 

@@ -19,6 +19,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -57,16 +58,20 @@ final class CommandEnumRawData{
 		return new self($name, $valueIndexes);
 	}
 
-	public function write(ByteBufferWriter $out, int $valueListSize) : void{
+	public function write(ByteBufferWriter $out, int $valueListSize, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
 		VarInt::writeUnsignedInt($out, count($this->valueIndexes));
 
 		foreach($this->valueIndexes as $index){
-			match(true){
-				$valueListSize < 256 => Byte::writeUnsigned($out, $index),
-				$valueListSize < 65536 => LE::writeUnsignedShort($out, $index),
-				default => LE::writeUnsignedInt($out, $index)
-			};
+			if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+				LE::writeUnsignedInt($out, $index);
+			} else {
+				match(true){
+					$valueListSize < 256 => Byte::writeUnsigned($out, $index),
+					$valueListSize < 65536 => LE::writeUnsignedShort($out, $index),
+					default => LE::writeUnsignedInt($out, $index)
+				};
+			}
 		}
 	}
 }

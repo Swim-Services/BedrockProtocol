@@ -93,6 +93,9 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
 			LE::writeSignedLong($out, $this->tick);
 		}
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+			CommonTypes::putBool($out, false);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

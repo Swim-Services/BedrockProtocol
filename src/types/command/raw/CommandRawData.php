@@ -97,13 +97,22 @@ final class CommandRawData{
 		CommonTypes::putString($out, $this->name);
 		CommonTypes::putString($out, $this->description);
 		LE::writeUnsignedShort($out, $this->flags);
-		Byte::writeUnsigned($out, $this->permission);
+		if ($protocolId === ProtocolInfo::PROTOCOL_1_21_130) {
+			CommonTypes::putString($out, "any");
+		} else {
+			Byte::writeUnsigned($out, $this->permission);
+		}
+
 		LE::writeSignedInt($out, $this->aliasEnumIndex);
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
 			VarInt::writeUnsignedInt($out, count($this->chainedSubCommandDataIndexes));
 			foreach($this->chainedSubCommandDataIndexes as $index){
-				LE::writeUnsignedShort($out, $index);
+				if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+					LE::writeUnsignedInt($out, $index);
+				} else {
+					LE::writeUnsignedShort($out, $index);
+				}
 			}
 		}
 

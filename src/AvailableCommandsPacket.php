@@ -303,13 +303,13 @@ final class AvailableCommandsPacket extends DataPacket implements ClientboundPac
 		VarInt::writeUnsignedInt($out, count($this->enums));
 		$valueListSize = count($this->enumValues);
 		foreach($this->enums as $enum){
-			$enum->write($out, $valueListSize);
+			$enum->write($out, $valueListSize, $protocolId);
 		}
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
 			VarInt::writeUnsignedInt($out, count($this->chainedSubCommandData));
 			foreach($this->chainedSubCommandData as $data){
-				$data->write($out);
+				$data->write($out, $protocolId);
 			}
 		}
 

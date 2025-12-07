@@ -632,10 +632,19 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	public static function getCommandOriginData(ByteBufferReader $in) : CommandOriginData{
+	public static function getCommandOriginData(ByteBufferReader $in, int $protocolId) : CommandOriginData{
 		$result = new CommandOriginData();
 
-		$result->type = VarInt::readUnsignedInt($in);
+		if ($protocolId === ProtocolInfo::PROTOCOL_1_21_130) {
+			$s = self::getString($in);
+			if ($s === "player") {
+				$result->type = CommandOriginData::ORIGIN_PLAYER;
+			} else {
+				$result->type = CommandOriginData::ORIGIN_CLIENT_AUTOMATION;
+			}
+		} else {
+			$result->type = VarInt::readUnsignedInt($in);
+		}
 		$result->uuid = self::getUUID($in);
 		$result->requestId = self::getString($in);
 

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -63,6 +64,9 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 		if($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT){
 			$this->rowingTime = LE::readFloat($in);
 		}
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+			CommonTypes::readOptional($in, CommonTypes::getString(...));
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -73,6 +77,9 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 		}
 		if($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT){
 			LE::writeFloat($out, $this->rowingTime);
+		}
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+			Byte::writeUnsigned($out, 0);
 		}
 	}
 

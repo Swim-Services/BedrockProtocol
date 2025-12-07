@@ -17,6 +17,8 @@ namespace pocketmine\network\mcpe\protocol\types\command\raw;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 
 final class ChainedSubCommandValueRawData{
 
@@ -36,8 +38,13 @@ final class ChainedSubCommandValueRawData{
 		return new self($nameIndex, $type);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
-		LE::writeUnsignedShort($out, $this->nameIndex);
-		LE::writeUnsignedShort($out, $this->type);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+			VarInt::writeUnsignedInt($out, $this->nameIndex);
+			VarInt::writeUnsignedInt($out, $this->type);
+		} else {
+			LE::writeUnsignedShort($out, $this->nameIndex);
+			LE::writeUnsignedShort($out, $this->type);
+		}
 	}
 }

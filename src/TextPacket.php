@@ -24,6 +24,10 @@ use function count;
 class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::TEXT_PACKET;
 
+	public const TYPE_MESSAGE_ONLY = 0;
+	public const TYPE_AUTHOR_AND_MESSAGE = 1;
+	public const TYPE_MESSAGE_AND_PARAMS = 2;
+
 	public const TYPE_RAW = 0;
 	public const TYPE_CHAT = 1;
 	public const TYPE_TRANSLATION = 2;
@@ -100,32 +104,65 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->type = Byte::readUnsigned($in);
-		$this->needsTranslation = CommonTypes::getBool($in);
-		switch($this->type){
-			case self::TYPE_CHAT:
-			case self::TYPE_WHISPER:
-			/** @noinspection PhpMissingBreakStatementInspection */
-			case self::TYPE_ANNOUNCEMENT:
-				$this->sourceName = CommonTypes::getString($in);
-			case self::TYPE_RAW:
-			case self::TYPE_TIP:
-			case self::TYPE_SYSTEM:
-			case self::TYPE_JSON_WHISPER:
-			case self::TYPE_JSON:
-			case self::TYPE_JSON_ANNOUNCEMENT:
-				$this->message = CommonTypes::getString($in);
-				break;
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+			$this->needsTranslation = CommonTypes::getBool($in);
+			$type = Byte::readUnsigned($in);
+			switch ($type) {
+				case self::TYPE_MESSAGE_ONLY:
+					for ($i = 0;$i < 6;$i++) {
+						CommonTypes::getString($in);
+					}
+					$this->type = Byte::readUnsigned($in);
+					$this->message = CommonTypes::getString($in);
+					break;
+				case self::TYPE_AUTHOR_AND_MESSAGE:
+					for ($i = 0;$i < 3;$i++) {
+						CommonTypes::getString($in);
+					}
+					$this->type = Byte::readUnsigned($in);
+					$this->sourceName = CommonTypes::getString($in);
+					$this->message = CommonTypes::getString($in);
+					break;
+				case self::TYPE_MESSAGE_AND_PARAMS:
+					for ($i = 0;$i < 3;$i++) {
+						CommonTypes::getString($in);
+					}
+					$this->type = Byte::readUnsigned($in);
+					$this->message = CommonTypes::getString($in);
+					$count = VarInt::readUnsignedInt($in);
+					for($i = 0; $i < $count; ++$i){
+						$this->parameters[] = CommonTypes::getString($in);
+					}
+					break;
+			}
+		} else {
+			$this->type = Byte::readUnsigned($in);
+			$this->needsTranslation = CommonTypes::getBool($in);
+			switch($this->type){
+				case self::TYPE_CHAT:
+				case self::TYPE_WHISPER:
+				/** @noinspection PhpMissingBreakStatementInspection */
+				case self::TYPE_ANNOUNCEMENT:
+					$this->sourceName = CommonTypes::getString($in);
+				case self::TYPE_RAW:
+				case self::TYPE_TIP:
+				case self::TYPE_SYSTEM:
+				case self::TYPE_JSON_WHISPER:
+				case self::TYPE_JSON:
+				case self::TYPE_JSON_ANNOUNCEMENT:
+					$this->message = CommonTypes::getString($in);
+					break;
 
-			case self::TYPE_TRANSLATION:
-			case self::TYPE_POPUP:
-			case self::TYPE_JUKEBOX_POPUP:
-				$this->message = CommonTypes::getString($in);
-				$count = VarInt::readUnsignedInt($in);
-				for($i = 0; $i < $count; ++$i){
-					$this->parameters[] = CommonTypes::getString($in);
-				}
-				break;
+				case self::TYPE_TRANSLATION:
+				case self::TYPE_POPUP:
+				case self::TYPE_JUKEBOX_POPUP:
+					$this->message = CommonTypes::getString($in);
+					$count = VarInt::readUnsignedInt($in);
+					for($i = 0; $i < $count; ++$i){
+						$this->parameters[] = CommonTypes::getString($in);
+					}
+					break;
+			}
 		}
 
 		$this->xboxUserId = CommonTypes::getString($in);
@@ -136,26 +173,52 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		Byte::writeUnsigned($out, $this->type);
+		if ($protocolId < ProtocolInfo::PROTOCOL_1_21_130) {
+			Byte::writeUnsigned($out, $this->type);
+		}
 		CommonTypes::putBool($out, $this->needsTranslation);
 		switch($this->type){
 			case self::TYPE_CHAT:
 			case self::TYPE_WHISPER:
-			/** @noinspection PhpMissingBreakStatementInspection */
 			case self::TYPE_ANNOUNCEMENT:
+				if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+					Byte::writeUnsigned($out, self::TYPE_AUTHOR_AND_MESSAGE);
+					CommonTypes::putString($out, "chat");
+					CommonTypes::putString($out, "whisper");
+					CommonTypes::putString($out, "announcement");
+					Byte::writeUnsigned($out, $this->type);
+				}
 				CommonTypes::putString($out, $this->sourceName);
+				CommonTypes::putString($out, $this->message);
+				break;
 			case self::TYPE_RAW:
 			case self::TYPE_TIP:
 			case self::TYPE_SYSTEM:
 			case self::TYPE_JSON_WHISPER:
 			case self::TYPE_JSON:
 			case self::TYPE_JSON_ANNOUNCEMENT:
+				if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+					Byte::writeUnsigned($out, self::TYPE_MESSAGE_ONLY);
+					CommonTypes::putString($out, "raw");
+					CommonTypes::putString($out, "tip");
+					CommonTypes::putString($out, "systemMessage");
+					CommonTypes::putString($out, "textObjectWhisper");
+					CommonTypes::putString($out, "textObjectAnnouncement");
+					CommonTypes::putString($out, "textObject");
+					Byte::writeUnsigned($out, $this->type);
+				}
 				CommonTypes::putString($out, $this->message);
 				break;
-
 			case self::TYPE_TRANSLATION:
 			case self::TYPE_POPUP:
 			case self::TYPE_JUKEBOX_POPUP:
+				if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+					Byte::writeUnsigned($out, self::TYPE_MESSAGE_AND_PARAMS);
+					CommonTypes::putString($out, "translate");
+					CommonTypes::putString($out, "popup");
+					CommonTypes::putString($out, "jukeboxPopup");
+					Byte::writeUnsigned($out, $this->type);
+				}
 				CommonTypes::putString($out, $this->message);
 				VarInt::writeUnsignedInt($out, count($this->parameters));
 				foreach($this->parameters as $p){

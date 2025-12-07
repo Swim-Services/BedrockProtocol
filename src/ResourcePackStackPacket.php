@@ -72,9 +72,11 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBool($out, $this->mustAccept);
 
-		VarInt::writeUnsignedInt($out, count($this->behaviorPackStack));
-		foreach($this->behaviorPackStack as $entry){
-			$entry->write($out);
+		if ($protocolId < ProtocolInfo::PROTOCOL_1_21_130) {
+			VarInt::writeUnsignedInt($out, count($this->behaviorPackStack));
+			foreach($this->behaviorPackStack as $entry){
+				$entry->write($out);
+			}
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->resourcePackStack));

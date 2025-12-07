@@ -50,12 +50,12 @@ final class ChainedSubCommandRawData{
 		return new self($name, $valueData);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
 
 		VarInt::writeUnsignedInt($out, count($this->valueData));
 		foreach($this->valueData as $valueDatum){
-			$valueDatum->write($out);
+			$valueDatum->write($out, $protocolId);
 		}
 	}
 

@@ -42,10 +42,15 @@ class CommandRequestPacket extends DataPacket implements ServerboundPacket{
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->command = CommonTypes::getString($in);
-		$this->originData = CommonTypes::getCommandOriginData($in);
+		$this->originData = CommonTypes::getCommandOriginData($in, $protocolId);
 		$this->isInternal = CommonTypes::getBool($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_60){
-			$this->version = VarInt::readSignedInt($in);
+			if ($protocolId === ProtocolInfo::PROTOCOL_1_21_130) {
+				CommonTypes::getString($in);
+				$this->version = 48;
+			} else {
+				$this->version = VarInt::readSignedInt($in);
+			}
 		}
 	}
 

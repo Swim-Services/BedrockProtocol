@@ -38,7 +38,11 @@ class InteractPacket extends DataPacket implements ServerboundPacket{
 		$this->action = Byte::readUnsigned($in);
 		$this->targetActorRuntimeId = CommonTypes::getActorRuntimeId($in);
 
-		if($this->action === self::ACTION_MOUSEOVER || $this->action === self::ACTION_LEAVE_VEHICLE){
+		$readXYZ = $this->action === self::ACTION_MOUSEOVER || $this->action === self::ACTION_LEAVE_VEHICLE;
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+			$readXYZ = CommonTypes::getBool($in);
+		}
+		if($readXYZ){
 			//TODO: should this be a vector3?
 			$this->x = LE::readFloat($in);
 			$this->y = LE::readFloat($in);
