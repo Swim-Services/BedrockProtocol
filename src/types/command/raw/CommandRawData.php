@@ -109,7 +109,8 @@ final class CommandRawData{
 			VarInt::writeUnsignedInt($out, count($this->chainedSubCommandDataIndexes));
 			foreach($this->chainedSubCommandDataIndexes as $index){
 				if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
-					LE::writeUnsignedInt($out, $index);
+					//LE::writeUnsignedInt($out, $index);
+					LE::writeUnsignedShort($out, $index);
 				} else {
 					LE::writeUnsignedShort($out, $index);
 				}

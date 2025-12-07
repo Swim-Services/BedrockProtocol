@@ -648,7 +648,7 @@ final class CommonTypes{
 		$result->uuid = self::getUUID($in);
 		$result->requestId = self::getString($in);
 
-		if($result->type === CommandOriginData::ORIGIN_DEV_CONSOLE or $result->type === CommandOriginData::ORIGIN_TEST){
+		if($result->type === CommandOriginData::ORIGIN_DEV_CONSOLE || $result->type === CommandOriginData::ORIGIN_TEST || $protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
 			$result->playerActorUniqueId = VarInt::readSignedLong($in);
 		}
 
