@@ -5,3 +5,5 @@
 !.idea/codeStyles/
 !.idea/fileTemplates/
 /.php-cs-fixer.cache
+
+polyfill.php
