@@ -56,7 +56,11 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->action = VarInt::readSignedInt($in);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_21_130) {
+			$this->action = Byte::readUnsigned($in);
+		} else {
+			$this->action = VarInt::readSignedInt($in);
+		}
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
 			$this->data = LE::readFloat($in);
