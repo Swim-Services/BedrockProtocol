@@ -83,7 +83,7 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 	protected function getCommandMessage(ByteBufferReader $in, int $protocolId) : CommandOutputMessage{
 		$message = new CommandOutputMessage();
 
-		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_120){
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
 			$message->isInternal = CommonTypes::getBool($in);
 		}
 		$message->messageId = CommonTypes::getString($in);
@@ -121,7 +121,7 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 	}
 
 	protected function putCommandMessage(CommandOutputMessage $message, ByteBufferWriter $out, int $protocolId) : void{
-		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_120){
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
 			CommonTypes::putBool($out, $message->isInternal);
 		}
 		CommonTypes::putString($out, $message->messageId);

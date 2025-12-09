@@ -105,7 +105,7 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_120){
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
 			$this->type = Byte::readUnsigned($in);
 		}
 		$this->needsTranslation = CommonTypes::getBool($in);
@@ -171,7 +171,7 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_120){
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
 			Byte::writeUnsigned($out, $this->type);
 		}
 		CommonTypes::putBool($out, $this->needsTranslation);
