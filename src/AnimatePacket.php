@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -34,45 +35,50 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 	public int $action;
 	public int $actorRuntimeId;
 	public float $data = 0.0;
-	public float $rowingTime = 0.0;
+	public ?string $swingSource = null;
 
-	public static function create(int $actorRuntimeId, int $actionId, float $data = 0.0) : self{
+	public static function create(int $actorRuntimeId, int $action, float $data = 0.0, ?string $swingSource = null) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
-		$result->action = $actionId;
+		$result->action = $action;
+		$result->data = $data;
+		$result->swingSource = $swingSource;
+		return $result;
+	}
+
+	public static function boatHack(int $actorRuntimeId, int $action, float $data) : self{
+		if($action !== self::ACTION_ROW_LEFT && $action !== self::ACTION_ROW_RIGHT){
+			throw new \InvalidArgumentException("Invalid actionId for boatHack: $action");
+		}
+
+		$result = self::create($actorRuntimeId, $action);
 		$result->data = $data;
 		return $result;
 	}
 
-	public static function boatHack(int $actorRuntimeId, int $actionId, float $rowingTime) : self{
-		if($actionId !== self::ACTION_ROW_LEFT && $actionId !== self::ACTION_ROW_RIGHT){
-			throw new \InvalidArgumentException("Invalid actionId for boatHack: $actionId");
-		}
-
-		$result = self::create($actorRuntimeId, $actionId);
-		$result->rowingTime = $rowingTime;
-		return $result;
-	}
-
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->action = VarInt::readSignedInt($in);
+		$this->action = $protocolId >= ProtocolInfo::PROTOCOL_1_21_130 ? Byte::readUnsigned($in) : VarInt::readSignedInt($in);
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120 || ($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT)){
 			$this->data = LE::readFloat($in);
 		}
-		if($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT){
-			$this->rowingTime = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$this->swingSource = CommonTypes::readOptional($in, CommonTypes::getString(...));
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		VarInt::writeSignedInt($out, $this->action);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			Byte::writeUnsigned($out, $this->action);
+		}else{
+			VarInt::writeSignedInt($out, $this->action);
+		}
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120 || ($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT)){
 			LE::writeFloat($out, $this->data);
 		}
-		if($this->action === self::ACTION_ROW_LEFT || $this->action === self::ACTION_ROW_RIGHT){
-			LE::writeFloat($out, $this->rowingTime);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::writeOptional($out, $this->swingSource, CommonTypes::putString(...));
 		}
 	}
 
