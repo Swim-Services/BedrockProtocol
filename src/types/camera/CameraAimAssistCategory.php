@@ -29,17 +29,17 @@ final class CameraAimAssistCategory{
 
 	public function getPriorities() : CameraAimAssistCategoryPriorities{ return $this->priorities; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$name = CommonTypes::getString($in);
-		$priorities = CameraAimAssistCategoryPriorities::read($in);
+		$priorities = CameraAimAssistCategoryPriorities::read($in, $protocolId);
 		return new self(
 			$name,
 			$priorities
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
-		$this->priorities->write($out);
+		$this->priorities->write($out, $protocolId);
 	}
 }

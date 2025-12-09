@@ -35,13 +35,21 @@ class InteractPacket extends DataPacket implements ServerboundPacket{
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->action = Byte::readUnsigned($in);
 		$this->targetActorRuntimeId = CommonTypes::getActorRuntimeId($in);
-		$this->position = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$this->position = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
+		}elseif($this->action === self::ACTION_MOUSEOVER || $this->action === self::ACTION_LEAVE_VEHICLE){
+			$this->position = CommonTypes::getVector3($in);
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->action);
 		CommonTypes::putActorRuntimeId($out, $this->targetActorRuntimeId);
-		CommonTypes::writeOptional($out, $this->position, CommonTypes::putVector3(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::writeOptional($out, $this->position, CommonTypes::putVector3(...));
+		}elseif($this->action === self::ACTION_MOUSEOVER || $this->action === self::ACTION_LEAVE_VEHICLE){
+			CommonTypes::putVector3($out, $this->position ?? throw new \InvalidArgumentException("Position must be set for this action"));
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -16,6 +16,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\command\CommandOriginData;
 
@@ -26,31 +27,41 @@ class CommandRequestPacket extends DataPacket implements ServerboundPacket{
 	public CommandOriginData $originData;
 	public bool $isInternal;
 	public string $version;
+	public int $oldVersion;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(string $command, CommandOriginData $originData, bool $isInternal, string $version) : self{
+	public static function create(string $command, CommandOriginData $originData, bool $isInternal, string $version, int $oldVersion) : self{
 		$result = new self;
 		$result->command = $command;
 		$result->originData = $originData;
 		$result->isInternal = $isInternal;
 		$result->version = $version;
+		$result->oldVersion = $oldVersion;
 		return $result;
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->command = CommonTypes::getString($in);
-		$this->originData = CommonTypes::getCommandOriginData($in);
+		$this->originData = CommonTypes::getCommandOriginData($in, $protocolId);
 		$this->isInternal = CommonTypes::getBool($in);
-		$this->version = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$this->version = CommonTypes::getString($in);
+		}else{
+			$this->oldVersion = VarInt::readSignedInt($in);
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->command);
-		CommonTypes::putCommandOriginData($out, $this->originData);
+		CommonTypes::putCommandOriginData($out, $this->originData, $protocolId);
 		CommonTypes::putBool($out, $this->isInternal);
-		CommonTypes::putString($out, $this->version);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::putString($out, $this->version);
+		}else{
+			VarInt::writeSignedInt($out, $this->oldVersion);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

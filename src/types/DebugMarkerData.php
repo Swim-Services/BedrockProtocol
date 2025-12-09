@@ -19,6 +19,7 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pocketmine\color\Color;
 use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 final class DebugMarkerData{
@@ -38,10 +39,19 @@ final class DebugMarkerData{
 
 	public function getDurationMillis() : int{ return $this->durationMillis; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$text = CommonTypes::getString($in);
 		$position = CommonTypes::getVector3($in);
-		$color = Color::fromARGB(LE::readUnsignedInt($in));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$color = new Color(
+				(int) (LE::readFloat($in) * 255),
+				(int) (LE::readFloat($in) * 255),
+				(int) (LE::readFloat($in) * 255),
+				(int) (LE::readFloat($in) * 255)
+			);
+		}else{
+			$color = Color::fromARGB(LE::readUnsignedInt($in));
+		}
 		$durationMillis = LE::readUnsignedLong($in);
 
 		return new self(
@@ -52,10 +62,17 @@ final class DebugMarkerData{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->text);
 		CommonTypes::putVector3($out, $this->position);
-		LE::writeUnsignedInt($out, $this->color->toARGB());
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			LE::writeFloat($out, $this->color->getR() / 255);
+			LE::writeFloat($out, $this->color->getG() / 255);
+			LE::writeFloat($out, $this->color->getB() / 255);
+			LE::writeFloat($out, $this->color->getA() / 255);
+		}else{
+			LE::writeUnsignedInt($out, $this->color->toARGB());
+		}
 		LE::writeUnsignedLong($out, $this->durationMillis);
 	}
 }

@@ -209,14 +209,15 @@ final class AvailableCommandsPacket extends DataPacket implements ClientboundPac
 		}
 
 		$this->enums = [];
+		$valueListSize = count($this->enumValues);
 		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-			$this->enums[] = CommandEnumRawData::read($in);
+			$this->enums[] = CommandEnumRawData::read($in, $valueListSize, $protocolId);
 		}
 
 		$this->chainedSubCommandData = [];
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
 			for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-				$this->chainedSubCommandData[] = ChainedSubCommandRawData::read($in);
+				$this->chainedSubCommandData[] = ChainedSubCommandRawData::read($in, $protocolId);
 			}
 		}
 
@@ -255,14 +256,15 @@ final class AvailableCommandsPacket extends DataPacket implements ClientboundPac
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->enums));
+		$valueListSize = count($this->enumValues);
 		foreach($this->enums as $enum){
-			$enum->write($out);
+			$enum->write($out, $valueListSize, $protocolId);
 		}
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_10){
 			VarInt::writeUnsignedInt($out, count($this->chainedSubCommandData));
 			foreach($this->chainedSubCommandData as $data){
-				$data->write($out);
+				$data->write($out, $protocolId);
 			}
 		}
 

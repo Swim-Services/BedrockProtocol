@@ -64,7 +64,7 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_80){
 				$this->categories[] = CameraAimAssistCategory::read($in, $protocolId);
 			}else{
-				$categories = CameraAimAssistCategories::read($in);
+				$categories = CameraAimAssistCategories::read($in, $protocolId);
 				foreach($categories->getCategories() as $category){
 					$this->categories[] = $category;
 				}
@@ -88,7 +88,7 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 				$category->write($out, $protocolId);
 			}else{
 				$categories = new CameraAimAssistCategories($category->getName(), [$category]);
-				$categories->write($out);
+				$categories->write($out, $protocolId);
 			}
 		}
 

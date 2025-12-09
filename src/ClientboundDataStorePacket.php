@@ -44,7 +44,7 @@ class ClientboundDataStorePacket extends DataPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->values = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$this->values[] = match(DataStoreType::fromPacket(VarInt::readUnsignedInt($in))){
@@ -55,7 +55,7 @@ class ClientboundDataStorePacket extends DataPacket{
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->values));
 		foreach($this->values as $value){
 			VarInt::writeUnsignedInt($out, $value->getTypeId()->value);

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\DataDecodeException;
@@ -22,6 +23,7 @@ use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\command\CommandOriginData;
 use pocketmine\network\mcpe\protocol\types\command\CommandOutputMessage;
+use function array_search;
 use function count;
 
 class CommandOutputPacket extends DataPacket implements ClientboundPacket{
@@ -32,6 +34,13 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 	public const TYPE_ALL = "alloutput";
 	public const TYPE_DATA_SET = "dataset";
 
+	private const TRANSLATION = [
+		self::TYPE_LAST => 1,
+		self::TYPE_SILENT => 2,
+		self::TYPE_ALL => 3,
+		self::TYPE_DATA_SET => 4,
+	];
+
 	public CommandOriginData $originData;
 	public string $outputType;
 	public int $successCount;
@@ -39,26 +48,48 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 	public array $messages = [];
 	public ?string $unknownString;
 
-	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->originData = CommonTypes::getCommandOriginData($in);
-		$this->outputType = CommonTypes::getString($in);
-		$this->successCount = LE::readUnsignedInt($in);
+	private function getOutputTypeFromId(int $typeId) : string{
+		$outputType = array_search($typeId, self::TRANSLATION, true);
+		if($outputType === false){
+			throw new \InvalidArgumentException("Invalid output type id: $typeId");
+		}
+		return $outputType;
+	}
 
-		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; ++$i){
-			$this->messages[] = $this->getCommandMessage($in);
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->originData = CommonTypes::getCommandOriginData($in, $protocolId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$this->outputType = CommonTypes::getString($in);
+			$this->successCount = LE::readUnsignedInt($in);
+		}else{
+			$this->outputType = $this->getOutputTypeFromId(Byte::readUnsigned($in));
+			$this->successCount = VarInt::readUnsignedInt($in);
 		}
 
-		$this->unknownString = CommonTypes::readOptional($in, CommonTypes::getString(...));
+		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; ++$i){
+			$this->messages[] = $this->getCommandMessage($in, $protocolId);
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$this->unknownString = CommonTypes::readOptional($in, CommonTypes::getString(...));
+		}elseif($this->outputType === self::TYPE_DATA_SET){
+			$this->unknownString = CommonTypes::getString($in);
+		}
 	}
 
 	/**
 	 * @throws DataDecodeException
 	 */
-	protected function getCommandMessage(ByteBufferReader $in) : CommandOutputMessage{
+	protected function getCommandMessage(ByteBufferReader $in, int $protocolId) : CommandOutputMessage{
 		$message = new CommandOutputMessage();
 
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_120){
+			$message->isInternal = CommonTypes::getBool($in);
+		}
 		$message->messageId = CommonTypes::getString($in);
-		$message->isInternal = CommonTypes::getBool($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$message->isInternal = CommonTypes::getBool($in);
+		}
 
 		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; ++$i){
 			$message->parameters[] = CommonTypes::getString($in);
@@ -68,21 +99,35 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		CommonTypes::putCommandOriginData($out, $this->originData);
-		CommonTypes::putString($out, $this->outputType);
-		LE::writeUnsignedInt($out, $this->successCount);
+		CommonTypes::putCommandOriginData($out, $this->originData, $protocolId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::putString($out, $this->outputType);
+			LE::writeUnsignedInt($out, $this->successCount);
+		}else{
+			Byte::writeUnsigned($out, self::TRANSLATION[$this->outputType] ?? throw new \InvalidArgumentException("Invalid action type for protocol $protocolId: $this->outputType"));
+			VarInt::writeUnsignedInt($out, $this->successCount);
+		}
 
 		VarInt::writeUnsignedInt($out, count($this->messages));
 		foreach($this->messages as $message){
-			$this->putCommandMessage($message, $out);
+			$this->putCommandMessage($message, $out, $protocolId);
 		}
 
-		CommonTypes::writeOptional($out, $this->unknownString, CommonTypes::putString(...));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::writeOptional($out, $this->unknownString, CommonTypes::putString(...));
+		}elseif($this->outputType === self::TYPE_DATA_SET){
+			CommonTypes::putString($out, $this->unknownString ?? throw new \InvalidArgumentException("unknownString must be set for outputType dataset"));
+		}
 	}
 
-	protected function putCommandMessage(CommandOutputMessage $message, ByteBufferWriter $out) : void{
+	protected function putCommandMessage(CommandOutputMessage $message, ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_120){
+			CommonTypes::putBool($out, $message->isInternal);
+		}
 		CommonTypes::putString($out, $message->messageId);
-		CommonTypes::putBool($out, $message->isInternal);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::putBool($out, $message->isInternal);
+		}
 
 		VarInt::writeUnsignedInt($out, count($message->parameters));
 		foreach($message->parameters as $parameter){
