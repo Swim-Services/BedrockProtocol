@@ -52,7 +52,7 @@ class AdventureSettingsPacket extends DataPacket implements ClientboundPacket, S
 	public const DEFAULT = 0x200 | self::BITFLAG_SECOND_SET;
 
 	public int $flags = 0;
-	public int $commandPermission = CommandPermissions::NORMAL;
+	public CommandPermissions $commandPermission = CommandPermissions::NORMAL;
 	public int $flags2 = -1;
 	public int $playerPermission = PlayerPermissions::MEMBER;
 	public int $customFlags = 0; //...
@@ -61,7 +61,7 @@ class AdventureSettingsPacket extends DataPacket implements ClientboundPacket, S
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(int $flags, int $commandPermission, int $flags2, int $playerPermission, int $customFlags, int $targetActorUniqueId) : self{
+	public static function create(int $flags, CommandPermissions $commandPermission, int $flags2, int $playerPermission, int $customFlags, int $targetActorUniqueId) : self{
 		$result = new self;
 		$result->flags = $flags;
 		$result->commandPermission = $commandPermission;
@@ -74,7 +74,7 @@ class AdventureSettingsPacket extends DataPacket implements ClientboundPacket, S
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->flags = VarInt::readUnsignedInt($in);
-		$this->commandPermission = VarInt::readUnsignedInt($in);
+		$this->commandPermission = CommandPermissions::fromPacket(VarInt::readUnsignedInt($in));
 		$this->flags2 = VarInt::readUnsignedInt($in);
 		$this->playerPermission = VarInt::readUnsignedInt($in);
 		$this->customFlags = VarInt::readUnsignedInt($in);
@@ -83,7 +83,7 @@ class AdventureSettingsPacket extends DataPacket implements ClientboundPacket, S
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->flags);
-		VarInt::writeUnsignedInt($out,$this->commandPermission);
+		VarInt::writeUnsignedInt($out,$this->commandPermission->value);
 		VarInt::writeUnsignedInt($out,$this->flags2);
 		VarInt::writeUnsignedInt($out,$this->playerPermission);
 		VarInt::writeUnsignedInt($out,$this->customFlags);
