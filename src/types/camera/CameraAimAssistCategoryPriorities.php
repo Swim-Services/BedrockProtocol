@@ -18,6 +18,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -26,10 +27,12 @@ final class CameraAimAssistCategoryPriorities{
 	/**
 	 * @param CameraAimAssistCategoryEntityPriority[] $entities
 	 * @param CameraAimAssistCategoryBlockPriority[] $blocks
+	 * @param int[] $blockTags
 	 */
 	public function __construct(
 		private array $entities,
 		private array $blocks,
+		private array $blockTags,
 		private ?int $defaultEntityPriority,
 		private ?int $defaultBlockPriority
 	){}
@@ -44,11 +47,16 @@ final class CameraAimAssistCategoryPriorities{
 	 */
 	public function getBlocks() : array{ return $this->blocks; }
 
+	/**
+	 * @return int[]
+	 */
+	public function getBlockTags() : array{ return $this->blockTags; }
+
 	public function getDefaultEntityPriority() : ?int{ return $this->defaultEntityPriority; }
 
 	public function getDefaultBlockPriority() : ?int{ return $this->defaultBlockPriority; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$entities = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$entities[] = CameraAimAssistCategoryEntityPriority::read($in);
@@ -59,17 +67,25 @@ final class CameraAimAssistCategoryPriorities{
 			$blocks[] = CameraAimAssistCategoryBlockPriority::read($in);
 		}
 
+		$blockTags = [];
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+				$blockTags[] = VarInt::readUnsignedInt($in);
+			}
+		}
+
 		$defaultEntityPriority = CommonTypes::readOptional($in, LE::readSignedInt(...));
 		$defaultBlockPriority = CommonTypes::readOptional($in, LE::readSignedInt(...));
 		return new self(
 			$entities,
 			$blocks,
+			$blockTags,
 			$defaultEntityPriority,
 			$defaultBlockPriority
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->entities));
 		foreach($this->entities as $entity){
 			$entity->write($out);
@@ -78,6 +94,13 @@ final class CameraAimAssistCategoryPriorities{
 		VarInt::writeUnsignedInt($out, count($this->blocks));
 		foreach($this->blocks as $block){
 			$block->write($out);
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			VarInt::writeUnsignedInt($out, count($this->blockTags));
+			foreach($this->blockTags as $tag){
+				VarInt::writeUnsignedInt($out, $tag);
+			}
 		}
 
 		CommonTypes::writeOptional($out, $this->defaultEntityPriority, LE::writeSignedInt(...));

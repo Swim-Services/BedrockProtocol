@@ -203,7 +203,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
 			$this->blockNetworkIdsAreHashes = CommonTypes::getBool($in);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100 && $protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
 			$this->enableTickDeathSystems = CommonTypes::getBool($in);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0){
@@ -263,7 +263,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
 			CommonTypes::putBool($out, $this->blockNetworkIdsAreHashes);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100 && $protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
 			CommonTypes::putBool($out, $this->enableTickDeathSystems);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0) {

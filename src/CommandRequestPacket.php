@@ -26,35 +26,46 @@ class CommandRequestPacket extends DataPacket implements ServerboundPacket{
 	public string $command;
 	public CommandOriginData $originData;
 	public bool $isInternal;
-	public int $version;
+	public string $version;
+	public int $oldVersion;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(string $command, CommandOriginData $originData, bool $isInternal, int $version) : self{
+	public static function create(string $command, CommandOriginData $originData, bool $isInternal, string $version, int $oldVersion) : self{
 		$result = new self;
 		$result->command = $command;
 		$result->originData = $originData;
 		$result->isInternal = $isInternal;
 		$result->version = $version;
+		$result->oldVersion = $oldVersion;
 		return $result;
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->command = CommonTypes::getString($in);
-		$this->originData = CommonTypes::getCommandOriginData($in);
+		$this->originData = CommonTypes::getCommandOriginData($in, $protocolId);
 		$this->isInternal = CommonTypes::getBool($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_60){
-			$this->version = VarInt::readSignedInt($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+				$this->version = CommonTypes::getString($in);
+			}else{
+				$this->oldVersion = VarInt::readSignedInt($in);
+			}
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->command);
-		CommonTypes::putCommandOriginData($out, $this->originData);
+		CommonTypes::putCommandOriginData($out, $this->originData, $protocolId);
 		CommonTypes::putBool($out, $this->isInternal);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_60){
 			VarInt::writeSignedInt($out, $this->version);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+				CommonTypes::putString($out, $this->version);
+			}else{
+				VarInt::writeSignedInt($out, $this->oldVersion);
+			}
 		}
 	}
 

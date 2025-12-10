@@ -39,23 +39,23 @@ final class ChainedSubCommandRawData{
 	 */
 	public function getValueData() : array{ return $this->valueData; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$name = CommonTypes::getString($in);
 
 		$valueData = [];
 		for($i = 0, $size = VarInt::readUnsignedInt($in); $i < $size; $i++){
-			$valueData[] = ChainedSubCommandValueRawData::read($in);
+			$valueData[] = ChainedSubCommandValueRawData::read($in, $protocolId);
 		}
 
 		return new self($name, $valueData);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
 
 		VarInt::writeUnsignedInt($out, count($this->valueData));
 		foreach($this->valueData as $valueDatum){
-			$valueDatum->write($out);
+			$valueDatum->write($out, $protocolId);
 		}
 	}
 

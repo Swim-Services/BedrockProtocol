@@ -17,27 +17,25 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
-use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use pocketmine\network\mcpe\protocol\types\DebugMarkerData;
+use function array_search;
 
 class ClientboundDebugRendererPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::CLIENTBOUND_DEBUG_RENDERER_PACKET;
 
-	public const TYPE_CLEAR = 1;
-	public const TYPE_ADD_CUBE = 2;
+	public const TYPE_CLEAR = "cleardebugmarkers";
+	public const TYPE_ADD_CUBE = "adddebugmarkercube";
 
-	private int $type;
+	private const TRANSLATION = [
+		self::TYPE_CLEAR => 1,
+		self::TYPE_ADD_CUBE => 2,
+	];
 
-	//TODO: if more types are added, we'll probably want to make a separate data type and interfaces
-	private string $text;
-	private Vector3 $position;
-	private float $red;
-	private float $green;
-	private float $blue;
-	private float $alpha;
-	private int $durationMillis;
+	private string $type;
+	private ?DebugMarkerData $data = null;
 
-	private static function base(int $type) : self{
+	private static function base(string $type) : self{
 		$result = new self;
 		$result->type = $type;
 		return $result;
@@ -45,73 +43,48 @@ class ClientboundDebugRendererPacket extends DataPacket implements ClientboundPa
 
 	public static function clear() : self{ return self::base(self::TYPE_CLEAR); }
 
-	public static function addCube(string $text, Vector3 $position, float $red, float $green, float $blue, float $alpha, int $durationMillis) : self{
+	public static function addCube(DebugMarkerData $data) : self{
 		$result = self::base(self::TYPE_ADD_CUBE);
-		$result->text = $text;
-		$result->position = $position;
-		$result->red = $red;
-		$result->green = $green;
-		$result->blue = $blue;
-		$result->alpha = $alpha;
-		$result->durationMillis = $durationMillis;
+		$result->data = $data;
 		return $result;
 	}
 
-	public function getType() : int{ return $this->type; }
+	private function getTypeFromId(int $typeId) : string{
+		$type = array_search($typeId, self::TRANSLATION, true);
+		if($type === false){
+			throw new \InvalidArgumentException("Invalid type id: $typeId");
+		}
+		return $type;
+	}
 
-	public function getText() : string{ return $this->text; }
+	public function getType() : string{ return $this->type; }
 
-	public function getPosition() : Vector3{ return $this->position; }
-
-	public function getRed() : float{ return $this->red; }
-
-	public function getGreen() : float{ return $this->green; }
-
-	public function getBlue() : float{ return $this->blue; }
-
-	public function getAlpha() : float{ return $this->alpha; }
-
-	public function getDurationMillis() : int{ return $this->durationMillis; }
+	public function getData() : ?DebugMarkerData{ return $this->data; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->type = LE::readUnsignedInt($in);
-
-		switch($this->type){
-			case self::TYPE_CLEAR:
-				//NOOP
-				break;
-			case self::TYPE_ADD_CUBE:
-				$this->text = CommonTypes::getString($in);
-				$this->position = CommonTypes::getVector3($in);
-				$this->red = LE::readFloat($in);
-				$this->green = LE::readFloat($in);
-				$this->blue = LE::readFloat($in);
-				$this->alpha = LE::readFloat($in);
-				$this->durationMillis = LE::readUnsignedLong($in);
-				break;
-			default:
-				throw new PacketDecodeException("Unknown type " . $this->type);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$this->type = CommonTypes::getString($in);
+			$this->data = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => DebugMarkerData::read($in, $protocolId));
+		}else{
+			$this->type = $this->getTypeFromId(LE::readUnsignedInt($in));
+			if($this->type === self::TYPE_ADD_CUBE){
+				$this->data = DebugMarkerData::read($in, $protocolId);
+			}
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		LE::writeUnsignedInt($out, $this->type);
-
-		switch($this->type){
-			case self::TYPE_CLEAR:
-				//NOOP
-				break;
-			case self::TYPE_ADD_CUBE:
-				CommonTypes::putString($out, $this->text);
-				CommonTypes::putVector3($out, $this->position);
-				LE::writeFloat($out, $this->red);
-				LE::writeFloat($out, $this->green);
-				LE::writeFloat($out, $this->blue);
-				LE::writeFloat($out, $this->alpha);
-				LE::writeUnsignedLong($out, $this->durationMillis);
-				break;
-			default:
-				throw new \InvalidArgumentException("Unknown type " . $this->type);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::putString($out, $this->type);
+			CommonTypes::writeOptional($out, $this->data, fn(ByteBufferWriter $out, DebugMarkerData $data) => $data->write($out, $protocolId));
+		}else{
+			LE::writeUnsignedInt($out, self::TRANSLATION[$this->type] ?? throw new \InvalidArgumentException("Invalid action type for protocol $protocolId: $this->type"));
+			if($this->type === self::TYPE_ADD_CUBE){
+				if($this->data === null){
+					throw new \InvalidArgumentException("DebugMarkerData must be set for type " . self::TYPE_ADD_CUBE);
+				}
+				$this->data->write($out, $protocolId);
+			}
 		}
 	}
 

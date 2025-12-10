@@ -35,6 +35,7 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 	public bool $particles = true;
 	public int $duration = 0;
 	public int $tick = 0;
+	public bool $ambient = true;
 
 	/**
 	 * @generate-create-func
@@ -47,6 +48,7 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		bool $particles,
 		int $duration,
 		int $tick,
+		bool $ambient,
 	) : self{
 		$result = new self;
 		$result->actorRuntimeId = $actorRuntimeId;
@@ -56,15 +58,16 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		$result->particles = $particles;
 		$result->duration = $duration;
 		$result->tick = $tick;
+		$result->ambient = $ambient;
 		return $result;
 	}
 
-	public static function add(int $actorRuntimeId, bool $replace, int $effectId, int $amplifier, bool $particles, int $duration, int $tick) : self{
-		return self::create($actorRuntimeId, $replace ? self::EVENT_MODIFY : self::EVENT_ADD, $effectId, $amplifier, $particles, $duration, $tick);
+	public static function add(int $actorRuntimeId, bool $replace, int $effectId, int $amplifier, bool $particles, int $duration, int $tick, bool $ambient) : self{
+		return self::create($actorRuntimeId, $replace ? self::EVENT_MODIFY : self::EVENT_ADD, $effectId, $amplifier, $particles, $duration, $tick, $ambient);
 	}
 
 	public static function remove(int $actorRuntimeId, int $effectId, int $tick) : self{
-		return self::create($actorRuntimeId, self::EVENT_REMOVE, $effectId, 0, false, 0, $tick);
+		return self::create($actorRuntimeId, self::EVENT_REMOVE, $effectId, 0, false, 0, $tick, false);
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
@@ -76,6 +79,9 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		$this->duration = VarInt::readSignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
 			$this->tick = VarInt::readUnsignedLong($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+				$this->ambient = CommonTypes::getBool($in);
+			}
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
 			$this->tick = LE::readSignedLong($in);
 		}
@@ -90,6 +96,9 @@ class MobEffectPacket extends DataPacket implements ClientboundPacket{
 		VarInt::writeSignedInt($out, $this->duration);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
 			VarInt::writeUnsignedLong($out, $this->tick);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+				CommonTypes::putBool($out, $this->ambient);
+			}
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_20_70){
 			LE::writeSignedLong($out, $this->tick);
 		}

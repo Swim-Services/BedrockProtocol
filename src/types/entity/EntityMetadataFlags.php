@@ -225,6 +225,7 @@ final class EntityMetadataFlags{
 	}
 	public const BODY_ROTATION_ALWAYS_FOLLOWS_HEAD = 124;
 	public const CAN_USE_VERTICAL_MOVEMENT_ACTION = 125;
+	public const ROTATION_LOCKED_TO_VEHICLE = 126;
 
-	public const NUMBER_OF_FLAGS = 126;
+	public const NUMBER_OF_FLAGS = 127;
 }

@@ -632,26 +632,32 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	public static function getCommandOriginData(ByteBufferReader $in) : CommandOriginData{
+	public static function getCommandOriginData(ByteBufferReader $in, int $protocolId) : CommandOriginData{
 		$result = new CommandOriginData();
 
-		$result->type = VarInt::readUnsignedInt($in);
+		$result->type = $protocolId >= ProtocolInfo::PROTOCOL_1_21_130 ? CommonTypes::getString($in) : CommandOriginData::getTypeFromId(VarInt::readUnsignedInt($in));
 		$result->uuid = self::getUUID($in);
 		$result->requestId = self::getString($in);
-
-		if($result->type === CommandOriginData::ORIGIN_DEV_CONSOLE or $result->type === CommandOriginData::ORIGIN_TEST){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$result->playerActorUniqueId = LE::readSignedLong($in);
+		}elseif($result->type === CommandOriginData::ORIGIN_DEV_CONSOLE or $result->type === CommandOriginData::ORIGIN_TEST){
 			$result->playerActorUniqueId = VarInt::readSignedLong($in);
 		}
 
 		return $result;
 	}
 
-	public static function putCommandOriginData(ByteBufferWriter $out, CommandOriginData $data) : void{
-		VarInt::writeUnsignedInt($out, $data->type);
+	public static function putCommandOriginData(ByteBufferWriter $out, CommandOriginData $data, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			self::putString($out, $data->type);
+		}else{
+			VarInt::writeUnsignedInt($out, CommandOriginData::getIdFromType($data->type));
+		}
 		self::putUUID($out, $data->uuid);
 		self::putString($out, $data->requestId);
-
-		if($data->type === CommandOriginData::ORIGIN_DEV_CONSOLE or $data->type === CommandOriginData::ORIGIN_TEST){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			LE::writeSignedLong($out, $data->playerActorUniqueId);
+		}elseif($data->type === CommandOriginData::ORIGIN_DEV_CONSOLE or $data->type === CommandOriginData::ORIGIN_TEST){
 			VarInt::writeSignedLong($out, $data->playerActorUniqueId);
 		}
 	}

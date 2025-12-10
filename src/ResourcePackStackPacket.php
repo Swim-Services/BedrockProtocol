@@ -52,9 +52,11 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->mustAccept = CommonTypes::getBool($in);
-		$behaviorPackCount = VarInt::readUnsignedInt($in);
-		while($behaviorPackCount-- > 0){
-			$this->behaviorPackStack[] = ResourcePackStackEntry::read($in);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
+			$behaviorPackCount = VarInt::readUnsignedInt($in);
+			while($behaviorPackCount-- > 0){
+				$this->behaviorPackStack[] = ResourcePackStackEntry::read($in);
+			}
 		}
 
 		$resourcePackCount = VarInt::readUnsignedInt($in);
@@ -71,10 +73,11 @@ class ResourcePackStackPacket extends DataPacket implements ClientboundPacket{
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putBool($out, $this->mustAccept);
-
-		VarInt::writeUnsignedInt($out, count($this->behaviorPackStack));
-		foreach($this->behaviorPackStack as $entry){
-			$entry->write($out);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_21_124){
+			VarInt::writeUnsignedInt($out, count($this->behaviorPackStack));
+			foreach($this->behaviorPackStack as $entry){
+				$entry->write($out);
+			}
 		}
 
 		VarInt::writeUnsignedInt($out, count($this->resourcePackStack));

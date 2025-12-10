@@ -17,7 +17,7 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pmmp\encoding\LE;
+use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class InteractPacket extends DataPacket implements ServerboundPacket{
@@ -30,30 +30,25 @@ class InteractPacket extends DataPacket implements ServerboundPacket{
 
 	public int $action;
 	public int $targetActorRuntimeId;
-	public float $x;
-	public float $y;
-	public float $z;
+	public ?Vector3 $position = null;
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->action = Byte::readUnsigned($in);
 		$this->targetActorRuntimeId = CommonTypes::getActorRuntimeId($in);
-
-		if($this->action === self::ACTION_MOUSEOVER || $this->action === self::ACTION_LEAVE_VEHICLE){
-			//TODO: should this be a vector3?
-			$this->x = LE::readFloat($in);
-			$this->y = LE::readFloat($in);
-			$this->z = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			$this->position = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
+		}elseif($this->action === self::ACTION_MOUSEOVER || $this->action === self::ACTION_LEAVE_VEHICLE){
+			$this->position = CommonTypes::getVector3($in);
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->action);
 		CommonTypes::putActorRuntimeId($out, $this->targetActorRuntimeId);
-
-		if($this->action === self::ACTION_MOUSEOVER || $this->action === self::ACTION_LEAVE_VEHICLE){
-			LE::writeFloat($out, $this->x);
-			LE::writeFloat($out, $this->y);
-			LE::writeFloat($out, $this->z);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
+			CommonTypes::writeOptional($out, $this->position, CommonTypes::putVector3(...));
+		}elseif($this->action === self::ACTION_MOUSEOVER || $this->action === self::ACTION_LEAVE_VEHICLE){
+			CommonTypes::putVector3($out, $this->position ?? throw new \InvalidArgumentException("Position must be set for this action"));
 		}
 	}
 

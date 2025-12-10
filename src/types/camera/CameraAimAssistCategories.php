@@ -37,12 +37,12 @@ final class CameraAimAssistCategories{
 	 */
 	public function getCategories() : array{ return $this->categories; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$identifier = CommonTypes::getString($in);
 
 		$categories = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$categories[] = CameraAimAssistCategory::read($in);
+			$categories[] = CameraAimAssistCategory::read($in, $protocolId);
 		}
 
 		return new self(
@@ -51,11 +51,11 @@ final class CameraAimAssistCategories{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->identifier);
 		VarInt::writeUnsignedInt($out, count($this->categories));
 		foreach($this->categories as $category){
-			$category->write($out);
+			$category->write($out, $protocolId);
 		}
 	}
 }
