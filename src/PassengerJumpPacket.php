@@ -16,26 +16,16 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-<<<<<<<< HEAD:src/PassengerJumpPacket.php
 use pmmp\encoding\VarInt;
 
 class PassengerJumpPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::PASSENGER_JUMP_PACKET;
 
 	public int $jumpStrength; //percentage
-========
-use pocketmine\network\mcpe\protocol\types\DataStoreUpdate;
-
-class ServerboundDataStorePacket extends DataPacket implements ServerboundPacket{
-	public const NETWORK_ID = ProtocolInfo::SERVERBOUND_DATA_STORE_PACKET;
-
-	private DataStoreUpdate $update;
->>>>>>>> upstream/master:src/ServerboundDataStorePacket.php
 
 	/**
 	 * @generate-create-func
 	 */
-<<<<<<<< HEAD:src/PassengerJumpPacket.php
 	public static function create(int $jumpStrength) : self{
 		$result = new self;
 		$result->jumpStrength = $jumpStrength;
@@ -52,25 +42,5 @@ class ServerboundDataStorePacket extends DataPacket implements ServerboundPacket
 
 	public function handle(PacketHandlerInterface $handler) : bool{
 		return $handler->handlePassengerJump($this);
-========
-	public static function create(DataStoreUpdate $update) : self{
-		$result = new self;
-		$result->update = $update;
-		return $result;
-	}
-
-	public function getUpdate() : DataStoreUpdate{ return $this->update; }
-
-	protected function decodePayload(ByteBufferReader $in) : void{
-		$this->update = DataStoreUpdate::read($in);
-	}
-
-	protected function encodePayload(ByteBufferWriter $out) : void{
-		$this->update->write($out);
-	}
-
-	public function handle(PacketHandlerInterface $handler) : bool{
-		return $handler->handleServerboundDataStore($this);
->>>>>>>> upstream/master:src/ServerboundDataStorePacket.php
 	}
 }

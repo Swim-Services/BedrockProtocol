@@ -46,7 +46,7 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 	public int $successCount;
 	/** @var CommandOutputMessage[] */
 	public array $messages = [];
-	public ?string $unknownString;
+	public ?string $data;
 
 	private function getOutputTypeFromId(int $typeId) : string{
 		$outputType = array_search($typeId, self::TRANSLATION, true);
@@ -71,9 +71,9 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 		}
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
-			$this->unknownString = CommonTypes::readOptional($in, CommonTypes::getString(...));
+			$this->data = CommonTypes::readOptional($in, CommonTypes::getString(...));
 		}elseif($this->outputType === self::TYPE_DATA_SET){
-			$this->unknownString = CommonTypes::getString($in);
+			$this->data = CommonTypes::getString($in);
 		}
 	}
 
@@ -114,9 +114,9 @@ class CommandOutputPacket extends DataPacket implements ClientboundPacket{
 		}
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
-			CommonTypes::writeOptional($out, $this->unknownString, CommonTypes::putString(...));
+			CommonTypes::writeOptional($out, $this->data, CommonTypes::putString(...));
 		}elseif($this->outputType === self::TYPE_DATA_SET){
-			CommonTypes::putString($out, $this->unknownString ?? throw new \InvalidArgumentException("unknownString must be set for outputType dataset"));
+			CommonTypes::putString($out, $this->data ?? throw new \InvalidArgumentException("unknownString must be set for outputType dataset"));
 		}
 	}
 

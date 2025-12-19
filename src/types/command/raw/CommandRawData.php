@@ -36,7 +36,7 @@ final class CommandRawData{
 		private string $name,
 		private string $description,
 		private int $flags,
-		private CommandPermissions $permission,
+		private string $permission,
 		private int $aliasEnumIndex,
 		private array $chainedSubCommandDataIndexes,
 		private array $overloads,
@@ -48,7 +48,7 @@ final class CommandRawData{
 
 	public function getFlags() : int{ return $this->flags; }
 
-	public function getPermission() : CommandPermissions{ return $this->permission; }
+	public function getPermission() : string{ return $this->permission; }
 
 	public function getAliasEnumIndex() : int{ return $this->aliasEnumIndex; }
 
@@ -68,7 +68,7 @@ final class CommandRawData{
 		$name = CommonTypes::getString($in);
 		$description = CommonTypes::getString($in);
 		$flags = LE::readUnsignedShort($in);
-		$permission = $protocolId >= ProtocolInfo::PROTOCOL_1_21_130 ? CommandPermissions::fromPermissionName(CommonTypes::getString($in)) : CommandPermissions::fromPacket(Byte::readUnsigned($in));
+		$permission = $protocolId >= ProtocolInfo::PROTOCOL_1_21_130 ? CommonTypes::getString($in) : CommandPermissions::toName(Byte::readUnsigned($in));
 		$aliasEnumIndex = LE::readSignedInt($in); //may be -1 for not set
 
 		$chainedSubCommandDataIndexes = [];
@@ -99,9 +99,9 @@ final class CommandRawData{
 		CommonTypes::putString($out, $this->description);
 		LE::writeUnsignedShort($out, $this->flags);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
-			CommonTypes::putString($out, $this->permission->getPermissionName());
+			CommonTypes::putString($out, $this->permission);
 		}else{
-			Byte::writeUnsigned($out, $this->permission->value);
+			Byte::writeUnsigned($out, CommandPermissions::fromName($this->permission));
 		}
 		LE::writeSignedInt($out, $this->aliasEnumIndex);
 
