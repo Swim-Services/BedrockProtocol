@@ -20,7 +20,6 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
-use function in_array;
 
 class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::TEXT_PACKET;
@@ -28,6 +27,27 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	private const CATEGORY_MESSAGE_ONLY = 0;
 	private const CATEGORY_AUTHORED_MESSAGE = 1;
 	private const CATEGORY_MESSAGE_WITH_PARAMETERS = 2;
+
+	private const CATEGORY_DUMMY_STRINGS = [
+		self::CATEGORY_MESSAGE_ONLY => [
+			'raw',
+			'tip',
+			'systemMessage',
+			'textObjectWhisper',
+			'textObjectAnnouncement',
+			'textObject'
+		],
+		self::CATEGORY_AUTHORED_MESSAGE => [
+			'chat',
+			'whisper',
+			'announcement'
+		],
+		self::CATEGORY_MESSAGE_WITH_PARAMETERS => [
+			'translate',
+			'popup',
+			'jukeboxPopup',
+		]
+	];
 
 	public const TYPE_RAW = 0;
 	public const TYPE_CHAT = 1;
@@ -55,7 +75,8 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	private static function messageOnly(int $type, string $message) : self{
 		$result = new self;
 		$result->type = $type;
-		$result->message = $message;
+		//TODO: HACK! Empty message crashes or bugs out client in 1.21.130
+		$result->message = $message === "" ? " " : $message;
 		return $result;
 	}
 
@@ -66,7 +87,8 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 		$result = new self;
 		$result->type = $type;
 		$result->needsTranslation = true;
-		$result->message = $key;
+		//TODO: HACK! Empty message crashes or bugs out client in 1.21.130
+		$result->message = $key === "" ? " " : $key;
 		$result->parameters = $parameters;
 		return $result;
 	}
@@ -112,47 +134,46 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
 			$category = Byte::readUnsigned($in);
-			switch($category){
-				case self::CATEGORY_MESSAGE_ONLY:
-					CommonTypes::getString($in); // raw
-					CommonTypes::getString($in); // tip
-					CommonTypes::getString($in); // systemMessage
-					CommonTypes::getString($in); // textObjectWhisper
-					CommonTypes::getString($in); // textObjectAnnouncement
-					CommonTypes::getString($in); // textObject
-					break;
-				case self::CATEGORY_AUTHORED_MESSAGE:
-					CommonTypes::getString($in); // chat
-					CommonTypes::getString($in); // whisper
-					CommonTypes::getString($in); // announcement
-					break;
-				case self::CATEGORY_MESSAGE_WITH_PARAMETERS:
-					CommonTypes::getString($in); // translation
-					CommonTypes::getString($in); // popup
-					CommonTypes::getString($in); // jukeboxPopup
-					break;
+			$expectedDummyStrings = self::CATEGORY_DUMMY_STRINGS[$category] ?? throw new PacketDecodeException("Unknown category ID $category");
+			foreach($expectedDummyStrings as $k => $expectedDummyString){
+				$actual = CommonTypes::getString($in);
+				if($expectedDummyString !== $actual){
+					throw new PacketDecodeException("Dummy string mismatch for category $category at position $k: expected $expectedDummyString, got $actual");
+				}
 			}
 
 			$this->type = Byte::readUnsigned($in);
+		}else{
+			$category = null;
 		}
 		switch($this->type){
 			case self::TYPE_CHAT:
 			case self::TYPE_WHISPER:
 			/** @noinspection PhpMissingBreakStatementInspection */
 			case self::TYPE_ANNOUNCEMENT:
+				if($category !== null && $category !== self::CATEGORY_AUTHORED_MESSAGE){
+					throw new PacketDecodeException("Decoded TextPacket has invalid structure: type {$this->type} requires category CATEGORY_AUTHORED_MESSAGE");
+				}
 				$this->sourceName = CommonTypes::getString($in);
+				$this->message = CommonTypes::getString($in);
+				break;
 			case self::TYPE_RAW:
 			case self::TYPE_TIP:
 			case self::TYPE_SYSTEM:
 			case self::TYPE_JSON_WHISPER:
 			case self::TYPE_JSON:
 			case self::TYPE_JSON_ANNOUNCEMENT:
+				if($category !== null && $category !== self::CATEGORY_MESSAGE_ONLY){
+					throw new PacketDecodeException("Decoded TextPacket has invalid structure: type {$this->type} requires category CATEGORY_MESSAGE_ONLY");
+				}
 				$this->message = CommonTypes::getString($in);
 				break;
-
 			case self::TYPE_TRANSLATION:
 			case self::TYPE_POPUP:
 			case self::TYPE_JUKEBOX_POPUP:
+				if($category !== null && $category !== self::CATEGORY_MESSAGE_WITH_PARAMETERS){
+					throw new PacketDecodeException("Decoded TextPacket has invalid structure: type {$this->type} requires category CATEGORY_MESSAGE_WITH_PARAMETERS");
+				}
 				$this->message = CommonTypes::getString($in);
 				$count = VarInt::readUnsignedInt($in);
 				for($i = 0; $i < $count; ++$i){
@@ -177,35 +198,27 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 		CommonTypes::putBool($out, $this->needsTranslation);
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
-			if(in_array($this->type, [
+			$category = match ($this->type) {
 				self::TYPE_RAW,
 				self::TYPE_TIP,
 				self::TYPE_SYSTEM,
 				self::TYPE_JSON_WHISPER,
 				self::TYPE_JSON_ANNOUNCEMENT,
-				self::TYPE_JSON,
-			], true)){
-				Byte::writeUnsigned($out, self::CATEGORY_MESSAGE_ONLY);
-				CommonTypes::putString($out, 'raw');
-				CommonTypes::putString($out, 'tip');
-				CommonTypes::putString($out, 'systemMessage');
-				CommonTypes::putString($out, 'textObjectWhisper');
-				CommonTypes::putString($out, 'textObjectAnnouncement');
-				CommonTypes::putString($out, 'textObject');
-			}elseif(in_array($this->type, [
+				self::TYPE_JSON => self::CATEGORY_MESSAGE_ONLY,
+
 				self::TYPE_CHAT,
 				self::TYPE_WHISPER,
-				self::TYPE_ANNOUNCEMENT,
-			], true)){
-				Byte::writeUnsigned($out, self::CATEGORY_AUTHORED_MESSAGE);
-				CommonTypes::putString($out, 'chat');
-				CommonTypes::putString($out, 'whisper');
-				CommonTypes::putString($out, 'announcement');
-			}else{
-				Byte::writeUnsigned($out, self::CATEGORY_MESSAGE_WITH_PARAMETERS);
-				CommonTypes::putString($out, 'translate');
-				CommonTypes::putString($out, 'popup');
-				CommonTypes::putString($out, 'jukeboxPopup');
+				self::TYPE_ANNOUNCEMENT => self::CATEGORY_AUTHORED_MESSAGE,
+
+				self::TYPE_TRANSLATION,
+				self::TYPE_POPUP,
+				self::TYPE_JUKEBOX_POPUP => self::CATEGORY_MESSAGE_WITH_PARAMETERS,
+
+				default => throw new \LogicException("Invalid TextPacket type: $this->type")
+			};
+			Byte::writeUnsigned($out, $category);
+			foreach(self::CATEGORY_DUMMY_STRINGS[$category] as $dummyString){
+				CommonTypes::putString($out, $dummyString);
 			}
 
 			Byte::writeUnsigned($out, $this->type);
@@ -213,7 +226,6 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 		switch($this->type){
 			case self::TYPE_CHAT:
 			case self::TYPE_WHISPER:
-			/** @noinspection PhpMissingBreakStatementInspection */
 			case self::TYPE_ANNOUNCEMENT:
 				CommonTypes::putString($out, $this->sourceName);
 			case self::TYPE_RAW:

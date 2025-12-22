@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 /**
@@ -32,7 +33,7 @@ final class DataStoreChange extends DataStore {
 		private DataStoreValue $data
 	){}
 
-	public function getTypeId() : DataStoreType{
+	public function getTypeId() : int{
 		return self::ID;
 	}
 
@@ -49,19 +50,12 @@ final class DataStoreChange extends DataStore {
 		$property = CommonTypes::getString($in);
 		$updateCount = VarInt::readUnsignedInt($in);
 
-		if ($in->getUnreadLength() === 1) {
-			$data = BoolDataStoreValue::read($in);
-		} else {
-			$offset = $in->getOffset();
-			$length = VarInt::readUnsignedInt($in);
-
-			if ($length === $in->getUnreadLength()) {
-				$data = StringDataStoreValue::read($in);
-			} else {
-				$in->setOffset($offset);
-				$data = DoubleDataStoreValue::read($in);
-			}
-		}
+		$data = match(VarInt::readUnsignedInt($in)){
+			DataStoreValueType::DOUBLE => DoubleDataStoreValue::read($in),
+			DataStoreValueType::BOOL => BoolDataStoreValue::read($in),
+			DataStoreValueType::STRING => StringDataStoreValue::read($in),
+			default => throw new PacketDecodeException("Unknown DataStoreValueType"),
+		};
 
 		return new self(
 			$name,
@@ -75,6 +69,7 @@ final class DataStoreChange extends DataStore {
 		CommonTypes::putString($out, $this->name);
 		CommonTypes::putString($out, $this->property);
 		VarInt::writeUnsignedInt($out, $this->updateCount);
+		VarInt::writeUnsignedInt($out, $this->data->getTypeId());
 		$this->data->write($out);
 	}
 }

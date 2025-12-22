@@ -21,7 +21,6 @@ use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistCategories;
 use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistCategory;
 use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistPreset;
-use pocketmine\network\mcpe\protocol\types\camera\CameraAimAssistPresetsPacketOperation;
 use function count;
 
 class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPacket{
@@ -31,14 +30,14 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 	private array $categories;
 	/** @var CameraAimAssistPreset[] */
 	private array $presets;
-	private CameraAimAssistPresetsPacketOperation $operation;
+	private int $operation;
 
 	/**
 	 * @generate-create-func
 	 * @param CameraAimAssistCategory[] $categories
 	 * @param CameraAimAssistPreset[]   $presets
 	 */
-	public static function create(array $categories, array $presets, CameraAimAssistPresetsPacketOperation $operation) : self{
+	public static function create(array $categories, array $presets, int $operation) : self{
 		$result = new self;
 		$result->categories = $categories;
 		$result->presets = $presets;
@@ -56,7 +55,7 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 	 */
 	public function getPresets() : array{ return $this->presets; }
 
-	public function getOperation() : CameraAimAssistPresetsPacketOperation{ return $this->operation; }
+	public function getOperation() : int{ return $this->operation; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->categories = [];
@@ -77,7 +76,7 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 		}
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
-			$this->operation = CameraAimAssistPresetsPacketOperation::fromPacket(Byte::readUnsigned($in));
+			$this->operation = Byte::readUnsigned($in);
 		}
 	}
 
@@ -98,7 +97,7 @@ class CameraAimAssistPresetsPacket extends DataPacket implements ClientboundPack
 		}
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_60){
-			Byte::writeUnsigned($out, $this->operation->value);
+			Byte::writeUnsigned($out, $this->operation);
 		}
 	}
 
