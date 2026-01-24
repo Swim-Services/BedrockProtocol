@@ -33,6 +33,7 @@ final class ProtocolInfo{
 
 	/** Actual Minecraft: PE protocol version */
 
+	public const PROTOCOL_1_26_0 = 924;
 	public const PROTOCOL_1_21_130 = 898;
 	public const PROTOCOL_1_21_124 = 860;
 	public const PROTOCOL_1_21_120 = 859;
@@ -111,6 +112,7 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_21_111,
 		self::PROTOCOL_1_21_120,
 		self::PROTOCOL_1_21_124,
+		self::PROTOCOL_1_26_0,
 		self::CURRENT_PROTOCOL
 	];
 

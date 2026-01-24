@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 
 class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::SERVERBOUND_DIAGNOSTICS_PACKET;
@@ -30,6 +31,7 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 	private float $avgEndFrameTimeMS;
 	private float $avgRemainderTimePercent;
 	private float $avgUnaccountedTimePercent;
+	private array $memoryUsage = [];
 
 	/**
 	 * @generate-create-func
@@ -44,6 +46,7 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 		float $avgEndFrameTimeMS,
 		float $avgRemainderTimePercent,
 		float $avgUnaccountedTimePercent,
+		array $memoryUsage = [],
 	) : self{
 		$result = new self;
 		$result->avgFps = $avgFps;
@@ -55,6 +58,7 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 		$result->avgEndFrameTimeMS = $avgEndFrameTimeMS;
 		$result->avgRemainderTimePercent = $avgRemainderTimePercent;
 		$result->avgUnaccountedTimePercent = $avgUnaccountedTimePercent;
+		$result->memoryUsage = $memoryUsage;
 		return $result;
 	}
 
@@ -86,6 +90,12 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 		$this->avgEndFrameTimeMS = LE::readFloat($in);
 		$this->avgRemainderTimePercent = LE::readFloat($in);
 		$this->avgUnaccountedTimePercent = LE::readFloat($in);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_0) {
+			$memoryUsageLen = VarInt::readUnsignedInt($in);
+			for($i = 0; $i < $memoryUsageLen; $i++) {
+				$this->memoryUsage[$i] = LE::readUnsignedInt($in);
+			}
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{

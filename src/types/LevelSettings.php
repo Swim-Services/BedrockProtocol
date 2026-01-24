@@ -195,7 +195,7 @@ final class LevelSettings{
 		CommonTypes::putBool($out, $this->hasAchievementsDisabled);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_30){
 			VarInt::writeSignedInt($out, $this->editorWorldType);
-		}else if($protocolId >= ProtocolInfo::PROTOCOL_1_19_10){
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_19_10){
 			CommonTypes::putBool($out, $this->editorWorldType !== EditorWorldType::NON_EDITOR);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
@@ -245,7 +245,7 @@ final class LevelSettings{
 			Byte::writeUnsigned($out, $this->chatRestrictionLevel);
 			CommonTypes::putBool($out, $this->disablePlayerInteractions);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_0 && $protocolId < ProtocolInfo::PROTOCOL_1_26_0){
 			CommonTypes::putString($out, $this->serverIdentifier);
 			CommonTypes::putString($out, $this->worldIdentifier);
 			CommonTypes::putString($out, $this->scenarioIdentifier);

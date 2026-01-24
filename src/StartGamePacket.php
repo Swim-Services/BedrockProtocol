@@ -62,6 +62,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 	public bool $blockNetworkIdsAreHashes = false; //new in 1.19.80, possibly useful for multi version
 	public bool $enableTickDeathSystems = false;
 	public NetworkPermissions $networkPermissions;
+	public bool $hasJoinInformation = false;
 
 	/**
 	 * @var BlockPaletteEntry[]
@@ -117,6 +118,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		array $blockPalette,
 		int $blockPaletteChecksum,
 		array $itemTable,
+		bool $hasJoinInformation = false,
 	) : self{
 		$result = new self;
 		$result->actorUniqueId = $actorUniqueId;
@@ -145,6 +147,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		$result->blockPalette = $blockPalette;
 		$result->blockPaletteChecksum = $blockPaletteChecksum;
 		$result->itemTable = $itemTable;
+		$result->hasJoinInformation = $hasJoinInformation;
 		return $result;
 	}
 
@@ -268,6 +271,13 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0) {
 			$this->networkPermissions->encode($out);
+		}
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_0) {
+			CommonTypes::putBool($out, $this->hasJoinInformation);
+			CommonTypes::putString($out, $this->levelSettings->serverIdentifier);
+			CommonTypes::putString($out, $this->levelSettings->scenarioIdentifier);
+			CommonTypes::putString($out, $this->levelSettings->worldIdentifier);
+			CommonTypes::putString($out, $this->levelSettings->ownerIdentifier);
 		}
 	}
 

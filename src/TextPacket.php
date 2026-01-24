@@ -73,7 +73,7 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	public ?string $filteredMessage = null;
 
 	private static function messageOnly(int $type, string $message) : self{
-		$result = new self;
+		$result = new self();
 		$result->type = $type;
 		//TODO: HACK! Empty message crashes or bugs out client in 1.21.130
 		$result->message = $message === "" ? " " : $message;
@@ -84,7 +84,7 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	 * @param string[] $parameters
 	 */
 	private static function baseTranslation(int $type, string $key, array $parameters) : self{
-		$result = new self;
+		$result = new self();
 		$result->type = $type;
 		$result->needsTranslation = true;
 		//TODO: HACK! Empty message crashes or bugs out client in 1.21.130
@@ -98,7 +98,7 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 	}
 
 	/**
-	 * @param string[]  $parameters
+	 * @param string[] $parameters
 	 */
 	public static function translation(string $key, array $parameters = []) : self{
 		return self::baseTranslation(self::TYPE_TRANSLATION, $key, $parameters);
@@ -134,6 +134,7 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
 			$category = Byte::readUnsigned($in);
+			if ($protocolId < ProtocolInfo::PROTOCOL_1_26_0) {
 			$expectedDummyStrings = self::CATEGORY_DUMMY_STRINGS[$category] ?? throw new PacketDecodeException("Unknown category ID $category");
 			foreach($expectedDummyStrings as $k => $expectedDummyString){
 				$actual = CommonTypes::getString($in);
@@ -141,7 +142,7 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 					throw new PacketDecodeException("Dummy string mismatch for category $category at position $k: expected $expectedDummyString, got $actual");
 				}
 			}
-
+			}
 			$this->type = Byte::readUnsigned($in);
 		}else{
 			$category = null;
@@ -217,8 +218,10 @@ class TextPacket extends DataPacket implements ClientboundPacket, ServerboundPac
 				default => throw new \LogicException("Invalid TextPacket type: $this->type")
 			};
 			Byte::writeUnsigned($out, $category);
-			foreach(self::CATEGORY_DUMMY_STRINGS[$category] as $dummyString){
-				CommonTypes::putString($out, $dummyString);
+			if ($protocolId < ProtocolInfo::PROTOCOL_1_26_0) {
+				foreach(self::CATEGORY_DUMMY_STRINGS[$category] as $dummyString){
+					CommonTypes::putString($out, $dummyString);
+				}
 			}
 
 			Byte::writeUnsigned($out, $this->type);
