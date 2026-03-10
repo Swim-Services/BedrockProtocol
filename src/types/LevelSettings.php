@@ -173,7 +173,7 @@ final class LevelSettings{
 		}
 	}
 
-	public function write(ByteBufferWriter $out, int $protocolId) : void{
+	public function write(ByteBufferWriter $out, ServerTelemetryData $serverTelemetryData, int $protocolId) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
 			LE::writeUnsignedLong($out, $this->seed);
 		} else {
