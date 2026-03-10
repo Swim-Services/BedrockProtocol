@@ -17,17 +17,21 @@ namespace pocketmine\network\mcpe\protocol;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
+use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\GraphicsOverrideParameterType;
 use pocketmine\network\mcpe\protocol\types\ParameterKeyframeValue;
 use function count;
 
-class GraphicsOverrideParameterPacket extends DataPacket{
+class GraphicsOverrideParameterPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::GRAPHICS_OVERRIDE_PARAMETER_PACKET;
 
 	/** @var ParameterKeyframeValue[] */
 	private array $values = [];
+	private float $unknownFloat;
+	private Vector3 $unknownVector3;
 	private string $biomeIdentifier;
 	private GraphicsOverrideParameterType $parameterType;
 	private bool $reset;
@@ -36,9 +40,11 @@ class GraphicsOverrideParameterPacket extends DataPacket{
 	 * @generate-create-func
 	 * @param ParameterKeyframeValue[] $values
 	 */
-	public static function create(array $values, string $biomeIdentifier, GraphicsOverrideParameterType $parameterType, bool $reset) : self{
+	public static function create(array $values, float $unknownFloat, Vector3 $unknownVector3, string $biomeIdentifier, GraphicsOverrideParameterType $parameterType, bool $reset) : self{
 		$result = new self;
 		$result->values = $values;
+		$result->unknownFloat = $unknownFloat;
+		$result->unknownVector3 = $unknownVector3;
 		$result->biomeIdentifier = $biomeIdentifier;
 		$result->parameterType = $parameterType;
 		$result->reset = $reset;
@@ -49,6 +55,10 @@ class GraphicsOverrideParameterPacket extends DataPacket{
 	 * @return ParameterKeyframeValue[]
 	 */
 	public function getValues() : array{ return $this->values; }
+
+	public function getUnknownFloat() : float{ return $this->unknownFloat; }
+
+	public function getUnknownVector3() : Vector3{ return $this->unknownVector3; }
 
 	public function getBiomeIdentifier() : string{ return $this->biomeIdentifier; }
 
@@ -61,6 +71,10 @@ class GraphicsOverrideParameterPacket extends DataPacket{
 		for($i = 0; $i < $count; ++$i){
 			$this->values[] = ParameterKeyframeValue::read($in);
 		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			$this->unknownFloat = LE::readFloat($in);
+			$this->unknownVector3 = CommonTypes::getVector3($in);
+		}
 		$this->biomeIdentifier = CommonTypes::getString($in);
 		$this->parameterType = GraphicsOverrideParameterType::fromPacket(Byte::readUnsigned($in));
 		$this->reset = CommonTypes::getBool($in);
@@ -70,6 +84,10 @@ class GraphicsOverrideParameterPacket extends DataPacket{
 		VarInt::writeUnsignedInt($out, count($this->values));
 		foreach($this->values as $value){
 			$value->write($out);
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			LE::writeFloat($out, $this->unknownFloat);
+			CommonTypes::putVector3($out, $this->unknownVector3);
 		}
 		CommonTypes::putString($out, $this->biomeIdentifier);
 		Byte::writeUnsigned($out, $this->parameterType->value);

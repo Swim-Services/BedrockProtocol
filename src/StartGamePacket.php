@@ -27,6 +27,8 @@ use pocketmine\network\mcpe\protocol\types\ItemTypeEntry;
 use pocketmine\network\mcpe\protocol\types\LevelSettings;
 use pocketmine\network\mcpe\protocol\types\NetworkPermissions;
 use pocketmine\network\mcpe\protocol\types\PlayerMovementSettings;
+use pocketmine\network\mcpe\protocol\types\ServerJoinInformation;
+use pocketmine\network\mcpe\protocol\types\ServerTelemetryData;
 use Ramsey\Uuid\UuidInterface;
 use function count;
 
@@ -62,6 +64,8 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 	public bool $blockNetworkIdsAreHashes = false; //new in 1.19.80, possibly useful for multi version
 	public bool $enableTickDeathSystems = false;
 	public NetworkPermissions $networkPermissions;
+	public ?ServerJoinInformation $serverJoinInformation;
+	public ServerTelemetryData $serverTelemetryData;
 
 	/**
 	 * @var BlockPaletteEntry[]
@@ -114,6 +118,8 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		bool $blockNetworkIdsAreHashes,
 		bool $enableTickDeathSystems,
 		NetworkPermissions $networkPermissions,
+		?ServerJoinInformation $serverJoinInformation,
+		ServerTelemetryData $serverTelemetryData,
 		array $blockPalette,
 		int $blockPaletteChecksum,
 		array $itemTable,
@@ -142,6 +148,8 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		$result->blockNetworkIdsAreHashes = $blockNetworkIdsAreHashes;
 		$result->enableTickDeathSystems = $enableTickDeathSystems;
 		$result->networkPermissions = $networkPermissions;
+		$result->serverJoinInformation = $serverJoinInformation;
+		$result->serverTelemetryData = $serverTelemetryData;
 		$result->blockPalette = $blockPalette;
 		$result->blockPaletteChecksum = $blockPaletteChecksum;
 		$result->itemTable = $itemTable;
@@ -158,7 +166,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		$this->pitch = LE::readFloat($in);
 		$this->yaw = LE::readFloat($in);
 
-		$this->levelSettings = LevelSettings::read($in, $protocolId);
+		$this->levelSettings = LevelSettings::read($in, $this->serverTelemetryData, $protocolId);
 
 		$this->levelId = CommonTypes::getString($in);
 		$this->worldName = CommonTypes::getString($in);
@@ -208,6 +216,10 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0){
 			$this->networkPermissions = NetworkPermissions::decode($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+				$this->serverJoinInformation = CommonTypes::readOptional($in, ServerJoinInformation::read(...));
+				$this->serverTelemetryData = ServerTelemetryData::read($in);
+			}
 		}
 	}
 
@@ -221,7 +233,7 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		LE::writeFloat($out, $this->pitch);
 		LE::writeFloat($out, $this->yaw);
 
-		$this->levelSettings->write($out, $protocolId);
+		$this->levelSettings->write($out, $this->serverTelemetryData, $protocolId);
 
 		CommonTypes::putString($out, $this->levelId);
 		CommonTypes::putString($out, $this->worldName);
@@ -268,6 +280,10 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0) {
 			$this->networkPermissions->encode($out);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+				CommonTypes::writeOptional($out, $this->serverJoinInformation, fn(ByteBufferWriter $out, ServerJoinInformation $info) => $info->write($out));
+				$this->serverTelemetryData->write($out);
+			}
 		}
 	}
 

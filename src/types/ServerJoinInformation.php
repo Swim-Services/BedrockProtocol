@@ -12,35 +12,29 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types\camera;
+namespace pocketmine\network\mcpe\protocol\types;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pmmp\encoding\LE;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
-final class CameraAimAssistCategoryEntityPriority{
+final class ServerJoinInformation{
 
 	public function __construct(
-		private string $identifier,
-		private int $priority
+		private ?GatheringJoinInfo $gatheringJoinInfo,
 	){}
 
-	public function getIdentifier() : string{ return $this->identifier; }
-
-	public function getPriority() : int{ return $this->priority; }
+	public function getGatheringJoinInfo() : ?GatheringJoinInfo{ return $this->gatheringJoinInfo; }
 
 	public static function read(ByteBufferReader $in) : self{
-		$identifier = CommonTypes::getString($in);
-		$priority = LE::readSignedInt($in);
+		$gatheringJoinInfo = CommonTypes::readOptional($in, GatheringJoinInfo::read(...));
+
 		return new self(
-			$identifier,
-			$priority
+			$gatheringJoinInfo
 		);
 	}
 
 	public function write(ByteBufferWriter $out) : void{
-		CommonTypes::putString($out, $this->identifier);
-		LE::writeSignedInt($out, $this->priority);
+		CommonTypes::writeOptional($out, $this->gatheringJoinInfo, fn(ByteBufferWriter $out, GatheringJoinInfo $info) => $info->write($out));
 	}
 }

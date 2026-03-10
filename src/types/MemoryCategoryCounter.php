@@ -14,35 +14,34 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use pmmp\encoding\LE;
 
-/**
- * @see ClientboundDataStorePacket
- */
-final class DataStoreRemoval extends DataStore{
-	public const ID = DataStoreType::REMOVAL;
+final class MemoryCategoryCounter{
 
 	public function __construct(
-		private string $name,
+		private int $category,
+		private int $bytes
 	){}
 
-	public function getTypeId() : int{
-		return self::ID;
-	}
+	public function getCategory() : int{ return $this->category; }
 
-	public function getName() : string{ return $this->name; }
+	public function getBytes() : int{ return $this->bytes; }
 
-	public static function read(ByteBufferReader $in, int $protocolId) : self{
-		$name = CommonTypes::getString($in);
+	public static function read(ByteBufferReader $in) : self{
+		$category = Byte::readUnsigned($in);
+		$bytes = LE::readUnsignedLong($in);
 
 		return new self(
-			$name,
+			$category,
+			$bytes
 		);
 	}
 
-	public function write(ByteBufferWriter $out, int $protocolId) : void{
-		CommonTypes::putString($out, $this->name);
+	public function write(ByteBufferWriter $out) : void{
+		Byte::writeUnsigned($out, $this->category);
+		LE::writeUnsignedLong($out, $this->bytes);
 	}
 }

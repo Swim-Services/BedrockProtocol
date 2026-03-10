@@ -16,33 +16,33 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pocketmine\network\mcpe\protocol\types\DataStoreUpdate;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
-class ServerboundDataStorePacket extends DataPacket implements ServerboundPacket{
-	public const NETWORK_ID = ProtocolInfo::SERVERBOUND_DATA_STORE_PACKET;
+class ClientboundDataDrivenUIShowScreenPacket extends DataPacket implements ClientboundPacket{
+	public const NETWORK_ID = ProtocolInfo::CLIENTBOUND_DATA_DRIVEN_UI_SHOW_SCREEN_PACKET;
 
-	private DataStoreUpdate $update;
+	private string $screenId;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(DataStoreUpdate $update) : self{
+	public static function create(string $screenId) : self{
 		$result = new self;
-		$result->update = $update;
+		$result->screenId = $screenId;
 		return $result;
 	}
 
-	public function getUpdate() : DataStoreUpdate{ return $this->update; }
+	public function getScreenId() : string{ return $this->screenId; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->update = DataStoreUpdate::read($in, $protocolId);
+		$this->screenId = CommonTypes::getString($in);
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		$this->update->write($out, $protocolId);
+		CommonTypes::putString($out, $this->screenId);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
-		return $handler->handleServerboundDataStore($this);
+		return $handler->handleClientboundDataDrivenUIShowScreen($this);
 	}
 }

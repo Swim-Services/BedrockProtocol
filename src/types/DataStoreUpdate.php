@@ -16,8 +16,10 @@ namespace pocketmine\network\mcpe\protocol\types;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 /**
@@ -31,7 +33,8 @@ final class DataStoreUpdate extends DataStore{
 		private string $property,
 		private string $path,
 		private DataStoreValue $data,
-		private int $updateCount
+		private int $updateCount,
+		private int $pathUpdateCount,
 	){}
 
 	public function getTypeId() : int{
@@ -48,7 +51,9 @@ final class DataStoreUpdate extends DataStore{
 
 	public function getUpdateCount() : int{ return $this->updateCount; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public function getPathUpdateCount() : int{ return $this->pathUpdateCount; }
+
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$name = CommonTypes::getString($in);
 		$property = CommonTypes::getString($in);
 		$path = CommonTypes::getString($in);
@@ -60,23 +65,30 @@ final class DataStoreUpdate extends DataStore{
 			default => throw new PacketDecodeException("Unknown DataStoreValueType"),
 		};
 
-		$updateCount = VarInt::readUnsignedInt($in);
+		$updateCount = LE::readUnsignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			$pathUpdateCount = LE::readUnsignedInt($in);
+		}
 
 		return new self(
 			$name,
 			$property,
 			$path,
 			$data,
-			$updateCount
+			$updateCount,
+			$pathUpdateCount ?? -1,
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
 		CommonTypes::putString($out, $this->property);
 		CommonTypes::putString($out, $this->path);
 		VarInt::writeUnsignedInt($out, $this->data->getTypeId());
 		$this->data->write($out);
-		VarInt::writeUnsignedInt($out, $this->updateCount);
+		LE::writeUnsignedInt($out, $this->updateCount);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0) {
+			LE::writeUnsignedInt($out, $this->pathUpdateCount);
+		}
 	}
 }

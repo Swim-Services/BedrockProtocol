@@ -16,33 +16,26 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
-use pocketmine\network\mcpe\protocol\types\DataStoreUpdate;
 
-class ServerboundDataStorePacket extends DataPacket implements ServerboundPacket{
-	public const NETWORK_ID = ProtocolInfo::SERVERBOUND_DATA_STORE_PACKET;
-
-	private DataStoreUpdate $update;
+class ClientboundDataDrivenUICloseAllScreensPacket extends DataPacket implements ClientboundPacket{
+	public const NETWORK_ID = ProtocolInfo::CLIENTBOUND_DATA_DRIVEN_UI_CLOSE_ALL_SCREENS_PACKET;
 
 	/**
 	 * @generate-create-func
 	 */
-	public static function create(DataStoreUpdate $update) : self{
-		$result = new self;
-		$result->update = $update;
-		return $result;
+	public static function create() : self{
+		return new self;
 	}
 
-	public function getUpdate() : DataStoreUpdate{ return $this->update; }
-
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->update = DataStoreUpdate::read($in, $protocolId);
+
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		$this->update->write($out, $protocolId);
+
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
-		return $handler->handleServerboundDataStore($this);
+		return $handler->handleClientboundDataDrivenUICloseAllScreens($this);
 	}
 }

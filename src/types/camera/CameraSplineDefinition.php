@@ -12,37 +12,31 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types;
+namespace pocketmine\network\mcpe\protocol\types\camera;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
-/**
- * @see ClientboundDataStorePacket
- */
-final class DataStoreRemoval extends DataStore{
-	public const ID = DataStoreType::REMOVAL;
+final class CameraSplineDefinition{
 
 	public function __construct(
 		private string $name,
+		private CameraSplineInstruction $instruction,
 	){}
 
-	public function getTypeId() : int{
-		return self::ID;
-	}
+	public function getName() : string { return $this->name; }
 
-	public function getName() : string{ return $this->name; }
+	public function getInstruction() : CameraSplineInstruction { return $this->instruction; }
 
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$name = CommonTypes::getString($in);
-
-		return new self(
-			$name,
-		);
+		$instruction = CameraSplineInstruction::read($in, $protocolId);
+		return new self($name, $instruction);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
+		$this->instruction->write($out, $protocolId);
 	}
 }
