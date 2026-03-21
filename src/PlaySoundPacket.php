@@ -46,7 +46,7 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->soundName = CommonTypes::getString($in);
-		$blockPosition = CommonTypes::getBlockPosition($in);
+		$blockPosition = CommonTypes::getBlockPosition($in, $protocolId);
 		$this->x = $blockPosition->getX() / 8;
 		$this->y = $blockPosition->getY() / 8;
 		$this->z = $blockPosition->getZ() / 8;
@@ -56,7 +56,7 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->soundName);
-		CommonTypes::putBlockPosition($out, new BlockPosition((int) ($this->x * 8), (int) ($this->y * 8), (int) ($this->z * 8)));
+		CommonTypes::putBlockPosition($out, new BlockPosition((int) ($this->x * 8), (int) ($this->y * 8), (int) ($this->z * 8)), $protocolId);
 		LE::writeFloat($out, $this->volume);
 		LE::writeFloat($out, $this->pitch);
 	}

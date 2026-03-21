@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
@@ -44,6 +45,7 @@ class UseItemTransactionData extends TransactionData{
 	private Vector3 $clickPosition;
 	private int $blockRuntimeId;
 	private PredictedResult $clientInteractPrediction;
+	private int $clientCooldownState = 0;
 
 	public function getActionType() : int{
 		return $this->actionType;
@@ -86,7 +88,7 @@ class UseItemTransactionData extends TransactionData{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			$this->triggerType = TriggerType::fromPacket(VarInt::readUnsignedInt($in));
 		}
-		$this->blockPosition = CommonTypes::getBlockPosition($in);
+		$this->blockPosition = CommonTypes::getBlockPosition($in, $protocolId);
 		$this->face = VarInt::readSignedInt($in);
 		$this->hotbarSlot = VarInt::readSignedInt($in);
 		$this->itemInHand = CommonTypes::getItemStackWrapper($in);
@@ -95,6 +97,9 @@ class UseItemTransactionData extends TransactionData{
 		$this->blockRuntimeId = VarInt::readUnsignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			$this->clientInteractPrediction = PredictedResult::fromPacket(VarInt::readUnsignedInt($in));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+				$this->clientCooldownState = Byte::readUnsigned($in);
+			}
 		}
 	}
 
@@ -103,7 +108,7 @@ class UseItemTransactionData extends TransactionData{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			VarInt::writeUnsignedInt($out, $this->triggerType->value);
 		}
-		CommonTypes::putBlockPosition($out, $this->blockPosition);
+		CommonTypes::putBlockPosition($out, $this->blockPosition, $protocolId);
 		VarInt::writeSignedInt($out, $this->face);
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
 		CommonTypes::putItemStackWrapper($out, $this->itemInHand);
@@ -112,6 +117,9 @@ class UseItemTransactionData extends TransactionData{
 		VarInt::writeUnsignedInt($out, $this->blockRuntimeId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			VarInt::writeUnsignedInt($out, $this->clientInteractPrediction->value);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+				Byte::writeUnsigned($out, $this->clientCooldownState);
+			}
 		}
 	}
 

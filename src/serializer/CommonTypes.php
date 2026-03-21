@@ -455,9 +455,13 @@ final class CommonTypes{
 	 *
 	 * @throws DataDecodeException
 	 */
-	public static function getBlockPosition(ByteBufferReader $in) : BlockPosition{
+	public static function getBlockPosition(ByteBufferReader $in, int $protocolId) : BlockPosition{
 		$x = VarInt::readSignedInt($in);
-		$y = Binary::signInt(VarInt::readUnsignedInt($in)); //Y coordinate may be signed, but it's written unsigned :<
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_10) {
+			$y = VarInt::readSignedInt($in);
+		} else {
+			$y = Binary::signInt(VarInt::readUnsignedInt($in)); //Y coordinate may be signed, but it's written unsigned :<
+		}
 		$z = VarInt::readSignedInt($in);
 		return new BlockPosition($x, $y, $z);
 	}
@@ -465,9 +469,13 @@ final class CommonTypes{
 	/**
 	 * Writes a block position with unsigned Y coordinate.
 	 */
-	public static function putBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition) : void{
+	public static function putBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $blockPosition->getX());
-		VarInt::writeUnsignedInt($out, Binary::unsignInt($blockPosition->getY())); //Y coordinate may be signed, but it's written unsigned :<
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_10) {
+			VarInt::writeSignedInt($out, $blockPosition->getY());
+		} else {
+			VarInt::writeUnsignedInt($out, Binary::unsignInt($blockPosition->getY())); //Y coordinate may be signed, but it's written unsigned :<
+		}
 		VarInt::writeSignedInt($out, $blockPosition->getZ());
 	}
 
@@ -677,8 +685,8 @@ final class CommonTypes{
 			$result->allowNonTickingChunks = false;
 		}
 
-		$result->dimensions = self::getBlockPosition($in);
-		$result->offset = self::getBlockPosition($in);
+		$result->dimensions = self::getBlockPosition($in, $protocolId);
+		$result->offset = self::getBlockPosition($in, $protocolId);
 
 		$result->lastTouchedByPlayerID = self::getActorUniqueId($in);
 		$result->rotation = Byte::readUnsigned($in);
@@ -702,8 +710,8 @@ final class CommonTypes{
 			self::putBool($out, $structureSettings->allowNonTickingChunks);
 		}
 
-		self::putBlockPosition($out, $structureSettings->dimensions);
-		self::putBlockPosition($out, $structureSettings->offset);
+		self::putBlockPosition($out, $structureSettings->dimensions, $protocolId);
+		self::putBlockPosition($out, $structureSettings->offset, $protocolId);
 
 		self::putActorUniqueId($out, $structureSettings->lastTouchedByPlayerID);
 		Byte::writeUnsigned($out, $structureSettings->rotation);
@@ -729,7 +737,7 @@ final class CommonTypes{
 		$result->showBoundingBox = self::getBool($in);
 
 		$result->structureBlockType = VarInt::readSignedInt($in);
-		$result->structureSettings = self::getStructureSettings($in);
+		$result->structureSettings = self::getStructureSettings($in, $protocolId);
 		$result->structureRedstoneSaveMode = VarInt::readSignedInt($in);
 
 		return $result;
@@ -746,8 +754,8 @@ final class CommonTypes{
 		self::putBool($out, $structureEditorData->showBoundingBox);
 
 		VarInt::writeSignedInt($out, $structureEditorData->structureBlockType);
-		self::putStructureSettings($out, $structureEditorData->structureSettings);
-		VarInt::writeSignedInt($out, $structureEditorData->structureRedstoneSaveMode);
+		self::putStructureSettings($out, $structureEditorData->structureSettings, $protocolId);
+		VarInt::writeSignedInt($out, $structureEditorData->structureRedstoneSaveMove);
 	}
 
 	/** @throws PacketDecodeException */
