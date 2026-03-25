@@ -60,6 +60,7 @@ use pocketmine\network\mcpe\protocol\types\skin\SkinData;
 use pocketmine\network\mcpe\protocol\types\skin\SkinImage;
 use pocketmine\network\mcpe\protocol\types\StructureEditorData;
 use pocketmine\network\mcpe\protocol\types\StructureSettings;
+use pocketmine\utils\Binary;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use function count;
@@ -436,9 +437,9 @@ final class CommonTypes{
 	 *
 	 * @throws DataDecodeException
 	 */
-	public static function getBlockPosition(ByteBufferReader $in) : BlockPosition{
+	public static function getBlockPosition(ByteBufferReader $in, bool $signedY = true) : BlockPosition{
 		$x = VarInt::readSignedInt($in);
-		$y = VarInt::readSignedInt($in);
+		$y = $signedY ? VarInt::readSignedInt($in) : Binary::signInt(VarInt::readUnsignedInt($in));
 		$z = VarInt::readSignedInt($in);
 		return new BlockPosition($x, $y, $z);
 	}
@@ -446,9 +447,13 @@ final class CommonTypes{
 	/**
 	 * Writes a block position
 	 */
-	public static function putBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition) : void{
+	public static function putBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition, bool $signedY = true) : void{
 		VarInt::writeSignedInt($out, $blockPosition->getX());
-		VarInt::writeSignedInt($out, $blockPosition->getY());
+		if($signedY){
+			VarInt::writeSignedInt($out, $blockPosition->getY());
+		}else{
+			VarInt::writeUnsignedInt($out, Binary::unsignInt($blockPosition->getY()));
+		}
 		VarInt::writeSignedInt($out, $blockPosition->getZ());
 	}
 
@@ -623,7 +628,7 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	public static function getStructureSettings(ByteBufferReader $in) : StructureSettings{
+	public static function getStructureSettings(ByteBufferReader $in, int $protocolId) : StructureSettings{
 		$result = new StructureSettings();
 
 		$result->paletteName = self::getString($in);
@@ -632,8 +637,8 @@ final class CommonTypes{
 		$result->ignoreBlocks = self::getBool($in);
 		$result->allowNonTickingChunks = self::getBool($in);
 
-		$result->dimensions = self::getBlockPosition($in);
-		$result->offset = self::getBlockPosition($in);
+		$result->dimensions = self::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		$result->offset = self::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 
 		$result->lastTouchedByPlayerID = self::getActorUniqueId($in);
 		$result->rotation = Byte::readUnsigned($in);
@@ -647,15 +652,15 @@ final class CommonTypes{
 		return $result;
 	}
 
-	public static function putStructureSettings(ByteBufferWriter $out, StructureSettings $structureSettings) : void{
+	public static function putStructureSettings(ByteBufferWriter $out, StructureSettings $structureSettings, int $protocolId) : void{
 		self::putString($out, $structureSettings->paletteName);
 
 		self::putBool($out, $structureSettings->ignoreEntities);
 		self::putBool($out, $structureSettings->ignoreBlocks);
 		self::putBool($out, $structureSettings->allowNonTickingChunks);
 
-		self::putBlockPosition($out, $structureSettings->dimensions);
-		self::putBlockPosition($out, $structureSettings->offset);
+		self::putBlockPosition($out, $structureSettings->dimensions, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		self::putBlockPosition($out, $structureSettings->offset, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 
 		self::putActorUniqueId($out, $structureSettings->lastTouchedByPlayerID);
 		Byte::writeUnsigned($out, $structureSettings->rotation);
@@ -681,7 +686,7 @@ final class CommonTypes{
 		$result->showBoundingBox = self::getBool($in);
 
 		$result->structureBlockType = VarInt::readSignedInt($in);
-		$result->structureSettings = self::getStructureSettings($in);
+		$result->structureSettings = self::getStructureSettings($in, $protocolId);
 		$result->structureRedstoneSaveMode = VarInt::readSignedInt($in);
 
 		return $result;
@@ -698,7 +703,7 @@ final class CommonTypes{
 		self::putBool($out, $structureEditorData->showBoundingBox);
 
 		VarInt::writeSignedInt($out, $structureEditorData->structureBlockType);
-		self::putStructureSettings($out, $structureEditorData->structureSettings);
+		self::putStructureSettings($out, $structureEditorData->structureSettings, $protocolId);
 		VarInt::writeSignedInt($out, $structureEditorData->structureRedstoneSaveMode);
 	}
 

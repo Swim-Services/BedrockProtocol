@@ -87,7 +87,7 @@ final class CameraSplineInstruction{
 		$rotationOptions = [];
 		$rotationOptionCount = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $rotationOptionCount; ++$i){
-			$rotationOptions[] = CameraRotationOption::read($in);
+			$rotationOptions[] = CameraRotationOption::read($in, $protocolId);
 		}
 
 		$splineIdentifier = CommonTypes::getString($in);
@@ -112,7 +112,7 @@ final class CameraSplineInstruction{
 
 		VarInt::writeUnsignedInt($out, count($this->rotationOptions));
 		foreach($this->rotationOptions as $option){
-			$option->write($out);
+			$option->write($out, $protocolId);
 		}
 
 		CommonTypes::putString($out, $this->splineIdentifier);

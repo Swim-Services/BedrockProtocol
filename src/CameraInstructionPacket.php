@@ -93,7 +93,7 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 				$this->target = CommonTypes::readOptional($in, CameraTargetInstruction::read(...));
 				$this->removeTarget = CommonTypes::readOptional($in, CommonTypes::getBool(...));
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
-					$this->fieldOfView = CommonTypes::readOptional($in, CameraFovInstruction::read(...));
+					$this->fieldOfView = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => CameraFovInstruction::read($in, $protocolId));
 					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
 						$this->spline = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => CameraSplineInstruction::read($in, $protocolId));
 						$this->attachToEntity = CommonTypes::readOptional($in, LE::readSignedLong(...)); //WHY IS THIS NON-STANDARD?
@@ -125,7 +125,7 @@ class CameraInstructionPacket extends DataPacket implements ClientboundPacket{
 				CommonTypes::writeOptional($out, $this->target, fn(ByteBufferWriter $out, CameraTargetInstruction $v) => $v->write($out));
 				CommonTypes::writeOptional($out, $this->removeTarget, CommonTypes::putBool(...));
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_21_100){
-					CommonTypes::writeOptional($out, $this->fieldOfView, fn(ByteBufferWriter $out, CameraFovInstruction $v) => $v->write($out));
+					CommonTypes::writeOptional($out, $this->fieldOfView, fn(ByteBufferWriter $out, CameraFovInstruction $v) => $v->write($out, $protocolId));
 					if($protocolId >= ProtocolInfo::PROTOCOL_1_21_120){
 						CommonTypes::writeOptional($out, $this->spline, fn(ByteBufferWriter $out, CameraSplineInstruction $v) => $v->write($out, $protocolId));
 						CommonTypes::writeOptional($out, $this->attachToEntity, LE::writeSignedLong(...)); //WHY IS THIS NON-STANDARD?

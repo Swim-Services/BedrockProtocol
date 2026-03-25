@@ -18,6 +18,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function is_int;
 
@@ -43,21 +44,25 @@ final class CameraRotationOption{
 	 */
 	public function getEaseType() : string{ return $this->easeType; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$value = CommonTypes::getVector3($in);
 		$time = LE::readFloat($in);
-		$ease = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			$ease = CommonTypes::getString($in);
+		}
 
 		return new self(
 			$value,
 			$time,
-			$ease
+			$ease ?? ""
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putVector3($out, $this->value);
 		LE::writeFloat($out, $this->time);
-		CommonTypes::putString($out, $this->easeType);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+			CommonTypes::putString($out, $this->easeType);
+		}
 	}
 }

@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
 
@@ -44,8 +45,8 @@ final class UpdateSubChunkBlocksPacketEntry{
 
 	public function getSyncedUpdateType() : int{ return $this->syncedUpdateType; }
 
-	public static function read(ByteBufferReader $in) : self{
-		$blockPosition = CommonTypes::getBlockPosition($in);
+	public static function read(ByteBufferReader $in, int $protocolId) : UpdateSubChunkBlocksPacketEntry{
+		$blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		$blockRuntimeId = VarInt::readUnsignedInt($in);
 		$updateFlags = VarInt::readUnsignedInt($in);
 		$syncedUpdateActorUniqueId = VarInt::readUnsignedLong($in); //this can't use the standard method because it's unsigned as opposed to the usual signed... !!!!!!
@@ -54,8 +55,8 @@ final class UpdateSubChunkBlocksPacketEntry{
 		return new self($blockPosition, $blockRuntimeId, $updateFlags, $syncedUpdateActorUniqueId, $syncedUpdateType);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
-		CommonTypes::putBlockPosition($out, $this->blockPosition);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putBlockPosition($out, $this->blockPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		VarInt::writeUnsignedInt($out, $this->blockRuntimeId);
 		VarInt::writeUnsignedInt($out, $this->flags);
 		VarInt::writeUnsignedLong($out, $this->syncedUpdateActorUniqueId);

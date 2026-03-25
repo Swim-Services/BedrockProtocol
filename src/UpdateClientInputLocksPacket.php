@@ -32,6 +32,7 @@ class UpdateClientInputLocksPacket extends DataPacket implements ClientboundPack
 	public static function create(int $flags, Vector3 $position) : self{
 		$result = new self;
 		$result->flags = $flags;
+		$result->position = $position;
 		return $result;
 	}
 

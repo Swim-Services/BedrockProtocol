@@ -31,9 +31,7 @@ class LocatorBarPacket extends DataPacket{
 
 	/**
 	 * @generate-create-func
-	 *
-	 * @param LocatorBarWaypointPayload[]             $waypoints
-	 *
+	 * @param LocatorBarWaypointPayload[] $waypoints
 	 * @phpstan-param list<LocatorBarWaypointPayload> $waypoints
 	 */
 	public static function create(array $waypoints) : self{
@@ -42,14 +40,14 @@ class LocatorBarPacket extends DataPacket{
 		return $result;
 	}
 
-	protected function decodePayload(ByteBufferReader $in) : void{
+	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->waypoints = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			$this->waypoints[] = LocatorBarWaypointPayload::read($in);
 		}
 	}
 
-	protected function encodePayload(ByteBufferWriter $out) : void{
+	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->waypoints));
 		foreach($this->waypoints as $waypoint){
 			$waypoint->write($out);
