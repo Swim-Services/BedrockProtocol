@@ -30,8 +30,8 @@ class GraphicsOverrideParameterPacket extends DataPacket implements ClientboundP
 
 	/** @var ParameterKeyframeValue[] */
 	private array $values = [];
-	private float $unknownFloat;
-	private Vector3 $unknownVector3;
+	private ?float $unknownFloat;
+	private ?Vector3 $unknownVector3;
 	private string $biomeIdentifier;
 	private GraphicsOverrideParameterType $parameterType;
 	private bool $reset;
@@ -40,7 +40,7 @@ class GraphicsOverrideParameterPacket extends DataPacket implements ClientboundP
 	 * @generate-create-func
 	 * @param ParameterKeyframeValue[] $values
 	 */
-	public static function create(array $values, float $unknownFloat, Vector3 $unknownVector3, string $biomeIdentifier, GraphicsOverrideParameterType $parameterType, bool $reset) : self{
+	public static function create(array $values, ?float $unknownFloat, ?Vector3 $unknownVector3, string $biomeIdentifier, GraphicsOverrideParameterType $parameterType, bool $reset) : self{
 		$result = new self;
 		$result->values = $values;
 		$result->unknownFloat = $unknownFloat;
@@ -56,9 +56,9 @@ class GraphicsOverrideParameterPacket extends DataPacket implements ClientboundP
 	 */
 	public function getValues() : array{ return $this->values; }
 
-	public function getUnknownFloat() : float{ return $this->unknownFloat; }
+	public function getUnknownFloat() : ?float{ return $this->unknownFloat; }
 
-	public function getUnknownVector3() : Vector3{ return $this->unknownVector3; }
+	public function getUnknownVector3() : ?Vector3{ return $this->unknownVector3; }
 
 	public function getBiomeIdentifier() : string{ return $this->biomeIdentifier; }
 
@@ -72,8 +72,8 @@ class GraphicsOverrideParameterPacket extends DataPacket implements ClientboundP
 			$this->values[] = ParameterKeyframeValue::read($in);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
-			$this->unknownFloat = LE::readFloat($in);
-			$this->unknownVector3 = CommonTypes::getVector3($in);
+			$this->unknownFloat = CommonTypes::readOptional($in, LE::readFloat(...));
+			$this->unknownVector3 = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
 		}
 		$this->biomeIdentifier = CommonTypes::getString($in);
 		$this->parameterType = GraphicsOverrideParameterType::fromPacket(Byte::readUnsigned($in));
@@ -86,8 +86,8 @@ class GraphicsOverrideParameterPacket extends DataPacket implements ClientboundP
 			$value->write($out);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
-			LE::writeFloat($out, $this->unknownFloat);
-			CommonTypes::putVector3($out, $this->unknownVector3);
+			CommonTypes::writeOptional($out, $this->unknownFloat, LE::writeFloat(...));
+			CommonTypes::writeOptional($out, $this->unknownVector3, CommonTypes::putVector3(...));
 		}
 		CommonTypes::putString($out, $this->biomeIdentifier);
 		Byte::writeUnsigned($out, $this->parameterType->value);
