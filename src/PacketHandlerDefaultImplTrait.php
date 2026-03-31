@@ -905,7 +905,7 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
-	public function handleClientboundDataDrivenUICloseAllScreens(ClientboundDataDrivenUICloseAllScreensPacket $packet) : bool{
+	public function handleClientboundDataDrivenUICloseScreen(ClientboundDataDrivenUICloseScreenPacket $packet) : bool{
 		return false;
 	}
 
@@ -926,6 +926,30 @@ trait PacketHandlerDefaultImplTrait{
 	}
 
 	public function handleCameraAimAssistActorPriority(CameraAimAssistActorPriorityPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleResourcePacksReadyForValidation(ResourcePacksReadyForValidationPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleLocatorBar(LocatorBarPacket $packet) : bool{
+		return false;
+	}
+
+	public function handlePartyChanged(PartyChangedPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleServerboundDataDrivenScreenClosed(ServerboundDataDrivenScreenClosedPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleSyncWorldClocks(SyncWorldClocksPacket $packet) : bool{
+		return false;
+	}
+
+	public function handleClientboundAttributeLayerSync(ClientboundAttributeLayerSyncPacket $packet) : bool{
 		return false;
 	}
 }

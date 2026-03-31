@@ -46,7 +46,7 @@ class NetworkChunkPublisherUpdatePacket extends DataPacket implements Clientboun
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->blockPosition = CommonTypes::getSignedBlockPosition($in);
+		$this->blockPosition = CommonTypes::getBlockPosition($in);
 		$this->radius = VarInt::readUnsignedInt($in);
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
@@ -61,7 +61,7 @@ class NetworkChunkPublisherUpdatePacket extends DataPacket implements Clientboun
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		CommonTypes::putSignedBlockPosition($out, $this->blockPosition);
+		CommonTypes::putBlockPosition($out, $this->blockPosition);
 		VarInt::writeUnsignedInt($out, $this->radius);
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){

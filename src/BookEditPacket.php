@@ -79,7 +79,7 @@ class BookEditPacket extends DataPacket implements ServerboundPacket{
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
-			VarInt::readSignedInt($out, $this->inventorySlot);
+			VarInt::writeSignedInt($out, $this->inventorySlot);
 			VarInt::writeUnsignedInt($out, $this->type);
 		}else{
 			Byte::writeUnsigned($out, $this->type);

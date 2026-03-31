@@ -451,44 +451,27 @@ final class CommonTypes{
 	}
 
 	/**
-	 * Reads a block position with unsigned Y coordinate.
+	 * Reads a block position
 	 *
 	 * @throws DataDecodeException
 	 */
-	public static function getBlockPosition(ByteBufferReader $in) : BlockPosition{
+	public static function getBlockPosition(ByteBufferReader $in, bool $signedY = true) : BlockPosition{
 		$x = VarInt::readSignedInt($in);
-		$y = Binary::signInt(VarInt::readUnsignedInt($in)); //Y coordinate may be signed, but it's written unsigned :<
+		$y = $signedY ? VarInt::readSignedInt($in) : Binary::signInt(VarInt::readUnsignedInt($in));
 		$z = VarInt::readSignedInt($in);
 		return new BlockPosition($x, $y, $z);
 	}
 
 	/**
-	 * Writes a block position with unsigned Y coordinate.
+	 * Writes a block position
 	 */
-	public static function putBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition) : void{
+	public static function putBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition, bool $signedY = true) : void{
 		VarInt::writeSignedInt($out, $blockPosition->getX());
-		VarInt::writeUnsignedInt($out, Binary::unsignInt($blockPosition->getY())); //Y coordinate may be signed, but it's written unsigned :<
-		VarInt::writeSignedInt($out, $blockPosition->getZ());
-	}
-
-	/**
-	 * Reads a block position with a signed Y coordinate.
-	 *
-	 * @throws DataDecodeException
-	 */
-	public static function getSignedBlockPosition(ByteBufferReader $in) : BlockPosition{
-		$x = VarInt::readSignedInt($in);
-		$y = VarInt::readSignedInt($in);
-		$z = VarInt::readSignedInt($in);
-		return new BlockPosition($x, $y, $z);
-	}
-
-	/**
-	 * Writes a block position with a signed Y coordinate.
-	 */
-	public static function putSignedBlockPosition(ByteBufferWriter $out, BlockPosition $blockPosition) : void{
-		VarInt::writeSignedInt($out, $blockPosition->getX());
-		VarInt::writeSignedInt($out, $blockPosition->getY());
+		if($signedY){
+			VarInt::writeSignedInt($out, $blockPosition->getY());
+		}else{
+			VarInt::writeUnsignedInt($out, Binary::unsignInt($blockPosition->getY()));
+		}
 		VarInt::writeSignedInt($out, $blockPosition->getZ());
 	}
 
@@ -677,8 +660,8 @@ final class CommonTypes{
 			$result->allowNonTickingChunks = false;
 		}
 
-		$result->dimensions = self::getBlockPosition($in);
-		$result->offset = self::getBlockPosition($in);
+		$result->dimensions = self::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		$result->offset = self::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 
 		$result->lastTouchedByPlayerID = self::getActorUniqueId($in);
 		$result->rotation = Byte::readUnsigned($in);
@@ -702,8 +685,8 @@ final class CommonTypes{
 			self::putBool($out, $structureSettings->allowNonTickingChunks);
 		}
 
-		self::putBlockPosition($out, $structureSettings->dimensions);
-		self::putBlockPosition($out, $structureSettings->offset);
+		self::putBlockPosition($out, $structureSettings->dimensions, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+		self::putBlockPosition($out, $structureSettings->offset, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 
 		self::putActorUniqueId($out, $structureSettings->lastTouchedByPlayerID);
 		Byte::writeUnsigned($out, $structureSettings->rotation);
@@ -729,7 +712,7 @@ final class CommonTypes{
 		$result->showBoundingBox = self::getBool($in);
 
 		$result->structureBlockType = VarInt::readSignedInt($in);
-		$result->structureSettings = self::getStructureSettings($in);
+		$result->structureSettings = self::getStructureSettings($in, $protocolId);
 		$result->structureRedstoneSaveMode = VarInt::readSignedInt($in);
 
 		return $result;
@@ -746,7 +729,7 @@ final class CommonTypes{
 		self::putBool($out, $structureEditorData->showBoundingBox);
 
 		VarInt::writeSignedInt($out, $structureEditorData->structureBlockType);
-		self::putStructureSettings($out, $structureEditorData->structureSettings);
+		self::putStructureSettings($out, $structureEditorData->structureSettings, $protocolId);
 		VarInt::writeSignedInt($out, $structureEditorData->structureRedstoneSaveMode);
 	}
 

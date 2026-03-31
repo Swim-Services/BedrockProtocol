@@ -61,7 +61,7 @@ class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPack
 		$this->dimensionId = Byte::readUnsigned($in);
 		$this->isLocked = CommonTypes::getBool($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-			$this->origin = CommonTypes::getSignedBlockPosition($in);
+			$this->origin = CommonTypes::getBlockPosition($in);
 		}
 
 		if(($this->type & self::BITFLAG_MAP_CREATION) !== 0){
@@ -80,7 +80,7 @@ class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPack
 				$object = new MapTrackedObject();
 				$object->type = LE::readUnsignedInt($in);
 				if($object->type === MapTrackedObject::TYPE_BLOCK){
-					$object->blockPosition = CommonTypes::getBlockPosition($in);
+					$object->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 				}elseif($object->type === MapTrackedObject::TYPE_ENTITY){
 					$object->actorUniqueId = CommonTypes::getActorUniqueId($in);
 				}else{
@@ -133,7 +133,7 @@ class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPack
 		Byte::writeUnsigned($out, $this->dimensionId);
 		CommonTypes::putBool($out, $this->isLocked);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-			CommonTypes::putSignedBlockPosition($out, $this->origin);
+			CommonTypes::putBlockPosition($out, $this->origin);
 		}
 
 		if(($type & self::BITFLAG_MAP_CREATION) !== 0){
@@ -152,7 +152,7 @@ class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPack
 			foreach($this->trackedEntities as $object){
 				LE::writeUnsignedInt($out, $object->type);
 				if($object->type === MapTrackedObject::TYPE_BLOCK){
-					CommonTypes::putBlockPosition($out, $object->blockPosition);
+					CommonTypes::putBlockPosition($out, $object->blockPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 				}elseif($object->type === MapTrackedObject::TYPE_ENTITY){
 					CommonTypes::putActorUniqueId($out, $object->actorUniqueId);
 				}else{

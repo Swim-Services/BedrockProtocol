@@ -14,10 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\camera;
 
-use function array_change_key_case;
-use function array_search;
-use function strtolower;
-use const CASE_LOWER;
+use function array_flip;
 
 final class CameraSetInstructionEaseType{
 
@@ -58,22 +55,51 @@ final class CameraSetInstructionEaseType{
 	public const OUT_ELASTIC = 30;
 	public const IN_OUT_ELASTIC = 31;
 
-	/**
-	 * @return array<string, int>
-	 */
-	private static function getStringIdMap() : array{
-		static $map = null;
-		if($map === null){
-			$map = (new \ReflectionClass(self::class))->getConstants();
+	private const EASE_TYPE_NAMES = [
+		self::LINEAR => 'linear',
+		self::SPRING => 'spring',
+		self::IN_SINE => 'in_sine',
+		self::OUT_SINE => 'out_sine',
+		self::IN_OUT_SINE => 'in_out_sine',
+		self::IN_QUAD => 'in_quad',
+		self::OUT_QUAD => 'out_quad',
+		self::IN_OUT_QUAD => 'in_out_quad',
+		self::IN_CUBIC => 'in_cubic',
+		self::OUT_CUBIC => 'out_cubic',
+		self::IN_OUT_CUBIC => 'in_out_cubic',
+		self::IN_QUART => 'in_quart',
+		self::OUT_QUART => 'out_quart',
+		self::IN_OUT_QUART => 'in_out_quart',
+		self::IN_QUINT => 'in_quint',
+		self::OUT_QUINT => 'out_quint',
+		self::IN_OUT_QUINT => 'in_out_quint',
+		self::IN_EXPO => 'in_expo',
+		self::OUT_EXPO => 'out_expo',
+		self::IN_OUT_EXPO => 'in_out_expo',
+		self::IN_CIRC => 'in_circ',
+		self::OUT_CIRC => 'out_circ',
+		self::IN_OUT_CIRC => 'in_out_circ',
+		self::IN_BACK => 'in_back',
+		self::OUT_BACK => 'out_back',
+		self::IN_OUT_BACK => 'in_out_back',
+		self::IN_ELASTIC => 'in_elastic',
+		self::OUT_ELASTIC => 'out_elastic',
+		self::IN_OUT_ELASTIC => 'in_out_elastic',
+		self::IN_BOUNCE => 'in_bounce',
+		self::OUT_BOUNCE => 'out_bounce',
+		self::IN_OUT_BOUNCE => 'in_out_bounce'
+	];
+
+	public static function toName(int $value) : string{
+		return self::EASE_TYPE_NAMES[$value] ?? throw new \InvalidArgumentException("Invalid raw value \"$value\" for EaseType.");
+	}
+
+	public static function fromName(string $name) : int{
+		static $cache = null;
+		if($cache === null){
+			$cache = array_flip(self::EASE_TYPE_NAMES);
 		}
-		return array_change_key_case($map, CASE_LOWER);
-	}
 
-	public static function toString(int $type) : ?string {
-		return ($key = array_search($type, self::getStringIdMap(), true)) === false ? null : $key;
-	}
-
-	public static function fromString(string $type) : ?int {
-		return self::getStringIdMap()[strtolower($type)] ?? null;
+		return $cache[$name] ?? throw new \InvalidArgumentException("Invalid raw value \"$name\" for EaseType.");
 	}
 }

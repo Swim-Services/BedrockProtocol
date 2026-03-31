@@ -36,6 +36,8 @@ class VoxelShapesPacket extends DataPacket implements ClientboundPacket{
 	 */
 	private array $nameMap;
 
+	private int $customShapeCount;
+
 	/**
 	 * @generate-create-func
 	 * @param SerializableVoxelShape[] $shapes
@@ -43,10 +45,11 @@ class VoxelShapesPacket extends DataPacket implements ClientboundPacket{
 	 * @phpstan-param list<SerializableVoxelShape> $shapes
 	 * @phpstan-param array<string, int>           $nameMap
 	 */
-	public static function create(array $shapes, array $nameMap) : self{
+	public static function create(array $shapes, array $nameMap, int $customShapeCount) : self{
 		$result = new self;
 		$result->shapes = $shapes;
 		$result->nameMap = $nameMap;
+		$result->customShapeCount = $customShapeCount;
 		return $result;
 	}
 
@@ -62,6 +65,8 @@ class VoxelShapesPacket extends DataPacket implements ClientboundPacket{
 	 */
 	public function getNameMap() : array{ return $this->nameMap; }
 
+	public function getCustomShapeCount() : int{ return $this->customShapeCount; }
+
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->shapes = [];
 		for($i = 0, $shapesCount = VarInt::readUnsignedInt($in); $i < $shapesCount; ++$i){
@@ -73,6 +78,10 @@ class VoxelShapesPacket extends DataPacket implements ClientboundPacket{
 			$name = CommonTypes::getString($in);
 			$id = LE::readUnsignedShort($in);
 			$this->nameMap[$name] = $id;
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			$this->customShapeCount = LE::readUnsignedShort($in);
 		}
 	}
 
@@ -86,6 +95,10 @@ class VoxelShapesPacket extends DataPacket implements ClientboundPacket{
 		foreach($this->nameMap as $name => $id){
 			CommonTypes::putString($out, $name);
 			LE::writeUnsignedShort($out, $id);
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			LE::writeUnsignedShort($out, $this->customShapeCount);
 		}
 	}
 

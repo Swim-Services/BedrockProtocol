@@ -38,6 +38,8 @@ final class CameraSplineInstruction{
 		private array $curve,
 		private array $progressKeyFrames,
 		private array $rotationOptions,
+		private string $splineIdentifier,
+		private bool $loadFromJson
 	){}
 
 	public function getTotalTime() : float{ return $this->totalTime; }
@@ -62,6 +64,10 @@ final class CameraSplineInstruction{
 	 */
 	public function getRotationOptions() : array{ return $this->rotationOptions; }
 
+	public function getSplineIdentifier() : string{ return $this->splineIdentifier; }
+
+	public function isLoadFromJson() : bool{ return $this->loadFromJson; }
+
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$totalTime = LE::readFloat($in);
 		$easeType = Byte::readUnsigned($in);
@@ -81,10 +87,13 @@ final class CameraSplineInstruction{
 		$rotationOptions = [];
 		$rotationOptionCount = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $rotationOptionCount; ++$i){
-			$rotationOptions[] = CameraRotationOption::read($in);
+			$rotationOptions[] = CameraRotationOption::read($in, $protocolId);
 		}
 
-		return new self($totalTime, $easeType, $curve, $progressKeyFrames, $rotationOptions);
+		$splineIdentifier = CommonTypes::getString($in);
+		$loadFromJson = CommonTypes::getBool($in);
+
+		return new self($totalTime, $easeType, $curve, $progressKeyFrames, $rotationOptions, $splineIdentifier, $loadFromJson);
 	}
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
@@ -103,7 +112,10 @@ final class CameraSplineInstruction{
 
 		VarInt::writeUnsignedInt($out, count($this->rotationOptions));
 		foreach($this->rotationOptions as $option){
-			$option->write($out);
+			$option->write($out, $protocolId);
 		}
+
+		CommonTypes::putString($out, $this->splineIdentifier);
+		CommonTypes::putBool($out, $this->loadFromJson);
 	}
 }

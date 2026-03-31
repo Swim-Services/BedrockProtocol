@@ -33,6 +33,7 @@ final class ProtocolInfo{
 
 	/** Actual Minecraft: PE protocol version */
 
+	public const PROTOCOL_1_26_10 = 944;
 	public const PROTOCOL_1_26_0 = 924;
 	public const PROTOCOL_1_21_130 = 898;
 	public const PROTOCOL_1_21_124 = 860;
@@ -74,7 +75,7 @@ final class ProtocolInfo{
 	public const PROTOCOL_1_18_0 = 475;
 	public const PROTOCOL_1_16_100 = 419;
 
-	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_0;
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_10;
 	public const ACCEPTED_PROTOCOL = [
 		self::PROTOCOL_1_18_10,
 		/*self::PROTOCOL_1_18_30,
@@ -113,11 +114,12 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_21_120,
 		self::PROTOCOL_1_21_124,
 		self::PROTOCOL_1_21_130,
+		self::PROTOCOL_1_26_0,
 		self::CURRENT_PROTOCOL
 	];
 
 	/** Version number sent to clients in ping responses. */
-	public const MINECRAFT_VERSION_NETWORK = '1.26.0';
+	public const MINECRAFT_VERSION_NETWORK = '1.26.10';
 	/** Current Minecraft PE version reported by the server. This is usually the earliest currently supported version. */
 	public const MINECRAFT_VERSION = 'v' . self::MINECRAFT_VERSION_NETWORK;
 
@@ -355,11 +357,17 @@ final class ProtocolInfo{
 	public const GRAPHICS_OVERRIDE_PARAMETER_PACKET = 0x14b;
 	public const SERVERBOUND_DATA_STORE_PACKET = 0x14c;
 	public const CLIENTBOUND_DATA_DRIVEN_UI_SHOW_SCREEN_PACKET = 0x14d;
-	public const CLIENTBOUND_DATA_DRIVEN_UI_CLOSE_ALL_SCREENS_PACKET = 0x14e;
+	public const CLIENTBOUND_DATA_DRIVEN_UI_CLOSE_SCREEN_PACKET = 0x14e;
 	public const CLIENTBOUND_DATA_DRIVEN_UI_RELOAD_PACKET = 0x14f;
 	public const CLIENTBOUND_TEXTURE_SHIFT_PACKET = 0x150;
 	public const VOXEL_SHAPES_PACKET = 0x151;
 	public const CAMERA_SPLINE_PACKET = 0x152;
 	public const CAMERA_AIM_ASSIST_ACTOR_PRIORITY_PACKET = 0x153;
+	public const RESOURCE_PACKS_READY_FOR_VALIDATION_PACKET = 0x154;
+	public const LOCATOR_BAR_PACKET = 0x155;
+	public const PARTY_CHANGED_PACKET = 0x156;
+	public const SERVERBOUND_DATA_DRIVEN_SCREEN_CLOSED_PACKET = 0x157;
+	public const SYNC_WORLD_CLOCKS_PACKET = 0x158;
+	public const CLIENTBOUND_ATTRIBUTE_LAYER_SYNC_PACKET = 0x159;
 
 }

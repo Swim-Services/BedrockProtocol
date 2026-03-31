@@ -42,12 +42,16 @@ class UpdateClientInputLocksPacket extends DataPacket implements ClientboundPack
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->flags = VarInt::readUnsignedInt($in);
-		$this->position = CommonTypes::getVector3($in);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_0){
+			$this->position = CommonTypes::getVector3($in);
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->flags);
-		CommonTypes::putVector3($out, $this->position);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_0){
+			CommonTypes::putVector3($out, $this->position);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -41,7 +41,7 @@ class StructureBlockUpdatePacket extends DataPacket implements ServerboundPacket
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->blockPosition = CommonTypes::getBlockPosition($in);
+		$this->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		$this->structureEditorData = CommonTypes::getStructureEditorData($in, $protocolId);
 		$this->isPowered = CommonTypes::getBool($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
@@ -50,7 +50,7 @@ class StructureBlockUpdatePacket extends DataPacket implements ServerboundPacket
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		CommonTypes::putBlockPosition($out, $this->blockPosition);
+		CommonTypes::putBlockPosition($out, $this->blockPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		CommonTypes::putStructureEditorData($out, $protocolId, $this->structureEditorData);
 		CommonTypes::putBool($out, $this->isPowered);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){

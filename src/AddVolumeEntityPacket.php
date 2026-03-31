@@ -83,8 +83,8 @@ class AddVolumeEntityPacket extends DataPacket implements ClientboundPacket{
 		$this->jsonIdentifier = CommonTypes::getString($in);
 		$this->instanceName = CommonTypes::getString($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
-			$this->minBound = CommonTypes::getBlockPosition($in);
-			$this->maxBound = CommonTypes::getBlockPosition($in);
+			$this->minBound = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+			$this->maxBound = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 			$this->dimension = VarInt::readSignedInt($in);
 		}
 		$this->engineVersion = CommonTypes::getString($in);
@@ -96,8 +96,8 @@ class AddVolumeEntityPacket extends DataPacket implements ClientboundPacket{
 		CommonTypes::putString($out, $this->jsonIdentifier);
 		CommonTypes::putString($out, $this->instanceName);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_18_30){
-			CommonTypes::putBlockPosition($out, $this->minBound);
-			CommonTypes::putBlockPosition($out, $this->maxBound);
+			CommonTypes::putBlockPosition($out, $this->minBound, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
+			CommonTypes::putBlockPosition($out, $this->maxBound, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 			VarInt::writeSignedInt($out, $this->dimension);
 		}
 		CommonTypes::putString($out, $this->engineVersion);

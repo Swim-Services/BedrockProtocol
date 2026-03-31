@@ -45,7 +45,7 @@ final class CameraSetInstructionEase{
 
 	public static function fromNBT(CompoundTag $nbt) : self{
 		$typeName = $nbt->getString("type");
-		$type = CameraSetInstructionEaseType::fromString($typeName) ?? throw new \InvalidArgumentException("Invalid type tag");
+		$type = CameraSetInstructionEaseType::fromName($typeName);
 		$duration = $nbt->getFloat("time");
 		return new self($type, $duration);
 	}
@@ -57,7 +57,7 @@ final class CameraSetInstructionEase{
 
 	public function toNBT() : CompoundTag{
 		return CompoundTag::create()
-			->setString("type", CameraSetInstructionEaseType::toString($this->type) ?? throw new \InvalidArgumentException("Invalid type"))
+			->setString("type", CameraSetInstructionEaseType::toName($this->type))
 			->setFloat("time", $this->duration);
 	}
 }

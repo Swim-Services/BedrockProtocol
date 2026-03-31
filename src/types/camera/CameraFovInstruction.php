@@ -18,19 +18,23 @@ use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use function is_int;
 
 final class CameraFovInstruction{
 
-	/**
-	 * @see CameraSetInstructionEaseType
-	 */
+	/** @see CameraSetInstructionEaseType */
+	private string $easeType;
+
 	public function __construct(
 		private float $fieldOfView,
 		private float $easeTime,
-		private int $easeType,
+		int|string $easeType,
 		private bool $clear,
-	){}
+	){
+		$this->easeType = is_int($easeType) ? CameraSetInstructionEaseType::toName($easeType) : $easeType;
+	}
 
 	public function getFieldOfView() : float{ return $this->fieldOfView; }
 
@@ -39,15 +43,20 @@ final class CameraFovInstruction{
 	/**
 	 * @see CameraSetInstructionEaseType
 	 */
-	public function getEaseType() : int{ return $this->easeType; }
+	public function getEaseType() : string{ return $this->easeType; }
 
 	public function getClear() : bool{ return $this->clear; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$fieldOfView = LE::readFloat($in);
 		$easeTime = LE::readFloat($in);
-		$easeType = Byte::readUnsigned($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			$easeType = CommonTypes::getString($in);
+		}else{
+			$easeType = CameraSetInstructionEaseType::toName(Byte::readUnsigned($in));
+		}
 		$clear = CommonTypes::getBool($in);
+
 		return new self(
 			$fieldOfView,
 			$easeTime,
@@ -56,10 +65,14 @@ final class CameraFovInstruction{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeFloat($out, $this->fieldOfView);
 		LE::writeFloat($out, $this->easeTime);
-		Byte::writeUnsigned($out, $this->easeType);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			CommonTypes::putString($out, $this->easeType);
+		}else{
+			Byte::writeUnsigned($out, CameraSetInstructionEaseType::fromName($this->easeType));
+		}
 		CommonTypes::putBool($out, $this->clear);
 	}
 }
