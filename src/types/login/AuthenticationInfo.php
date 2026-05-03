@@ -22,7 +22,7 @@ final class AuthenticationInfo{
 	/** @required */
 	public int $AuthenticationType;
 
-	/** @required */
+	/** < ProtocolInfo::PROTOCOL_1_26_20 */
 	public string $Certificate;
 
 	/** @required */
