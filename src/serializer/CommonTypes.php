@@ -343,7 +343,7 @@ final class CommonTypes{
 			$networkId = 0;
 		}
 
-		$blockRuntimeId = VarInt::readUnsignedInt($in);
+		$blockRuntimeId = Binary::signInt(VarInt::readUnsignedInt($in));
 
 		$rawExtraData = self::getString($in);
 
