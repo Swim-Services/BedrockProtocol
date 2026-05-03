@@ -45,6 +45,9 @@ class RequestNetworkSettingsPacket extends DataPacket implements ServerboundPack
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->protocolVersion = BE::readUnsignedInt($in);
+		if ($this->protocolVersion === 974) {
+			$this->protocolVersion = 975;
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
