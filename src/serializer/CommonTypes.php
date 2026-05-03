@@ -313,7 +313,10 @@ final class CommonTypes{
 	}
 
 	/** @throws DataDecodeException */
-	public static function getItemStackWrapper(ByteBufferReader $in) : ItemStackWrapper{
+	public static function getItemStackWrapper(ByteBufferReader $in, bool $cereal = false) : ItemStackWrapper{
+		if ($cereal) {
+			return self::getItemStackWrapperCereal($in);
+		}
 		[$id, $count, $meta] = self::getItemStackHeader($in);
 		if($id === 0){
 			return new ItemStackWrapper(0, ItemStack::null());
@@ -327,7 +330,33 @@ final class CommonTypes{
 		return new ItemStackWrapper($stackId, $itemStack);
 	}
 
-	public static function putItemStackWrapper(ByteBufferWriter $out, ItemStackWrapper $itemStackWrapper) : void{
+	public static function getItemStackWrapperCereal(ByteBufferReader $in) : ItemStackWrapper {
+		$id = LE::readSignedShort($in);
+		$count = LE::readUnsignedShort($in);
+		$meta = VarInt::readUnsignedInt($in);
+
+		$hasNetId = self::getBool($in);
+		if($hasNetId){
+			VarInt::readUnsignedInt($in);
+			$networkId = self::readServerItemStackId($in);
+		} else {
+			$networkId = 0;
+		}
+
+		$blockRuntimeId = VarInt::readUnsignedInt($in);
+
+		$rawExtraData = self::getString($in);
+
+		$stack = new ItemStack($id, $meta, $count, $blockRuntimeId, $rawExtraData);
+
+		return new ItemStackWrapper($networkId, $stack);
+	}
+
+	public static function putItemStackWrapper(ByteBufferWriter $out, ItemStackWrapper $itemStackWrapper, bool $cereal = false) : void{
+		if ($cereal) {
+			self::putItemStackWrapperCereal($out, $itemStackWrapper);
+			return;
+		}
 		$itemStack = $itemStackWrapper->getItemStack();
 		if(self::putItemStackHeader($out, $itemStack)){
 			$hasNetId = $itemStackWrapper->getStackId() !== 0;
@@ -338,6 +367,30 @@ final class CommonTypes{
 
 			self::putItemStackFooter($out, $itemStack);
 		}
+	}
+
+	public static function putItemStackWrapperCereal(ByteBufferWriter $out, ItemStackWrapper $itemStackWrapper) {
+		$itemStack = $itemStackWrapper->getItemStack();
+
+		LE::writeSignedShort($out, $itemStack->getId());
+		LE::writeUnsignedShort($out, $itemStack->getCount());
+		VarInt::writeUnsignedInt($out, $itemStack->getMeta());
+
+		$hasNetId = $itemStackWrapper->getStackId() !== 0;
+		self::putBool($out, $hasNetId);
+		if($hasNetId){
+			VarInt::writeUnsignedInt($out, 0);
+			self::writeServerItemStackId($out, $itemStackWrapper->getStackId());
+		}
+
+		VarInt::writeUnsignedInt($out, $itemStack->getBlockRuntimeId());
+		if ($itemStack->getId() === 0) {
+			VarInt::writeUnsignedInt($out, 0);
+			return;
+		}
+
+		self::putString($out, $itemStack->getRawExtraData());
+
 	}
 
 	/** @throws DataDecodeException */

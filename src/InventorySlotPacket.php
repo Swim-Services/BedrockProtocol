@@ -26,9 +26,9 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 
 	public int $windowId;
 	public int $inventorySlot;
-	public FullContainerName $containerName;
+	public ?FullContainerName $containerName;
 	public int $dynamicContainerSize;
-	public ItemStackWrapper $storage;
+	public ?ItemStackWrapper $storage;
 	public ItemStackWrapper $item;
 
 	/**
@@ -49,32 +49,51 @@ class InventorySlotPacket extends DataPacket implements ClientboundPacket{
 		$this->windowId = VarInt::readUnsignedInt($in);
 		$this->inventorySlot = VarInt::readUnsignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
-			$this->containerName = FullContainerName::read($in, $protocolId);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+				$this->containerName = CommonTypes::readOptional($in, fn() => FullContainerName::read($in, $protocolId));
+			} else {
+				$this->containerName = FullContainerName::read($in, $protocolId);
+			}
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
-				$this->storage = CommonTypes::getItemStackWrapper($in);
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+					$this->storage = CommonTypes::readOptional($in, CommonTypes::getItemStackWrapperCereal(...));
+				} else {
+					$this->storage = CommonTypes::getItemStackWrapper($in);
+				}
 			}else{
 				$this->dynamicContainerSize = VarInt::readUnsignedInt($in);
 			}
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			$this->containerName = new FullContainerName(0, VarInt::readUnsignedInt($in));
 		}
-		$this->item = CommonTypes::getItemStackWrapper($in);
+		$this->item = CommonTypes::getItemStackWrapper($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_20);
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, $this->windowId);
 		VarInt::writeUnsignedInt($out, $this->inventorySlot);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
-			$this->containerName->write($out, $protocolId);
+			if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_20) {
+				CommonTypes::writeOptional($out, $this->containerName, fn(ByteBufferWriter $out, FullContainerName $v) => $v->write($out, $protocolId));
+			} else {
+				$this->containerName->write($out, $protocolId);
+			}
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
-				CommonTypes::putItemStackWrapper($out, $this->storage);
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+					if ($this->storage->getItemStack()->isNull()) {
+						$this->storage = null;
+					}
+					CommonTypes::writeOptional($out, $this->storage, CommonTypes::putItemStackWrapperCereal(...));
+				} else {
+					CommonTypes::putItemStackWrapper($out, $this->storage);
+				}
 			}else{
 				VarInt::writeUnsignedInt($out, $this->dynamicContainerSize);
 			}
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			VarInt::writeUnsignedInt($out, $this->containerName->getDynamicId() ?? 0);
 		}
-		CommonTypes::putItemStackWrapper($out, $this->item);
+		CommonTypes::putItemStackWrapper($out, $this->item, $protocolId >= ProtocolInfo::PROTOCOL_1_26_20);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

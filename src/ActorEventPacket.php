@@ -44,12 +44,19 @@ class ActorEventPacket extends DataPacket implements ClientboundPacket, Serverbo
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
 		$this->eventId = Byte::readUnsigned($in);
 		$this->eventData = VarInt::readSignedInt($in);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_20) {
+			Byte::readUnsigned($in);
+		}
+
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		Byte::writeUnsigned($out, $this->eventId);
 		VarInt::writeSignedInt($out, $this->eventData);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_20) {
+			Byte::writeUnsigned($out, 0);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

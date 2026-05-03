@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -71,6 +72,9 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
 			$this->actorUniqueId = LE::readSignedLong($in); //WHY IS THIS NON-STANDARD?
 		}
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_20) {
+			Byte::readUnsigned($in);
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -82,6 +86,9 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 		CommonTypes::putBool($out, $this->disableRelativeVolume);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
 			LE::writeSignedLong($out, $this->actorUniqueId);
+		}
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_20) {
+			Byte::writeUnsigned($out, 0);
 		}
 	}
 

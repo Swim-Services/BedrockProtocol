@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -52,6 +53,9 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 		$this->z = $blockPosition->getZ() / 8;
 		$this->volume = LE::readFloat($in);
 		$this->pitch = LE::readFloat($in);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_20) {
+			Byte::readUnsigned($in);
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -59,6 +63,9 @@ class PlaySoundPacket extends DataPacket implements ClientboundPacket{
 		CommonTypes::putBlockPosition($out, new BlockPosition((int) ($this->x * 8), (int) ($this->y * 8), (int) ($this->z * 8)), $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
 		LE::writeFloat($out, $this->volume);
 		LE::writeFloat($out, $this->pitch);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_20) {
+			Byte::writeUnsigned($out, 0);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{
