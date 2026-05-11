@@ -20,7 +20,7 @@ use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\types\LocatorBarWaypointPayload;
 use function count;
 
-class LocatorBarPacket extends DataPacket{
+class LocatorBarPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::LOCATOR_BAR_PACKET;
 
 	/**
@@ -40,17 +40,23 @@ class LocatorBarPacket extends DataPacket{
 		return $result;
 	}
 
+	/**
+	 * @return LocatorBarWaypointPayload[]
+	 * @phpstan-return list<LocatorBarWaypointPayload>
+	 */
+	public function getWaypoints() : array{ return $this->waypoints; }
+
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->waypoints = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$this->waypoints[] = LocatorBarWaypointPayload::read($in);
+			$this->waypoints[] = LocatorBarWaypointPayload::read($in, $protocolId);
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->waypoints));
 		foreach($this->waypoints as $waypoint){
-			$waypoint->write($out);
+			$waypoint->write($out, $protocolId);
 		}
 	}
 

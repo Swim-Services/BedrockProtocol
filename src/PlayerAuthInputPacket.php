@@ -240,6 +240,10 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		return $this->interactionMode;
 	}
 
+	public function getVrGazeDirection() : ?Vector3{
+		return $this->vrGazeDirection;
+	}
+
 	public function getInteractRotation() : Vector2{ return $this->interactRotation; }
 
 	public function getTick() : int{

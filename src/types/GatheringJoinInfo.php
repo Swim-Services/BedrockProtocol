@@ -16,38 +16,51 @@ namespace pocketmine\network\mcpe\protocol\types;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 final class GatheringJoinInfo{
 
 	public function __construct(
-		private string $experienceId,
+		private UuidInterface $experienceId,
 		private string $experienceName,
-		private string $experienceWorldId,
+		private UuidInterface $experienceWorldId,
 		private string $experienceWorldName,
 		private string $creatorId,
-		private string $storeId,
+		private UuidInterface $targetId,
+		private string $scenarioId,
+		private string $serverId,
 	){}
 
-	public function getExperienceId() : string{ return $this->experienceId; }
+	public function getExperienceId() : UuidInterface{ return $this->experienceId; }
 
 	public function getExperienceName() : string{ return $this->experienceName; }
 
-	public function getExperienceWorldId() : string{ return $this->experienceWorldId; }
+	public function getExperienceWorldId() : UuidInterface{ return $this->experienceWorldId; }
 
 	public function getExperienceWorldName() : string{ return $this->experienceWorldName; }
 
 	public function getCreatorId() : string{ return $this->creatorId; }
 
-	public function getStoreId() : string{ return $this->storeId; }
+	public function getTargetId() : UuidInterface{ return $this->targetId; }
 
-	public static function read(ByteBufferReader $in) : self{
-		$experienceId = CommonTypes::getString($in);
+	public function getScenarioId() : string{ return $this->scenarioId; }
+
+	public function getServerId() : string{ return $this->serverId; }
+
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		$experienceId = CommonTypes::getUUID($in);
 		$experienceName = CommonTypes::getString($in);
-		$experienceWorldId = CommonTypes::getString($in);
+		$experienceWorldId = CommonTypes::getUUID($in);
 		$experienceWorldName = CommonTypes::getString($in);
 		$creatorId = CommonTypes::getString($in);
-		$storeId = CommonTypes::getString($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			$targetId = CommonTypes::getUUID($in);
+			$scenarioId = CommonTypes::getString($in);
+			$serverId = CommonTypes::getString($in);
+		}
 
 		return new self(
 			$experienceId,
@@ -55,16 +68,22 @@ final class GatheringJoinInfo{
 			$experienceWorldId,
 			$experienceWorldName,
 			$creatorId,
-			$storeId
+			$targetId ?? Uuid::uuid4(),
+			$scenarioId ?? "",
+			$serverId ?? "",
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
-		CommonTypes::putString($out, $this->experienceId);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		CommonTypes::putUUID($out, $this->experienceId);
 		CommonTypes::putString($out, $this->experienceName);
-		CommonTypes::putString($out, $this->experienceWorldId);
+		CommonTypes::putUUID($out, $this->experienceWorldId);
 		CommonTypes::putString($out, $this->experienceWorldName);
 		CommonTypes::putString($out, $this->creatorId);
-		CommonTypes::putString($out, $this->storeId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
+			CommonTypes::putUUID($out, $this->targetId);
+			CommonTypes::putString($out, $this->scenarioId);
+			CommonTypes::putString($out, $this->serverId);
+		}
 	}
 }

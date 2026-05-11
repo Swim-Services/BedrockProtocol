@@ -23,7 +23,7 @@ use pocketmine\network\mcpe\protocol\types\AttributesUpdateEnvironment;
 use pocketmine\network\mcpe\protocol\types\AttributeUpdateLayers;
 use pocketmine\network\mcpe\protocol\types\AttributeUpdateLayerSettings;
 
-class ClientboundAttributeLayerSyncPacket extends DataPacket{
+class ClientboundAttributeLayerSyncPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::CLIENTBOUND_ATTRIBUTE_LAYER_SYNC_PACKET;
 
 	private AttributeLayerSyncPayload $payload;
@@ -36,6 +36,8 @@ class ClientboundAttributeLayerSyncPacket extends DataPacket{
 		$result->payload = $payload;
 		return $result;
 	}
+
+	public function getPayload() : AttributeLayerSyncPayload{ return $this->payload; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->payload = match(VarInt::readUnsignedInt($in)){

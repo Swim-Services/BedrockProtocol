@@ -17,6 +17,8 @@ namespace pocketmine\network\mcpe\protocol\types;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 
 final class Enchant{
 	public function __construct(
@@ -28,14 +30,22 @@ final class Enchant{
 
 	public function getLevel() : int{ return $this->level; }
 
-	public static function read(ByteBufferReader $in) : self{
-		$id = Byte::readUnsigned($in);
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			$id = VarInt::readUnsignedInt($in);
+		}else{
+			$id = Byte::readUnsigned($in);
+		}
 		$level = Byte::readUnsigned($in);
 		return new self($id, $level);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
-		Byte::writeUnsigned($out, $this->id);
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			VarInt::writeUnsignedInt($out, $this->id);
+		}else{
+			Byte::writeUnsigned($out, $this->id);
+		}
 		Byte::writeUnsigned($out, $this->level);
 	}
 }

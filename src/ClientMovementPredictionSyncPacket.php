@@ -38,6 +38,9 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 	private float $jumpStrength;
 	private float $health;
 	private float $hunger;
+	private float $frictionModifier;
+	private float $bounciness;
+	private float $airDragModifier;
 
 	private int $actorUniqueId;
 	private bool $actorFlyingState;
@@ -56,6 +59,9 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 		float $jumpStrength,
 		float $health,
 		float $hunger,
+		float $frictionModifier,
+		float $bounciness,
+		float $airDragModifier,
 		int $actorUniqueId,
 		bool $actorFlyingState,
 	) : self{
@@ -70,6 +76,9 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 		$result->jumpStrength = $jumpStrength;
 		$result->health = $health;
 		$result->hunger = $hunger;
+		$result->frictionModifier = $frictionModifier;
+		$result->bounciness = $bounciness;
+		$result->airDragModifier = $airDragModifier;
 		$result->actorUniqueId = $actorUniqueId;
 		$result->actorFlyingState = $actorFlyingState;
 		return $result;
@@ -86,6 +95,9 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 		float $jumpStrength,
 		float $health,
 		float $hunger,
+		float $frictionModifier,
+		float $bounciness,
+		float $airDragModifier,
 		int $actorUniqueId,
 		bool $actorFlyingState,
 	) : self{
@@ -93,7 +105,7 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 			throw new \InvalidArgumentException("Input flags must be " . self::FLAG_LENGTH . " bits long");
 		}
 
-		return self::internalCreate($flags, $scale, $width, $height, $movementSpeed, $underwaterMovementSpeed, $lavaMovementSpeed, $jumpStrength, $health, $hunger, $actorUniqueId, $actorFlyingState);
+		return self::internalCreate($flags, $scale, $width, $height, $movementSpeed, $underwaterMovementSpeed, $lavaMovementSpeed, $jumpStrength, $health, $hunger, $frictionModifier, $bounciness, $airDragModifier, $actorUniqueId, $actorFlyingState);
 	}
 
 	public function getFlags() : BitSet{ return $this->flags; }
@@ -116,13 +128,20 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 
 	public function getHunger() : float{ return $this->hunger; }
 
+	public function getFrictionModifier() : float{ return $this->frictionModifier; }
+
+	public function getBounciness() : float{ return $this->bounciness; }
+
+	public function getAirDragModifier() : float{ return $this->airDragModifier; }
+
 	public function getActorUniqueId() : int{ return $this->actorUniqueId; }
 
 	public function getActorFlyingState() : bool{ return $this->actorFlyingState; }
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->flags = BitSet::read($in, match(true) {
-			$protocolId >= ProtocolInfo::PROTOCOL_1_21_130 => self::FLAG_LENGTH,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_26_20 => self::FLAG_LENGTH,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_130 => 127,
 			$protocolId >= ProtocolInfo::PROTOCOL_1_21_111 => 126,
 			$protocolId >= ProtocolInfo::PROTOCOL_1_21_90 => 125,
 			$protocolId >= ProtocolInfo::PROTOCOL_1_21_80 => 124,
@@ -138,6 +157,11 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 		$this->jumpStrength = LE::readFloat($in);
 		$this->health = LE::readFloat($in);
 		$this->hunger = LE::readFloat($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->frictionModifier = LE::readFloat($in);
+			$this->bounciness = LE::readFloat($in);
+			$this->airDragModifier = LE::readFloat($in);
+		}
 		$this->actorUniqueId = CommonTypes::getActorUniqueId($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
 			$this->actorFlyingState = CommonTypes::getBool($in);
@@ -146,7 +170,8 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		$this->flags->write($out, match(true) {
-			$protocolId >= ProtocolInfo::PROTOCOL_1_21_130 => self::FLAG_LENGTH,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_26_20 => self::FLAG_LENGTH,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_21_130 => 127,
 			$protocolId >= ProtocolInfo::PROTOCOL_1_21_111 => 126,
 			$protocolId >= ProtocolInfo::PROTOCOL_1_21_90 => 125,
 			$protocolId >= ProtocolInfo::PROTOCOL_1_21_80 => 124,
@@ -162,6 +187,11 @@ class ClientMovementPredictionSyncPacket extends DataPacket implements Serverbou
 		LE::writeFloat($out, $this->jumpStrength);
 		LE::writeFloat($out, $this->health);
 		LE::writeFloat($out, $this->hunger);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_20){
+			LE::writeFloat($out, $this->frictionModifier);
+			LE::writeFloat($out, $this->bounciness);
+			LE::writeFloat($out, $this->airDragModifier);
+		}
 		CommonTypes::putActorUniqueId($out, $this->actorUniqueId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_70){
 			CommonTypes::putBool($out, $this->actorFlyingState);

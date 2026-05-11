@@ -24,7 +24,7 @@ use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 /**
  * Useless leftover from a 1.8 refactor, does nothing
  */
-class LevelSoundEventPacketV1 extends DataPacket{
+class LevelSoundEventPacketV1 extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::LEVEL_SOUND_EVENT_PACKET_V1;
 
 	public int $sound;
