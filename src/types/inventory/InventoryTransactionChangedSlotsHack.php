@@ -42,7 +42,7 @@ final class InventoryTransactionChangedSlotsHack
 		return $this->changedSlotIndexes;
 	}
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$containerId = Byte::readUnsigned($in);
 		$changedSlots = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){

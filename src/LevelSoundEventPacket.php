@@ -21,6 +21,8 @@ use pmmp\encoding\VarInt;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
+use function count;
+use function strtolower;
 
 class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::LEVEL_SOUND_EVENT_PACKET;
@@ -48,7 +50,7 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 		int $actorUniqueId,
 		?Vector3 $firePosition,
 	) : self{
-		$result = new self;
+		$result = new self();
 		$result->sound = $sound;
 		$result->position = $position;
 		$result->extraData = $extraData;
@@ -64,8 +66,25 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 		return self::create($sound, $position, $extraData, ":", false, $disableRelativeVolume, -1, null);
 	}
 
+	private static array $idToStringMap = [];
+	private static array $stringToIdMap = [];
+	private static function makeSoundMap() {
+		$refl = new \ReflectionClass(LevelSoundEvent::class);
+		foreach($refl->getConstants() as $name => $val) {
+			self::$idToStringMap[$val] = strtolower($name);
+			self::$stringToIdMap[strtolower($name)] = $val;
+		}
+	}
+
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->sound = VarInt::readUnsignedInt($in);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_30) {
+			if (count(self::$stringToIdMap) === 0) {
+				self::makeSoundMap();
+			}
+			$this->sound = self::$stringToIdMap[CommonTypes::getString($in)] ?? -1;
+		} else {
+			$this->sound = VarInt::readUnsignedInt($in);
+		}
 		$this->position = CommonTypes::getVector3($in);
 		$this->extraData = VarInt::readSignedInt($in);
 		$this->entityType = CommonTypes::getString($in);
@@ -80,7 +99,14 @@ class LevelSoundEventPacket extends DataPacket implements ClientboundPacket, Ser
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		VarInt::writeUnsignedInt($out, $this->sound);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_30) {
+			if (count(self::$idToStringMap) === 0) {
+				self::makeSoundMap();
+			}
+			CommonTypes::putString($out, self::$idToStringMap[$this->sound] ?? "");
+		} else {
+			VarInt::writeUnsignedInt($out, $this->sound);
+		}
 		CommonTypes::putVector3($out, $this->position);
 		VarInt::writeSignedInt($out, $this->extraData);
 		CommonTypes::putString($out, $this->entityType);

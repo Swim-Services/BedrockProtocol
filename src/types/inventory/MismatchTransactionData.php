@@ -26,13 +26,13 @@ class MismatchTransactionData extends TransactionData{
 
 	public const ID = InventoryTransactionPacket::TYPE_MISMATCH;
 
-	protected function decodeData(ByteBufferReader $in, int $protocolId) : void{
+	protected function decodeData(ByteBufferReader $in, int $protocolId, bool $new) : void{
 		if(count($this->actions) > 0){
 			throw new PacketDecodeException("Mismatch transaction type should not have any actions associated with it, but got " . count($this->actions));
 		}
 	}
 
-	protected function encodeData(ByteBufferWriter $out, int $protocolId) : void{
+	protected function encodeData(ByteBufferWriter $out, int $protocolId, bool $new) : void{
 
 	}
 

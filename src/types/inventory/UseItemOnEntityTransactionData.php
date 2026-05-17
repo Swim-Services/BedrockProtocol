@@ -62,20 +62,20 @@ class UseItemOnEntityTransactionData extends TransactionData{
 		return $this->clickPosition;
 	}
 
-	protected function decodeData(ByteBufferReader $in, int $protocolId) : void{
+	protected function decodeData(ByteBufferReader $in, int $protocolId, bool $new) : void{
 		$this->actorRuntimeId = CommonTypes::getActorRuntimeId($in);
-		$this->actionType = VarInt::readUnsignedInt($in);
+		$this->actionType = $new ? VarInt::readSignedInt($in) : VarInt::readUnsignedInt($in);
 		$this->hotbarSlot = VarInt::readSignedInt($in);
-		$this->itemInHand = CommonTypes::getItemStackWrapper($in);
+		$this->itemInHand = $new ? CommonTypes::getNetworkItemStackDescriptor($in) : CommonTypes::getItemStackWrapper($in);
 		$this->playerPosition = CommonTypes::getVector3($in);
 		$this->clickPosition = CommonTypes::getVector3($in);
 	}
 
-	protected function encodeData(ByteBufferWriter $out, int $protocolId) : void{
+	protected function encodeData(ByteBufferWriter $out, int $protocolId, bool $new) : void{
 		CommonTypes::putActorRuntimeId($out, $this->actorRuntimeId);
 		VarInt::writeUnsignedInt($out, $this->actionType);
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
-		CommonTypes::putItemStackWrapper($out, $this->itemInHand);
+		$new ? CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand) : CommonTypes::putItemStackWrapper($out, $this->itemInHand);
 		CommonTypes::putVector3($out, $this->playerPosition);
 		CommonTypes::putVector3($out, $this->clickPosition);
 	}
@@ -84,7 +84,7 @@ class UseItemOnEntityTransactionData extends TransactionData{
 	 * @generate-create-func
 	 */
 	private static function initSelf(int $actorRuntimeId, int $actionType, int $hotbarSlot, ItemStackWrapper $itemInHand, Vector3 $playerPosition, Vector3 $clickPosition) : self{
-		$result = new self;
+		$result = new self();
 		$result->actorRuntimeId = $actorRuntimeId;
 		$result->actionType = $actionType;
 		$result->hotbarSlot = $hotbarSlot;

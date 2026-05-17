@@ -248,5 +248,9 @@ final class LevelSettings{
 				CommonTypes::putString($out, $serverTelemetryData->getOwnerId());
 			}
 		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			VarInt::writeSignedInt($out, 0);
+			CommonTypes::putBool($out, false);
+		}
 	}
 }

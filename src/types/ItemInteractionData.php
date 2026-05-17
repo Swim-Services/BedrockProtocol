@@ -52,7 +52,7 @@ final class ItemInteractionData{
 		if($requestId !== 0){
 			$len = VarInt::readUnsignedInt($in);
 			for($i = 0; $i < $len; ++$i){
-				$requestChangedSlots[] = InventoryTransactionChangedSlotsHack::read($in);
+				$requestChangedSlots[] = InventoryTransactionChangedSlotsHack::read($in, $protocolId);
 			}
 		}
 		$transactionData = new UseItemTransactionData();
@@ -68,6 +68,6 @@ final class ItemInteractionData{
 				$changedSlot->write($out);
 			}
 		}
-		$this->transactionData->encode($out, $protocolId);
+		$this->transactionData->encode($out, $protocolId, false);
 	}
 }

@@ -24,11 +24,11 @@ class NormalTransactionData extends TransactionData{
 
 	public const ID = InventoryTransactionPacket::TYPE_NORMAL;
 
-	protected function decodeData(ByteBufferReader $in, int $protocolId) : void{
+	protected function decodeData(ByteBufferReader $in, int $protocolId, bool $new) : void{
 
 	}
 
-	protected function encodeData(ByteBufferWriter $out, int $protocolId) : void{
+	protected function encodeData(ByteBufferWriter $out, int $protocolId, bool $new) : void{
 
 	}
 

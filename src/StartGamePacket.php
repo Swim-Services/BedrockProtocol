@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -281,6 +282,9 @@ class StartGamePacket extends DataPacket implements ClientboundPacket{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_0) {
 			$this->networkPermissions->encode($out);
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+					Byte::writeUnsigned($out, 0);
+				}
 				CommonTypes::writeOptional($out, $this->serverJoinInformation, fn(ByteBufferWriter $out, ServerJoinInformation $info) => $info->write($out, $protocolId));
 				$this->serverTelemetryData->write($out);
 			}

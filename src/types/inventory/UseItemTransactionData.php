@@ -85,40 +85,41 @@ class UseItemTransactionData extends TransactionData{
 
 	public function getClientCooldownState() : int{ return $this->clientCooldownState; }
 
-	protected function decodeData(ByteBufferReader $in, int $protocolId) : void{
-		$this->actionType = VarInt::readUnsignedInt($in);
+	protected function decodeData(ByteBufferReader $in, int $protocolId, bool $new) : void{
+		$this->actionType = $new ? VarInt::readSignedInt($in) : VarInt::readUnsignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
-			$this->triggerType = TriggerType::fromPacket(VarInt::readUnsignedInt($in));
+			$this->triggerType = TriggerType::fromPacket($new ? Byte::readUnsigned($in) : VarInt::readUnsignedInt($in));
 		}
 		$this->blockPosition = CommonTypes::getBlockPosition($in, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
-		$this->face = VarInt::readSignedInt($in);
+
+		$this->face = $new ? Byte::readSigned($in) : VarInt::readSignedInt($in);
 		$this->hotbarSlot = VarInt::readSignedInt($in);
-		$this->itemInHand = CommonTypes::getItemStackWrapper($in);
+		$this->itemInHand = $new ? CommonTypes::getNetworkItemStackDescriptor($in) : CommonTypes::getItemStackWrapper($in);
 		$this->playerPosition = CommonTypes::getVector3($in);
 		$this->clickPosition = CommonTypes::getVector3($in);
 		$this->blockRuntimeId = VarInt::readUnsignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
-			$this->clientInteractPrediction = PredictedResult::fromPacket(VarInt::readUnsignedInt($in));
+			$this->clientInteractPrediction = PredictedResult::fromPacket($new ? Byte::readUnsigned($in) : VarInt::readUnsignedInt($in));
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
 				$this->clientCooldownState = Byte::readUnsigned($in);
 			}
 		}
 	}
 
-	protected function encodeData(ByteBufferWriter $out, int $protocolId) : void{
+	protected function encodeData(ByteBufferWriter $out, int $protocolId, bool $new) : void{
 		VarInt::writeUnsignedInt($out, $this->actionType);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
-			VarInt::writeUnsignedInt($out, $this->triggerType->value);
+			$new ? Byte::writeUnsigned($out, $this->triggerType->value) : VarInt::writeUnsignedInt($out, $this->triggerType->value);
 		}
 		CommonTypes::putBlockPosition($out, $this->blockPosition, $protocolId >= ProtocolInfo::PROTOCOL_1_26_10);
-		VarInt::writeSignedInt($out, $this->face);
+		$new ? Byte::writeSigned($out, $this->face) : VarInt::writeSignedInt($out, $this->face);
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
-		CommonTypes::putItemStackWrapper($out, $this->itemInHand);
+		$new ? CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand) : CommonTypes::putItemStackWrapper($out, $this->itemInHand);
 		CommonTypes::putVector3($out, $this->playerPosition);
 		CommonTypes::putVector3($out, $this->clickPosition);
 		VarInt::writeUnsignedInt($out, $this->blockRuntimeId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
-			VarInt::writeUnsignedInt($out, $this->clientInteractPrediction->value);
+			$new ? Byte::writeUnsigned($out, $this->clientInteractPrediction->value) : VarInt::writeUnsignedInt($out, $this->clientInteractPrediction->value);
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_10){
 				Byte::writeUnsigned($out, $this->clientCooldownState);
 			}
@@ -141,7 +142,7 @@ class UseItemTransactionData extends TransactionData{
 		PredictedResult $clientInteractPrediction,
 		int $clientCooldownState,
 	) : self{
-		$result = new self;
+		$result = new self();
 		$result->actionType = $actionType;
 		$result->triggerType = $triggerType;
 		$result->blockPosition = $blockPosition;
