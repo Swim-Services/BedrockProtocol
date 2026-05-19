@@ -19,6 +19,7 @@ use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\FullContainerName;
+use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use function count;
 
@@ -50,9 +51,14 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 		$this->windowId = VarInt::readUnsignedInt($in);
 		$count = VarInt::readUnsignedInt($in);
 		for($i = 0; $i < $count; ++$i){
-			$this->items[] = CommonTypes::getItemStackWrapper($in);
+			$this->items[] = $protocolId >= ProtocolInfo::PROTOCOL_1_26_30 ? CommonTypes::getNetworkItemStackDescriptor($in) : CommonTypes::getItemStackWrapper($in);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_30) {
+			$containerName = CommonTypes::readOptional($in, fn(ByteBufferReader $in) => FullContainerName::read($in, $protocolId));
+			$this->containerName = $containerName ?? new FullContainerName(0);
+			$storage = CommonTypes::readOptional($in, CommonTypes::getNetworkItemStackDescriptor(...));
+			$this->storage = $storage ?? new ItemStack(0, 0, 0, 0, "");
+		} elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
 			$this->containerName = FullContainerName::read($in, $protocolId);
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
 				$this->storage = CommonTypes::getItemStackWrapper($in);
@@ -68,9 +74,13 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 		VarInt::writeUnsignedInt($out, $this->windowId);
 		VarInt::writeUnsignedInt($out, count($this->items));
 		foreach($this->items as $item){
-			CommonTypes::putItemStackWrapper($out, $item);
+			$protocolId >= ProtocolInfo::PROTOCOL_1_26_30 ? CommonTypes::putNetworkItemStackDescriptor($out, $item) : CommonTypes::putItemStackWrapper($out, $item);
 		}
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			CommonTypes::writeOptional($out, $this->containerName, fn(ByteBufferWriter $out, FullContainerName $v) => $v->write($out, $protocolId));
+			CommonTypes::writeOptional($out, $this->storage, CommonTypes::putNetworkItemStackDescriptor(...));
+			CommonTypes::putNetworkItemStackDescriptor($out, $this->item);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
 			$this->containerName->write($out, $protocolId);
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
 				CommonTypes::putItemStackWrapper($out, $this->storage);
