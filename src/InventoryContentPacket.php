@@ -78,8 +78,11 @@ class InventoryContentPacket extends DataPacket implements ClientboundPacket{
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
 			CommonTypes::writeOptional($out, $this->containerName, fn(ByteBufferWriter $out, FullContainerName $v) => $v->write($out, $protocolId));
-			CommonTypes::writeOptional($out, $this->storage, CommonTypes::putNetworkItemStackDescriptor(...));
-			CommonTypes::putNetworkItemStackDescriptor($out, $this->item);
+			if ($this->storage->getItemStack()->isNull()) {
+				CommonTypes::putBool($out, false);
+			} else {
+				CommonTypes::writeOptional($out, $this->storage, CommonTypes::putNetworkItemStackDescriptor(...));
+			}
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_30){
 			$this->containerName->write($out, $protocolId);
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_40){
