@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -117,6 +118,15 @@ class BossEventPacket extends DataPacket implements ClientboundPacket, Serverbou
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->bossActorUniqueId = CommonTypes::getActorUniqueId($in);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_30) {
+			$this->eventType = Byte::readUnsigned($in);
+			$this->title = CommonTypes::getString($in);
+			$this->filteredTitle = CommonTypes::getString($in);
+			$this->healthPercent = LE::readFloat($in);
+			$this->color = Byte::readUnsigned($in);
+			$this->overlay = Byte::readUnsigned($in);
+			return;
+		}
 		$this->eventType = VarInt::readUnsignedInt($in);
 		switch($this->eventType){
 			case self::TYPE_REGISTER_PLAYER:
@@ -158,6 +168,15 @@ class BossEventPacket extends DataPacket implements ClientboundPacket, Serverbou
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->bossActorUniqueId);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_30) {
+			Byte::writeUnsigned($out, $this->eventType);
+			CommonTypes::putString($out, $this->title);
+			CommonTypes::putString($out, $this->filteredTitle);
+			LE::writeFloat($out, $this->healthPercent);
+			Byte::writeUnsigned($out, $this->color);
+			Byte::writeUnsigned($out, $this->overlay);
+			return;
+		}
 		VarInt::writeUnsignedInt($out, $this->eventType);
 		switch($this->eventType){
 			case self::TYPE_REGISTER_PLAYER:
