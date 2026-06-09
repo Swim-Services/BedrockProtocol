@@ -47,13 +47,13 @@ class BossEventPacket extends DataPacket implements ClientboundPacket, Serverbou
 	public int $bossActorUniqueId;
 	public int $eventType;
 
-	public int $playerActorUniqueId;
-	public float $healthPercent;
-	public string $title;
-	public string $filteredTitle;
-	public bool $darkenScreen;
-	public int $color;
-	public int $overlay;
+	public int $playerActorUniqueId = 0;
+	public float $healthPercent = 0;
+	public string $title = "";
+	public string $filteredTitle = "";
+	public bool $darkenScreen = false;
+	public int $color = 0;
+	public int $overlay = 0;
 
 	private static function base(int $bossActorUniqueId, int $eventId) : self{
 		$result = new self;
@@ -119,6 +119,7 @@ class BossEventPacket extends DataPacket implements ClientboundPacket, Serverbou
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->bossActorUniqueId = CommonTypes::getActorUniqueId($in);
 		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_30) {
+			$this->playerActorUniqueId = CommonTypes::getActorUniqueId($in);
 			$this->eventType = Byte::readUnsigned($in);
 			$this->title = CommonTypes::getString($in);
 			$this->filteredTitle = CommonTypes::getString($in);
@@ -169,6 +170,7 @@ class BossEventPacket extends DataPacket implements ClientboundPacket, Serverbou
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putActorUniqueId($out, $this->bossActorUniqueId);
 		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_30) {
+			CommonTypes::putActorUniqueId($out, $this->playerActorUniqueId);
 			Byte::writeUnsigned($out, $this->eventType);
 			CommonTypes::putString($out, $this->title);
 			CommonTypes::putString($out, $this->filteredTitle);
