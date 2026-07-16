@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
@@ -41,14 +42,14 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 
 	public int $requestId;
 	/** @var InventoryTransactionChangedSlotsHack[] */
-	public array $requestChangedSlots;
+	public ?array $requestChangedSlots = null;
 	public TransactionData $trData;
 
 	/**
 	 * @generate-create-func
 	 * @param InventoryTransactionChangedSlotsHack[] $requestChangedSlots
 	 */
-	public static function create(int $requestId, array $requestChangedSlots, TransactionData $trData) : self{
+	public static function create(int $requestId, ?array $requestChangedSlots, TransactionData $trData) : self{
 		$result = new self;
 		$result->requestId = $requestId;
 		$result->requestChangedSlots = $requestChangedSlots;
@@ -58,16 +59,29 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->requestId = CommonTypes::readLegacyItemStackRequestId($in);
-		$this->requestChangedSlots = [];
-		if($this->requestId !== 0){
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->requestChangedSlots = CommonTypes::readOptional($in, static function(ByteBufferReader $in) : array{
+				$result = [];
+				for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
+					$result[] = InventoryTransactionChangedSlotsHack::read($in);
+				}
+				return $result;
+			});
+		}elseif($this->requestId !== 0){
 			for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 				$this->requestChangedSlots[] = InventoryTransactionChangedSlotsHack::read($in);
 			}
 		}
 
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && Byte::readUnsigned($in) !== 1){
+			throw new PacketDecodeException("Dummy optional bool for transactionType should always be 1");
+		}
 		$transactionType = VarInt::readUnsignedInt($in);
-
-		$this->trData = match($transactionType){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && Byte::readUnsigned($in) !== 1){
+			throw new PacketDecodeException("Dummy optional bool for trData should always be 1");
+		}
+		$this->trData = match($transactionType) {
 			NormalTransactionData::ID => new NormalTransactionData(),
 			MismatchTransactionData::ID => new MismatchTransactionData(),
 			UseItemTransactionData::ID => new UseItemTransactionData(),
@@ -75,22 +89,33 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 			ReleaseItemTransactionData::ID => new ReleaseItemTransactionData(),
 			default => throw new PacketDecodeException("Unknown transaction type $transactionType"),
 		};
-
-		$this->trData->decode($in, $protocolId);
+		$this->trData->decodeTransaction($in, $protocolId);
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeLegacyItemStackRequestId($out, $this->requestId);
-		if($this->requestId !== 0){
-			VarInt::writeUnsignedInt($out, count($this->requestChangedSlots));
-			foreach($this->requestChangedSlots as $changedSlots){
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			CommonTypes::writeOptional($out, $this->requestChangedSlots, static function(ByteBufferWriter $out, array $value) : void{
+				VarInt::writeUnsignedInt($out, count($value));
+				foreach($value as $changedSlots){
+					$changedSlots->write($out);
+				}
+			});
+
+			Byte::writeUnsigned($out, 1);
+		}elseif($this->requestId !== 0){
+			VarInt::writeUnsignedInt($out, count($this->requestChangedSlots ?? []));
+			foreach(($this->requestChangedSlots ?? []) as $changedSlots){
 				$changedSlots->write($out);
 			}
 		}
-
 		VarInt::writeUnsignedInt($out, $this->trData->getTypeId());
 
-		$this->trData->encode($out, $protocolId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			Byte::writeUnsigned($out, 1);
+		}
+		$this->trData->encodeTransaction($out, $protocolId);
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

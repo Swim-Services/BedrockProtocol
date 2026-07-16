@@ -56,20 +56,30 @@ class ClientCacheBlobStatusPacket extends DataPacket implements ServerboundPacke
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$missCount = VarInt::readUnsignedInt($in);
-		$hitCount = VarInt::readUnsignedInt($in);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
+			$hitCount = VarInt::readUnsignedInt($in);
+		}
 		for($i = 0; $i < $missCount; ++$i){
 			$this->missHashes[] = LE::readUnsignedLong($in);
 		}
-		for($i = 0; $i < $hitCount; ++$i){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$hitCount = VarInt::readUnsignedInt($in);
+		}
+		for($i = 0; $i < ($hitCount ?? 0); ++$i){
 			$this->hitHashes[] = LE::readUnsignedLong($in);
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->missHashes));
-		VarInt::writeUnsignedInt($out, count($this->hitHashes));
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
+			VarInt::writeUnsignedInt($out, count($this->hitHashes));
+		}
 		foreach($this->missHashes as $hash){
 			LE::writeUnsignedLong($out, $hash);
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			VarInt::writeUnsignedInt($out, count($this->hitHashes));
 		}
 		foreach($this->hitHashes as $hash){
 			LE::writeUnsignedLong($out, $hash);

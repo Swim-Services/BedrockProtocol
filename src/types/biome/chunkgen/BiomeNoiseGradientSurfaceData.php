@@ -24,9 +24,9 @@ use function count;
 final class BiomeNoiseGradientSurfaceData{
 
 	/**
-	 * @param int[]   $nonReplaceableBlocks
-	 * @param int[]   $gradientBlocks
-	 * @param float[] $amplitudes
+	 * @param int[]   					   $nonReplaceableBlocks
+	 * @param BiomeNoiseBlockSpecifier[]   $gradientBlocks
+	 * @param float[] 					   $amplitudes
 	 */
 	public function __construct(
 		private array $nonReplaceableBlocks,
@@ -42,7 +42,7 @@ final class BiomeNoiseGradientSurfaceData{
 	public function getNonReplaceableBlocks() : array{ return $this->nonReplaceableBlocks; }
 
 	/**
-	 * @return int[]
+	 * @return BiomeNoiseBlockSpecifier[]
 	 */
 	public function getGradientBlocks() : array{ return $this->gradientBlocks; }
 
@@ -55,7 +55,7 @@ final class BiomeNoiseGradientSurfaceData{
 	 */
 	public function getAmplitudes() : array{ return $this->amplitudes; }
 
-	public static function read(ByteBufferReader $in) : self{
+	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$nonReplaceableBlocks = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$nonReplaceableBlocks[] = LE::readUnsignedInt($in);
@@ -63,7 +63,7 @@ final class BiomeNoiseGradientSurfaceData{
 
 		$gradientBlocks = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
-			$gradientBlocks[] = LE::readUnsignedInt($in);
+			$gradientBlocks[] = BiomeNoiseBlockSpecifier::read($in, $protocolId);
 		}
 
 		$noiseSeed = CommonTypes::getString($in);
@@ -83,7 +83,7 @@ final class BiomeNoiseGradientSurfaceData{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->nonReplaceableBlocks));
 		foreach($this->nonReplaceableBlocks as $value){
 			LE::writeUnsignedInt($out, $value);
@@ -91,7 +91,7 @@ final class BiomeNoiseGradientSurfaceData{
 
 		VarInt::writeUnsignedInt($out, count($this->gradientBlocks));
 		foreach($this->gradientBlocks as $value){
-			LE::writeUnsignedInt($out, $value);
+			$value->write($out, $protocolId);
 		}
 
 		CommonTypes::putString($out, $this->noiseSeed);

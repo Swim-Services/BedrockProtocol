@@ -33,6 +33,7 @@ final class ProtocolInfo{
 
 	/** Actual Minecraft: PE protocol version */
 
+	public const PROTOCOL_1_26_30 = 1001;
 	public const PROTOCOL_1_26_20 = 975;
 	public const PROTOCOL_1_26_10 = 944;
 	public const PROTOCOL_1_26_0 = 924;
@@ -76,7 +77,7 @@ final class ProtocolInfo{
 	public const PROTOCOL_1_18_0 = 475;
 	public const PROTOCOL_1_16_100 = 419;
 
-	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_20;
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_30;
 	public const ACCEPTED_PROTOCOL = [
 		self::PROTOCOL_1_18_10,
 		/*self::PROTOCOL_1_18_30,
@@ -117,11 +118,12 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_21_130,
 		self::PROTOCOL_1_26_0,
 		self::PROTOCOL_1_26_10,
+		self::PROTOCOL_1_26_20,
 		self::CURRENT_PROTOCOL
 	];
 
 	/** Version number sent to clients in ping responses. */
-	public const MINECRAFT_VERSION_NETWORK = '1.26.20';
+	public const MINECRAFT_VERSION_NETWORK = '1.26.30';
 	/** Current Minecraft PE version reported by the server. This is usually the earliest currently supported version. */
 	public const MINECRAFT_VERSION = 'v' . self::MINECRAFT_VERSION_NETWORK;
 
@@ -373,5 +375,8 @@ final class ProtocolInfo{
 	public const CLIENTBOUND_ATTRIBUTE_LAYER_SYNC_PACKET = 0x159;
 	public const SERVER_STORE_INFO_PACKET = 0x15a;
 	public const SERVER_PRESENCE_INFO_PACKET = 0x15b;
+	public const CLIENTBOUND_UPDATE_SOUND_DATA_PACKET = 0x15c;
+	public const SEND_PARTY_DESTINATION_COOKIE_PACKET = 0x15d;
+	public const PARTY_DESTINATION_COOKIE_RESPONSE_PACKET = 0x15e;
 
 }

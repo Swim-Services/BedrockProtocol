@@ -43,6 +43,12 @@ final class ClientData{
 	/** @required */
 	public bool $CapeOnClassicSkin;
 
+	/** >= ProtocolInfo::PROTOCOL_1_26_30 */
+	public int $ClientEditorConnectionIntent;
+
+	/** >= ProtocolInfo::PROTOCOL_1_26_30 */
+	public bool $ClientIsEditorCapable;
+
 	/** @required */
 	public int $ClientRandomId;
 

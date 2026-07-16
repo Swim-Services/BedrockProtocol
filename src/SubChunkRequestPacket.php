@@ -58,21 +58,37 @@ class SubChunkRequestPacket extends DataPacket implements ServerboundPacket{
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->dimension = VarInt::readSignedInt($in);
-		$this->basePosition = SubChunkPosition::read($in);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->basePosition = SubChunkPosition::readVarInts($in);
+		}
 
 		$this->entries = [];
-		for($i = 0, $count = LE::readUnsignedInt($in); $i < $count; $i++){
+		for($i = 0, $count = $protocolId >= ProtocolInfo::PROTOCOL_1_26_30 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in); $i < $count; $i++){
 			$this->entries[] = SubChunkPositionOffset::read($in);
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->basePosition = SubChunkPosition::readFixedInts($in);
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->dimension);
-		$this->basePosition->write($out);
+		if($protocolId <= ProtocolInfo::PROTOCOL_1_26_20){
+			$this->basePosition->writeVarInts($out);
+		}
 
-		LE::writeUnsignedInt($out, count($this->entries));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			LE::writeUnsignedInt($out, count($this->entries));
+		}else{
+			VarInt::writeUnsignedInt($out, count($this->entries));
+		}
 		foreach($this->entries as $entry){
 			$entry->write($out);
+		}
+
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+			$this->basePosition->writeFixedInts($out);
 		}
 	}
 

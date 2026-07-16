@@ -12,34 +12,31 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types;
+namespace pocketmine\network\mcpe\protocol\types\shape;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
+use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
-/**
- * @see ServerPresenceInfoPacket
- */
-final class PresenceConfig{
+final class PrimitiveShapeBoxPayload extends PrimitiveShapePayload{
+	use GetTypeIdFromConstTrait;
+
+	public const ID = PrimitiveShapeType::PAYLOAD_TYPE_BOX;
+
 	public function __construct(
-		private string $experienceName,
-		private string $worldName
+		private Vector3 $boxBound,
 	){}
 
-	public function getExperienceName() : string{ return $this->experienceName; }
-
-	public function getWorldName() : string{ return $this->worldName; }
+	public function getBoxBound() : Vector3{ return $this->boxBound; }
 
 	public static function read(ByteBufferReader $in) : self{
-		$experienceName = CommonTypes::getString($in);
-		$worldName = CommonTypes::getString($in);
-
-		return new self($experienceName, $worldName);
+		$boxBound = CommonTypes::getVector3($in);
+		return new self($boxBound);
 	}
 
 	public function write(ByteBufferWriter $out) : void{
-		CommonTypes::putString($out, $this->experienceName);
-		CommonTypes::putString($out, $this->worldName);
+		CommonTypes::putVector3($out, $this->boxBound);
 	}
 }
