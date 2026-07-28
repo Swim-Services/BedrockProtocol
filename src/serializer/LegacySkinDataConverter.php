@@ -1,5 +1,15 @@
 <?php
 
+/*
+ * This file is part of BedrockProtocol.
+ * Copyright (C) 2014-2022 PocketMine Team <https://github.com/pmmp/BedrockProtocol>
+ *
+ * BedrockProtocol is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\serializer;
@@ -27,6 +37,8 @@ final class LegacySkinDataConverter{
 		"persona_top" => PersonaSkinPiece::PIECE_TYPE_TOP,
 		"persona_high_pants" => PersonaSkinPiece::PIECE_TYPE_HIGH_PANTS,
 		"persona_hands" => PersonaSkinPiece::PIECE_TYPE_HANDS,
+		//Some client versions use the singular form in login skin data.
+		"persona_hand" => PersonaSkinPiece::PIECE_TYPE_HANDS,
 		"persona_outerwear" => PersonaSkinPiece::PIECE_TYPE_OUTERWEAR,
 		"persona_facial_hair" => PersonaSkinPiece::PIECE_TYPE_FACIAL_HAIR,
 		"persona_mouth" => PersonaSkinPiece::PIECE_TYPE_MOUTH,
