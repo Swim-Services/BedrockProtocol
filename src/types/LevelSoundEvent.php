@@ -139,6 +139,7 @@ final class LevelSoundEvent{
 	public const RECORD_11 = "record.11";
 	public const RECORD_WAIT = "record.wait";
 	public const RECORD_NULL = "record.null";
+	public const STOP_RECORD = self::RECORD_NULL;
 	public const FLOP = "flop";
 	public const ELDERGUARDIAN_CURSE = "elderguardian.curse";
 	public const MOB_WARNING = "mob.warning";

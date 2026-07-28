@@ -178,6 +178,8 @@ class BiomeDefinitionListPacket extends DataPacket implements ClientboundPacket{
 		}
 
 		$this->legacyDefinitions = null;
+		$this->definitionData = [];
+		$this->strings = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$this->definitionData[] = BiomeDefinitionData::read($in, $protocolId);
 		}

@@ -809,6 +809,10 @@ trait PacketHandlerDefaultImplTrait{
 		return false;
 	}
 
+	public function handleRefreshEntitlements(RefreshEntitlementsPacket $packet) : bool{
+		return false;
+	}
+
 	public function handleAwardAchievement(AwardAchievementPacket $packet) : bool{
 		return false;
 	}

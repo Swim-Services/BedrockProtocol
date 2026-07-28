@@ -56,7 +56,7 @@ class LevelEventGenericPacket extends DataPacket implements ClientboundPacket{
 		$this->eventId = VarInt::readSignedInt($in);
 		$offset = $in->getOffset();
 		try{
-			$this->eventData = (new NetworkNbtSerializer())->readHeadless($in->getData(), NBT::TAG_Compound, $offset);
+			$this->eventData = new CacheableNbt((new NetworkNbtSerializer())->readHeadless($in->getData(), NBT::TAG_Compound, $offset));
 		}catch(NbtDataException $e){
 			throw PacketDecodeException::wrap($e);
 		}
@@ -65,7 +65,7 @@ class LevelEventGenericPacket extends DataPacket implements ClientboundPacket{
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeSignedInt($out, $this->eventId);
-		$out->writeByteArray((new NetworkNbtSerializer())->writeHeadless($this->eventData));
+		$out->writeByteArray((new NetworkNbtSerializer())->writeHeadless($this->eventData->getRoot()));
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

@@ -18,6 +18,7 @@ use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
@@ -45,6 +46,17 @@ class ResourcePackClientResponsePacket extends DataPacket implements Serverbound
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$this->status = VarInt::readUnsignedInt($in) + 1;
+			CommonTypes::getString($in); //status ID, redundant with the numeric status
+			$this->packIds = [];
+			if($this->status === self::STATUS_SEND_PACKS){
+				for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+					$this->packIds[] = CommonTypes::getString($in);
+				}
+			}
+			return;
+		}
 		$this->status = Byte::readUnsigned($in);
 		$entryCount = LE::readUnsignedShort($in);
 		$this->packIds = [];
@@ -54,6 +66,23 @@ class ResourcePackClientResponsePacket extends DataPacket implements Serverbound
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			VarInt::writeUnsignedInt($out, $this->status - 1);
+			CommonTypes::putString($out, match($this->status){
+				self::STATUS_REFUSED => "cancel",
+				self::STATUS_SEND_PACKS => "downloading",
+				self::STATUS_HAVE_ALL_PACKS => "downloadingfinished",
+				self::STATUS_COMPLETED => "resourcepackstackfinished",
+				default => throw new \InvalidArgumentException("Unknown status " . $this->status),
+			});
+			if($this->status === self::STATUS_SEND_PACKS){
+				VarInt::writeUnsignedInt($out, count($this->packIds));
+				foreach($this->packIds as $id){
+					CommonTypes::putString($out, $id);
+				}
+			}
+			return;
+		}
 		Byte::writeUnsigned($out, $this->status);
 		LE::writeUnsignedShort($out, count($this->packIds));
 		foreach($this->packIds as $id){

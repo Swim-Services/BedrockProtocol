@@ -95,6 +95,7 @@ class ClientboundTextureShiftPacket extends DataPacket implements ClientboundPac
 		$this->fromStep = CommonTypes::getString($in);
 		$this->toStep = CommonTypes::getString($in);
 
+		$this->allSteps = [];
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$this->allSteps[] = CommonTypes::getString($in);
 		}

@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\inventory\stackrequest;
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
@@ -58,12 +59,14 @@ final class CraftRecipeAutoStackRequestAction extends ItemStackRequestAction{
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::readRecipeNetId($in);
 		$repetitions = Byte::readUnsigned($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$repetitions2 = 0;
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			$repetitions2 = Byte::readUnsigned($in); //repetitions property is sent twice, mojang...
 		}
 		$ingredients = [];
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
-			for($i = 0, $count = Byte::readUnsigned($in); $i < $count; ++$i){
+			for($i = 0, $count = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readUnsignedInt($in) : Byte::readUnsigned($in); $i < $count; ++$i){
 				$ingredients[] = CommonTypes::getRecipeIngredient($in, $protocolId);
 			}
 		}
@@ -73,11 +76,17 @@ final class CraftRecipeAutoStackRequestAction extends ItemStackRequestAction{
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeRecipeNetId($out, $this->recipeId);
 		Byte::writeUnsigned($out, $this->repetitions);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			//The duplicated repetitions field was removed.
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_20){
 			Byte::writeUnsigned($out, $this->repetitions2);
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
-			Byte::writeUnsigned($out, count($this->ingredients));
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				VarInt::writeUnsignedInt($out, count($this->ingredients));
+			}else{
+				Byte::writeUnsigned($out, count($this->ingredients));
+			}
 			foreach($this->ingredients as $ingredient){
 				CommonTypes::putRecipeIngredient($out, $ingredient, $protocolId);
 			}

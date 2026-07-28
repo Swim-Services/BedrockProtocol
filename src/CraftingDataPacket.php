@@ -73,21 +73,39 @@ class CraftingDataPacket extends DataPacket implements ClientboundPacket{
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$recipeCount = VarInt::readUnsignedInt($in);
-		$previousType = "none";
-		for($i = 0; $i < $recipeCount; ++$i){
-			$recipeType = VarInt::readSignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$decoders = [
+				self::ENTRY_SHAPED => ShapedRecipe::decode(...),
+				self::ENTRY_SHAPELESS => ShapelessRecipe::decode(...),
+				self::ENTRY_MULTI => MultiRecipe::decode(...),
+				self::ENTRY_USER_DATA_SHAPELESS => ShapelessRecipe::decode(...),
+				self::ENTRY_SHAPELESS_CHEMISTRY => ShapelessRecipe::decode(...),
+				self::ENTRY_SHAPED_CHEMISTRY => ShapedRecipe::decode(...),
+				self::ENTRY_SMITHING_TRANSFORM => SmithingTransformRecipe::decode(...),
+				self::ENTRY_SMITHING_TRIM => SmithingTrimRecipe::decode(...),
+			];
+			foreach($decoders as $typeId => $decoder){
+				for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+					$this->recipesWithTypeIds[] = $decoder($typeId, $in, $protocolId);
+				}
+			}
+		}else{
+			$recipeCount = VarInt::readUnsignedInt($in);
+			$previousType = "none";
+			for($i = 0; $i < $recipeCount; ++$i){
+				$recipeType = VarInt::readSignedInt($in);
 
-			$this->recipesWithTypeIds[] = match($recipeType){
-				self::ENTRY_SHAPELESS, self::ENTRY_USER_DATA_SHAPELESS, self::ENTRY_SHAPELESS_CHEMISTRY => ShapelessRecipe::decode($recipeType, $in, $protocolId),
-				self::ENTRY_SHAPED, self::ENTRY_SHAPED_CHEMISTRY => ShapedRecipe::decode($recipeType, $in, $protocolId),
-				self::ENTRY_FURNACE, self::ENTRY_FURNACE_DATA => FurnaceRecipe::decode($recipeType, $in),
-				self::ENTRY_MULTI => MultiRecipe::decode($recipeType, $in),
-				self::ENTRY_SMITHING_TRANSFORM => SmithingTransformRecipe::decode($recipeType, $in, $protocolId),
-				self::ENTRY_SMITHING_TRIM => SmithingTrimRecipe::decode($recipeType, $in, $protocolId),
-				default => throw new PacketDecodeException("Unhandled recipe type $recipeType (previous was $previousType)"),
-			};
-			$previousType = $recipeType;
+				$this->recipesWithTypeIds[] = match($recipeType){
+					self::ENTRY_SHAPELESS, self::ENTRY_USER_DATA_SHAPELESS, self::ENTRY_SHAPELESS_CHEMISTRY => ShapelessRecipe::decode($recipeType, $in, $protocolId),
+					self::ENTRY_SHAPED, self::ENTRY_SHAPED_CHEMISTRY => ShapedRecipe::decode($recipeType, $in, $protocolId),
+					self::ENTRY_FURNACE, self::ENTRY_FURNACE_DATA => FurnaceRecipe::decode($recipeType, $in, $protocolId),
+					self::ENTRY_MULTI => MultiRecipe::decode($recipeType, $in, $protocolId),
+					self::ENTRY_SMITHING_TRANSFORM => SmithingTransformRecipe::decode($recipeType, $in, $protocolId),
+					self::ENTRY_SMITHING_TRIM => SmithingTrimRecipe::decode($recipeType, $in, $protocolId),
+					default => throw new PacketDecodeException("Unhandled recipe type $recipeType (previous was $previousType)"),
+				};
+				$previousType = $recipeType;
+			}
 		}
 		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$inputId = VarInt::readSignedInt($in);
@@ -119,10 +137,36 @@ class CraftingDataPacket extends DataPacket implements ClientboundPacket{
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		VarInt::writeUnsignedInt($out, count($this->recipesWithTypeIds));
-		foreach($this->recipesWithTypeIds as $d){
-			VarInt::writeSignedInt($out, $d->getTypeId());
-			$d->encode($out, $protocolId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$buckets = [
+				self::ENTRY_SHAPED => [],
+				self::ENTRY_SHAPELESS => [],
+				self::ENTRY_MULTI => [],
+				self::ENTRY_USER_DATA_SHAPELESS => [],
+				self::ENTRY_SHAPELESS_CHEMISTRY => [],
+				self::ENTRY_SHAPED_CHEMISTRY => [],
+				self::ENTRY_SMITHING_TRANSFORM => [],
+				self::ENTRY_SMITHING_TRIM => [],
+			];
+			foreach($this->recipesWithTypeIds as $recipe){
+				$typeId = $recipe->getTypeId();
+				if(!isset($buckets[$typeId])){
+					throw new \InvalidArgumentException("Unhandled recipe type $typeId for protocol 1.26.40");
+				}
+				$buckets[$typeId][] = $recipe;
+			}
+			foreach($buckets as $recipes){
+				VarInt::writeUnsignedInt($out, count($recipes));
+				foreach($recipes as $recipe){
+					$recipe->encode($out, $protocolId);
+				}
+			}
+		}else{
+			VarInt::writeUnsignedInt($out, count($this->recipesWithTypeIds));
+			foreach($this->recipesWithTypeIds as $d){
+				VarInt::writeSignedInt($out, $d->getTypeId());
+				$d->encode($out, $protocolId);
+			}
 		}
 		VarInt::writeUnsignedInt($out, count($this->potionTypeRecipes));
 		foreach($this->potionTypeRecipes as $recipe){

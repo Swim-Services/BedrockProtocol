@@ -33,14 +33,14 @@ final class DeprecatedCraftingResultsStackRequestAction extends ItemStackRequest
 	public const ID = ItemStackRequestActionType::CRAFTING_RESULTS_DEPRECATED_ASK_TY_LAING;
 
 	/**
-	 * @param ItemStack[] $results
+	 * @param array<ItemStack|ItemStackRequestNetworkItemInstanceDescriptor> $results
 	 */
 	public function __construct(
 		private array $results,
 		private int $iterations
 	){}
 
-	/** @return ItemStack[] */
+	/** @return array<ItemStack|ItemStackRequestNetworkItemInstanceDescriptor> */
 	public function getResults() : array{ return $this->results; }
 
 	public function getIterations() : int{ return $this->iterations; }
@@ -48,7 +48,9 @@ final class DeprecatedCraftingResultsStackRequestAction extends ItemStackRequest
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$results = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$results[] = CommonTypes::getItemStackWithoutStackId($in);
+			$results[] = $protocolId >= \pocketmine\network\mcpe\protocol\ProtocolInfo::PROTOCOL_1_26_40
+				? ItemStackRequestNetworkItemInstanceDescriptor::read($in)
+				: CommonTypes::getItemStackWithoutStackId($in, $protocolId);
 		}
 		$iterations = Byte::readUnsigned($in);
 		return new self($results, $iterations);
@@ -57,7 +59,17 @@ final class DeprecatedCraftingResultsStackRequestAction extends ItemStackRequest
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->results));
 		foreach($this->results as $result){
-			CommonTypes::putItemStackWithoutStackId($out, $result);
+			if($protocolId >= \pocketmine\network\mcpe\protocol\ProtocolInfo::PROTOCOL_1_26_40){
+				if(!$result instanceof ItemStackRequestNetworkItemInstanceDescriptor){
+					throw new \InvalidArgumentException("Expected an item instance descriptor for protocol 1.26.40");
+				}
+				$result->write($out);
+			}else{
+				if(!$result instanceof ItemStack){
+					throw new \InvalidArgumentException("Expected an ItemStack for a legacy protocol");
+				}
+				CommonTypes::putItemStackWithoutStackId($out, $result, $protocolId);
+			}
 		}
 		Byte::writeUnsigned($out, $this->iterations);
 	}

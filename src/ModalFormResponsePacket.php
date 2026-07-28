@@ -65,10 +65,10 @@ class ModalFormResponsePacket extends DataPacket implements ServerboundPacket{
 		VarInt::writeUnsignedInt($out, $this->formId);
 
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_20){
-		CommonTypes::writeOptional($out, $this->formData, CommonTypes::putString(...));
-		CommonTypes::writeOptional($out, $this->cancelReason, Byte::writeUnsigned(...));
-		} else {
-			 CommonTypes::putString($out, $this->formData);
+			CommonTypes::writeOptional($out, $this->formData, CommonTypes::putString(...));
+			CommonTypes::writeOptional($out, $this->cancelReason, Byte::writeUnsigned(...));
+		}else{
+			CommonTypes::putString($out, $this->formData ?? "");
 		}
 	}
 

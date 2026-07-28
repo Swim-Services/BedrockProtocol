@@ -14,16 +14,19 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\login\clientdata;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\serializer\LegacySkinDataConverter;
 use pocketmine\network\mcpe\protocol\types\skin\PersonaPieceTintColor;
 use pocketmine\network\mcpe\protocol\types\skin\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\skin\SkinAnimation;
 use pocketmine\network\mcpe\protocol\types\skin\SkinData;
 use pocketmine\network\mcpe\protocol\types\skin\SkinImage;
+use Ramsey\Uuid\Uuid;
 use function array_map;
+use function array_values;
 use function base64_decode;
 
 final class ClientDataToSkinDataHelper{
-
 	/**
 	 * @throws \InvalidArgumentException
 	 */
@@ -38,7 +41,7 @@ final class ClientDataToSkinDataHelper{
 	/**
 	 * @throws \InvalidArgumentException
 	 */
-	public static function fromClientData(ClientData $clientData) : SkinData{
+	public static function fromClientData(ClientData $clientData, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : SkinData{
 		/** @var SkinAnimation[] $animations */
 		$animations = [];
 		foreach($clientData->AnimatedImageData as $k => $animation){
@@ -65,13 +68,19 @@ final class ClientDataToSkinDataHelper{
 			self::safeB64Decode($clientData->SkinAnimationData, "SkinAnimationData"),
 			$clientData->CapeId,
 			null,
-			$clientData->ArmSize,
-			$clientData->SkinColor,
+			LegacySkinDataConverter::armSizeFromString($clientData->ArmSize),
+			LegacySkinDataConverter::colorFromString($clientData->SkinColor),
 			array_map(function(ClientDataPersonaSkinPiece $piece) : PersonaSkinPiece{
-				return new PersonaSkinPiece($piece->PieceId, $piece->PieceType, $piece->PackId, $piece->IsDefault, $piece->ProductId);
+				return new PersonaSkinPiece(
+					$piece->PieceId,
+					LegacySkinDataConverter::personaPieceTypeFromString($piece->PieceType),
+					Uuid::fromString($piece->PackId),
+					$piece->IsDefault,
+					$piece->ProductId
+				);
 			}, $clientData->PersonaPieces),
 			array_map(function(ClientDataPersonaPieceTintColor $tint) : PersonaPieceTintColor{
-				return new PersonaPieceTintColor($tint->PieceType, $tint->Colors);
+				return new PersonaPieceTintColor($tint->PieceType, LegacySkinDataConverter::colorsFromStrings(array_values($tint->Colors)));
 			}, $clientData->PieceTintColors),
 			true,
 			$clientData->PremiumSkin,
@@ -79,6 +88,8 @@ final class ClientDataToSkinDataHelper{
 			$clientData->CapeOnClassicSkin,
 			true, //assume this is true? there's no field for it ...
 			$clientData->OverrideSkin ?? true,
+			SkinData::TRUSTED_SKIN_FLAG_UNSET,
+			$clientData->ProfileHash,
 		);
 	}
 }

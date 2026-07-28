@@ -77,7 +77,7 @@ final class AttributeLayer{
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
-			CommonTypes::writeOptional($out, $this->name, CommonTypes::putString(...));
+			CommonTypes::writeOptional($out, $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? $this->noiseName : $this->name, CommonTypes::putString(...));
 		}
 		VarInt::writeUnsignedInt($out, $this->dimension);
 		$this->settings->write($out);

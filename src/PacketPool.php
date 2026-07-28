@@ -229,6 +229,7 @@ class PacketPool{
 		$this->registerPacket(new TrimDataPacket());
 		$this->registerPacket(new OpenSignPacket());
 		$this->registerPacket(new AgentAnimationPacket());
+		$this->registerPacket(new RefreshEntitlementsPacket());
 		$this->registerPacket(new PlayerToggleCrafterSlotRequestPacket());
 		$this->registerPacket(new SetPlayerInventoryOptionsPacket());
 		$this->registerPacket(new SetHudPacket());

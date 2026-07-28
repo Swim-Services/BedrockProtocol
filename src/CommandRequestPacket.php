@@ -60,7 +60,6 @@ class CommandRequestPacket extends DataPacket implements ServerboundPacket{
 		CommonTypes::putCommandOriginData($out, $this->originData, $protocolId);
 		CommonTypes::putBool($out, $this->isInternal);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_60){
-			VarInt::writeSignedInt($out, $this->version);
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
 				CommonTypes::putString($out, $this->version);
 			}else{

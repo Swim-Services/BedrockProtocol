@@ -50,6 +50,7 @@ use pocketmine\network\mcpe\protocol\types\recipe\ComplexAliasItemDescriptor;
 use pocketmine\network\mcpe\protocol\types\recipe\IntIdMetaItemDescriptor;
 use pocketmine\network\mcpe\protocol\types\recipe\ItemDescriptorType;
 use pocketmine\network\mcpe\protocol\types\recipe\MolangItemDescriptor;
+use pocketmine\network\mcpe\protocol\types\recipe\NameItemDescriptor;
 use pocketmine\network\mcpe\protocol\types\recipe\RecipeIngredient;
 use pocketmine\network\mcpe\protocol\types\recipe\StringIdMetaItemDescriptor;
 use pocketmine\network\mcpe\protocol\types\recipe\TagItemDescriptor;
@@ -63,6 +64,8 @@ use pocketmine\network\mcpe\protocol\types\StructureSettings;
 use pocketmine\utils\Binary;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use function array_pad;
+use function array_slice;
 use function count;
 use function strlen;
 use function strrev;
@@ -113,13 +116,13 @@ final class CommonTypes{
 		$skinPlayFabId = self::getString($in);
 		$skinResourcePatch = self::getString($in);
 		$skinData = self::getSkinImage($in);
-		$animationCount = LE::readUnsignedInt($in);
+		$animationCount = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in);
 		$animations = [];
 		for($i = 0; $i < $animationCount; ++$i){
 			$skinImage = self::getSkinImage($in);
-			$animationType = LE::readUnsignedInt($in);
+			$animationType = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in);
 			$animationFrames = LE::readFloat($in);
-			$expressionType = LE::readUnsignedInt($in);
+			$expressionType = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in);
 			$animations[] = new SkinAnimation($skinImage, $animationType, $animationFrames, $expressionType);
 		}
 		$capeData = self::getSkinImage($in);
@@ -128,27 +131,42 @@ final class CommonTypes{
 		$animationData = self::getString($in);
 		$capeId = self::getString($in);
 		$fullSkinId = self::getString($in);
-		$armSize = self::getString($in);
-		$skinColor = self::getString($in);
-		$personaPieceCount = LE::readUnsignedInt($in);
+		$armSize = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+			Byte::readUnsigned($in) :
+			LegacySkinDataConverter::armSizeFromString(self::getString($in));
+		$skinColor = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+			LE::readSignedInt($in) :
+			LegacySkinDataConverter::colorFromString(self::getString($in));
+		$personaPieceCount = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in);
 		$personaPieces = [];
 		for($i = 0; $i < $personaPieceCount; ++$i){
 			$pieceId = self::getString($in);
-			$pieceType = self::getString($in);
-			$packId = self::getString($in);
+			$pieceType = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+				LE::readSignedInt($in) :
+				LegacySkinDataConverter::personaPieceTypeFromString(self::getString($in));
+			$packId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+				self::getUUID($in) :
+				Uuid::fromString(self::getString($in));
 			$isDefaultPiece = self::getBool($in);
 			$productId = self::getString($in);
 			$personaPieces[] = new PersonaSkinPiece($pieceId, $pieceType, $packId, $isDefaultPiece, $productId);
 		}
-		$pieceTintColorCount = LE::readUnsignedInt($in);
+		$pieceTintColorCount = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in);
 		$pieceTintColors = [];
 		for($i = 0; $i < $pieceTintColorCount; ++$i){
 			$pieceType = self::getString($in);
-			$colorCount = LE::readUnsignedInt($in);
+			$colorCount = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? PersonaPieceTintColor::COLOR_COUNT : LE::readUnsignedInt($in);
+			/** @var list<int> $colors */
 			$colors = [];
 			for($j = 0; $j < $colorCount; ++$j){
-				$colors[] = self::getString($in);
+				$colors[] = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+					LE::readSignedInt($in) :
+					LegacySkinDataConverter::colorFromString(self::getString($in));
 			}
+			if($protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+				$colors = array_slice(array_pad($colors, PersonaPieceTintColor::COLOR_COUNT, 0), 0, PersonaPieceTintColor::COLOR_COUNT);
+			}
+			/** @var list<int> $colors */
 			$pieceTintColors[] = new PersonaPieceTintColor(
 				$pieceType,
 				$colors
@@ -162,6 +180,12 @@ final class CommonTypes{
 		$override = false;
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_63){
 			$override = self::getBool($in);
+		}
+		$trustedSkinFlag = SkinData::TRUSTED_SKIN_FLAG_UNSET;
+		$profileHash = "";
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$trustedSkinFlag = self::getString($in);
+			$profileHash = self::getString($in);
 		}
 
 		return new SkinData(
@@ -186,6 +210,8 @@ final class CommonTypes{
 			$capeOnClassic,
 			$isPrimaryUser,
 			$override,
+			$trustedSkinFlag,
+			$profileHash,
 		);
 	}
 
@@ -194,12 +220,24 @@ final class CommonTypes{
 		self::putString($out, $skin->getPlayFabId());
 		self::putString($out, $skin->getResourcePatch());
 		self::putSkinImage($out, $skin->getSkinImage());
-		LE::writeUnsignedInt($out, count($skin->getAnimations()));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			VarInt::writeUnsignedInt($out, count($skin->getAnimations()));
+		}else{
+			LE::writeUnsignedInt($out, count($skin->getAnimations()));
+		}
 		foreach($skin->getAnimations() as $animation){
 			self::putSkinImage($out, $animation->getImage());
-			LE::writeUnsignedInt($out, $animation->getType());
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				VarInt::writeUnsignedInt($out, $animation->getType());
+			}else{
+				LE::writeUnsignedInt($out, $animation->getType());
+			}
 			LE::writeFloat($out, $animation->getFrames());
-			LE::writeUnsignedInt($out, $animation->getExpressionType());
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				VarInt::writeUnsignedInt($out, $animation->getExpressionType());
+			}else{
+				LE::writeUnsignedInt($out, $animation->getExpressionType());
+			}
 		}
 		self::putSkinImage($out, $skin->getCapeImage());
 		self::putString($out, $skin->getGeometryData());
@@ -207,22 +245,43 @@ final class CommonTypes{
 		self::putString($out, $skin->getAnimationData());
 		self::putString($out, $skin->getCapeId());
 		self::putString($out, $skin->getFullSkinId());
-		self::putString($out, $skin->getArmSize());
-		self::putString($out, $skin->getSkinColor());
-		LE::writeUnsignedInt($out, count($skin->getPersonaPieces()));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			Byte::writeUnsigned($out, $skin->getArmSize());
+			LE::writeSignedInt($out, $skin->getSkinColor());
+			VarInt::writeUnsignedInt($out, count($skin->getPersonaPieces()));
+		}else{
+			self::putString($out, LegacySkinDataConverter::armSizeToString($skin->getArmSize()));
+			self::putString($out, LegacySkinDataConverter::colorToString($skin->getSkinColor()));
+			LE::writeUnsignedInt($out, count($skin->getPersonaPieces()));
+		}
 		foreach($skin->getPersonaPieces() as $piece){
 			self::putString($out, $piece->getPieceId());
-			self::putString($out, $piece->getPieceType());
-			self::putString($out, $piece->getPackId());
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				LE::writeSignedInt($out, $piece->getPieceType());
+				self::putUUID($out, $piece->getPackId());
+			}else{
+				self::putString($out, LegacySkinDataConverter::personaPieceTypeToString($piece->getPieceType()));
+				self::putString($out, $piece->getPackId()->toString());
+			}
 			self::putBool($out, $piece->isDefaultPiece());
 			self::putString($out, $piece->getProductId());
 		}
-		LE::writeUnsignedInt($out, count($skin->getPieceTintColors()));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			VarInt::writeUnsignedInt($out, count($skin->getPieceTintColors()));
+		}else{
+			LE::writeUnsignedInt($out, count($skin->getPieceTintColors()));
+		}
 		foreach($skin->getPieceTintColors() as $tint){
 			self::putString($out, $tint->getPieceType());
-			LE::writeUnsignedInt($out, count($tint->getColors()));
+			if($protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+				LE::writeUnsignedInt($out, count($tint->getColors()));
+			}
 			foreach($tint->getColors() as $color){
-				self::putString($out, $color);
+				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+					LE::writeSignedInt($out, $color);
+				}else{
+					self::putString($out, LegacySkinDataConverter::colorToString($color));
+				}
 			}
 		}
 		self::putBool($out, $skin->isPremium());
@@ -231,6 +290,10 @@ final class CommonTypes{
 		self::putBool($out, $skin->isPrimaryUser());
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_63){
 			self::putBool($out, $skin->isOverride());
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			self::putString($out, $skin->getTrustedSkinFlag());
+			self::putString($out, $skin->getProfileHash());
 		}
 	}
 
@@ -299,14 +362,27 @@ final class CommonTypes{
 	 * @throws PacketDecodeException
 	 * @throws DataDecodeException
 	 */
-	public static function getItemStackWithoutStackId(ByteBufferReader $in) : ItemStack{
+	public static function getItemStackWithoutStackId(ByteBufferReader $in, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : ItemStack{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$id = VarInt::readSignedInt($in);
+			$count = LE::readUnsignedShort($in);
+			$meta = VarInt::readUnsignedInt($in);
+			return self::getItemStackFooter($in, $id, $meta, $count);
+		}
 		[$id, $count, $meta] = self::getItemStackHeader($in);
 
 		return $id !== 0 ? self::getItemStackFooter($in, $id, $meta, $count) : ItemStack::null();
 
 	}
 
-	public static function putItemStackWithoutStackId(ByteBufferWriter $out, ItemStack $itemStack) : void{
+	public static function putItemStackWithoutStackId(ByteBufferWriter $out, ItemStack $itemStack, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : void{
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			VarInt::writeSignedInt($out, $itemStack->getId());
+			LE::writeUnsignedShort($out, $itemStack->getCount());
+			VarInt::writeUnsignedInt($out, $itemStack->getMeta());
+			self::putItemStackFooter($out, $itemStack);
+			return;
+		}
 		if(self::putItemStackHeader($out, $itemStack)){
 			self::putItemStackFooter($out, $itemStack);
 		}
@@ -340,14 +416,14 @@ final class CommonTypes{
 		}
 	}
 
-	public static function getNetworkItemStackDescriptor(ByteBufferReader $in) : ItemStackWrapper{
+	public static function getNetworkItemStackDescriptor(ByteBufferReader $in, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : ItemStackWrapper{
 		$id = LE::readSignedShort($in);
 		$count = LE::readUnsignedShort($in);
 		$meta = VarInt::readUnsignedInt($in);
 
 		$hasNetId = self::getBool($in);
 		if ($hasNetId) {
-			$variant = VarInt::readUnsignedInt($in);
+			$variant = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? 0 : VarInt::readUnsignedInt($in);
 			$stackId = VarInt::readSignedInt($in);
 		} else {
 			$variant = 0;
@@ -355,35 +431,54 @@ final class CommonTypes{
 		}
 
 		$blockRuntimeId = VarInt::readUnsignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$blockRuntimeId = Binary::signInt($blockRuntimeId);
+		}
 		$rawExtraData = self::getString($in);
 
 		return new ItemStackWrapper($stackId, new ItemStack($id, $meta, $count, $blockRuntimeId, $rawExtraData), $variant);
 	}
 
-	public static function putNetworkItemStackDescriptor(ByteBufferWriter $out, ItemStackWrapper $itemStackWrapper) : void{
+	public static function putNetworkItemStackDescriptor(ByteBufferWriter $out, ItemStackWrapper $itemStackWrapper, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : void{
 		LE::writeSignedShort($out, $itemStackWrapper->getItemStack()->getId());
 		LE::writeUnsignedShort($out, $itemStackWrapper->getItemStack()->getCount());
 		VarInt::writeUnsignedInt($out, $itemStackWrapper->getItemStack()->getMeta());
 
 		self::putBool($out, $hasNetId = $itemStackWrapper->getStackId() !== 0);
 		if($hasNetId){
-			VarInt::writeUnsignedInt($out, $itemStackWrapper->getStackIdVariant());
+			if($protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+				VarInt::writeUnsignedInt($out, $itemStackWrapper->getStackIdVariant());
+			}
 			VarInt::writeSignedInt($out, $itemStackWrapper->getStackId());
 		}
 
-		VarInt::writeUnsignedInt($out, $itemStackWrapper->getItemStack()->getBlockRuntimeId());
+		$blockRuntimeId = $itemStackWrapper->getItemStack()->getBlockRuntimeId();
+		VarInt::writeUnsignedInt(
+			$out,
+			$protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? Binary::unsignInt($blockRuntimeId) : $blockRuntimeId
+		);
 		self::putString($out, $itemStackWrapper->getItemStack()->getRawExtraData());
 	}
 
 	/** @throws DataDecodeException */
 	public static function getRecipeIngredient(ByteBufferReader $in, int $protocolId) : RecipeIngredient{
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$descriptorType = VarInt::readUnsignedInt($in);
+			Byte::readUnsigned($in);
+			$descriptor = match($descriptorType){
+				ItemDescriptorType::NAME => NameItemDescriptor::read($in),
+				ItemDescriptorType::MOLANG => MolangItemDescriptor::read($in, $protocolId),
+				ItemDescriptorType::TAG => TagItemDescriptor::read($in),
+				default => null
+			};
+			$count = LE::readSignedShort($in);
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
 			$descriptorType = Byte::readUnsigned($in);
 			$descriptor = match($descriptorType){
 				ItemDescriptorType::INT_ID_META => IntIdMetaItemDescriptor::read($in, $protocolId),
 				ItemDescriptorType::STRING_ID_META => StringIdMetaItemDescriptor::read($in),
 				ItemDescriptorType::TAG => TagItemDescriptor::read($in),
-				ItemDescriptorType::MOLANG => MolangItemDescriptor::read($in),
+				ItemDescriptorType::MOLANG => MolangItemDescriptor::read($in, $protocolId),
 				ItemDescriptorType::COMPLEX_ALIAS => ComplexAliasItemDescriptor::read($in),
 				default => null
 			};
@@ -399,7 +494,12 @@ final class CommonTypes{
 	public static function putRecipeIngredient(ByteBufferWriter $out, RecipeIngredient $ingredient, int $protocolId) : void{
 		$type = $ingredient->getDescriptor();
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			VarInt::writeUnsignedInt($out, $type?->getTypeId() ?? 0);
+			Byte::writeUnsigned($out, $type?->getTypeId() ?? 0);
+			$type?->write($out, $protocolId);
+			LE::writeSignedShort($out, $ingredient->getCount());
+		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_19_30){
 			Byte::writeUnsigned($out, $type?->getTypeId() ?? 0);
 			$type?->write($out, $protocolId);
 			VarInt::writeSignedInt($out, $ingredient->getCount());
@@ -422,12 +522,18 @@ final class CommonTypes{
 	 * @throws PacketDecodeException
 	 * @throws DataDecodeException
 	 */
-	public static function getEntityMetadata(ByteBufferReader $in) : array{
+	public static function getEntityMetadata(ByteBufferReader $in, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : array{
 		$count = VarInt::readUnsignedInt($in);
 		$data = [];
 		for($i = 0; $i < $count; ++$i){
 			$key = VarInt::readUnsignedInt($in);
 			$type = VarInt::readUnsignedInt($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				$payloadType = Byte::readUnsigned($in);
+				if($payloadType !== $type){
+					throw new PacketDecodeException("Entity metadata type discriminator mismatch ($type != $payloadType)");
+				}
+			}
 
 			$data[$key] = self::readMetadataProperty($in, $type);
 		}
@@ -458,11 +564,14 @@ final class CommonTypes{
 	 *
 	 * @phpstan-param array<int, MetadataProperty> $metadata
 	 */
-	public static function putEntityMetadata(ByteBufferWriter $out, array $metadata) : void{
+	public static function putEntityMetadata(ByteBufferWriter $out, array $metadata, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : void{
 		VarInt::writeUnsignedInt($out, count($metadata));
 		foreach($metadata as $key => $d){
 			VarInt::writeUnsignedInt($out, $key);
 			VarInt::writeUnsignedInt($out, $d->getTypeId());
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				Byte::writeUnsigned($out, $d->getTypeId());
+			}
 			$d->write($out);
 		}
 	}
