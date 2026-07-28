@@ -88,8 +88,20 @@ final class ClientDataToSkinDataHelper{
 			$clientData->CapeOnClassicSkin,
 			true, //assume this is true? there's no field for it ...
 			$clientData->OverrideSkin ?? true,
-			SkinData::TRUSTED_SKIN_FLAG_UNSET,
+			self::trustedSkinFlagFromClientData($clientData),
 			$clientData->ProfileHash,
 		);
+	}
+
+	/**
+	 * $clientData->TrustedSkin only exists on >= PROTOCOL_1_19_20; older clients won't have sent it at all, in
+	 * which case there's nothing to derive a trust state from and we fall back to unset.
+	 */
+	private static function trustedSkinFlagFromClientData(ClientData $clientData) : string{
+		$trustedSkin = $clientData->TrustedSkin ?? null;
+		if($trustedSkin === null){
+			return SkinData::TRUSTED_SKIN_FLAG_UNSET;
+		}
+		return $trustedSkin ? SkinData::TRUSTED_SKIN_FLAG_TRUE : SkinData::TRUSTED_SKIN_FLAG_FALSE;
 	}
 }
