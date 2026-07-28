@@ -13,7 +13,6 @@
 declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\skin;
-
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use Ramsey\Uuid\Uuid;
 
@@ -22,13 +21,12 @@ class SkinData{
 	public const ARM_SIZE_SLIM = 0;
 	public const ARM_SIZE_WIDE = 1;
 
-	public const TRUSTED_SKIN_FLAG_UNSET = "unset";
-	public const TRUSTED_SKIN_FLAG_FALSE = "false";
-	public const TRUSTED_SKIN_FLAG_TRUE = "true";
+	public const TRUSTED_SKIN_FLAG_UNSET = "Unset";
+	public const TRUSTED_SKIN_FLAG_FALSE = "False";
+	public const TRUSTED_SKIN_FLAG_TRUE = "True";
 
 	private SkinImage $capeImage;
 	private string $fullSkinId;
-
 	/**
 	 * @param SkinAnimation[]         $animations
 	 * @param PersonaSkinPiece[]      $personaPieces
@@ -63,7 +61,6 @@ class SkinData{
 		//this has to be unique or the client will do stupid things
 		$this->fullSkinId = $fullSkinId ?? Uuid::uuid4()->toString();
 	}
-
 	public function getSkinId() : string{
 		return $this->skinId;
 	}
@@ -88,7 +85,6 @@ class SkinData{
 	public function getCapeImage() : SkinImage{
 		return $this->capeImage;
 	}
-
 	public function getGeometryData() : string{
 		return $this->geometryData;
 	}
@@ -110,7 +106,6 @@ class SkinData{
 	public function getArmSize() : int{
 		return $this->armSize;
 	}
-
 	public function getSkinColor() : int{
 		return $this->skinColor;
 	}
@@ -136,7 +131,6 @@ class SkinData{
 	public function isPremium() : bool{
 		return $this->premium;
 	}
-
 	public function isPersonaCapeOnClassic() : bool{
 		return $this->personaCapeOnClassic;
 	}
@@ -152,7 +146,6 @@ class SkinData{
 	public function isVerified() : bool{
 		return $this->isVerified;
 	}
-
 	/**
 	 * @internal
 	 */

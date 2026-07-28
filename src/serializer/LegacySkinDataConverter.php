@@ -14,6 +14,7 @@ use function count;
 use function hexdec;
 use function ltrim;
 use function sprintf;
+use function strtolower;
 
 final class LegacySkinDataConverter{
 	private const PERSONA_PIECE_TYPES = [
@@ -46,10 +47,47 @@ final class LegacySkinDataConverter{
 		"persona_emote" => PersonaSkinPiece::PIECE_TYPE_EMOTE,
 	];
 
+	/**
+	 * On >= 1.26.40, PieceTintColors' key is (unlike PersonaSkinPiece's own PieceType, which stayed a raw
+	 * uint32) serialized as a length-prefixed string containing the *bare* lowercased enum name, with no
+	 * "persona_" prefix - confirmed empirically from a live packet capture ("hair", "eyes").
+	 */
+	private const PERSONA_PIECE_TYPES_BARE = [
+		"skeleton" => PersonaSkinPiece::PIECE_TYPE_SKELETON,
+		"body" => PersonaSkinPiece::PIECE_TYPE_BODY,
+		"skin" => PersonaSkinPiece::PIECE_TYPE_SKIN,
+		"bottom" => PersonaSkinPiece::PIECE_TYPE_BOTTOM,
+		"feet" => PersonaSkinPiece::PIECE_TYPE_FEET,
+		"dress" => PersonaSkinPiece::PIECE_TYPE_DRESS,
+		"top" => PersonaSkinPiece::PIECE_TYPE_TOP,
+		"high_pants" => PersonaSkinPiece::PIECE_TYPE_HIGH_PANTS,
+		"hands" => PersonaSkinPiece::PIECE_TYPE_HANDS,
+		"outerwear" => PersonaSkinPiece::PIECE_TYPE_OUTERWEAR,
+		"facialhair" => PersonaSkinPiece::PIECE_TYPE_FACIAL_HAIR,
+		"mouth" => PersonaSkinPiece::PIECE_TYPE_MOUTH,
+		"eyes" => PersonaSkinPiece::PIECE_TYPE_EYES,
+		"hair" => PersonaSkinPiece::PIECE_TYPE_HAIR,
+		"hood" => PersonaSkinPiece::PIECE_TYPE_HOOD,
+		"back" => PersonaSkinPiece::PIECE_TYPE_BACK,
+		"faceaccessory" => PersonaSkinPiece::PIECE_TYPE_FACE_ACCESSORY,
+		"head" => PersonaSkinPiece::PIECE_TYPE_HEAD,
+		"legs" => PersonaSkinPiece::PIECE_TYPE_LEGS,
+		"leftleg" => PersonaSkinPiece::PIECE_TYPE_LEFT_LEG,
+		"rightleg" => PersonaSkinPiece::PIECE_TYPE_RIGHT_LEG,
+		"arms" => PersonaSkinPiece::PIECE_TYPE_ARMS,
+		"leftarm" => PersonaSkinPiece::PIECE_TYPE_LEFT_ARM,
+		"rightarm" => PersonaSkinPiece::PIECE_TYPE_RIGHT_ARM,
+		"capes" => PersonaSkinPiece::PIECE_TYPE_CAPES,
+		"classicskin" => PersonaSkinPiece::PIECE_TYPE_CLASSIC_SKIN,
+		"emote" => PersonaSkinPiece::PIECE_TYPE_EMOTE,
+	];
+
 	private function __construct(){}
 
 	public static function armSizeFromString(string $armSize) : int{
-		return match($armSize){
+		//real clients send this capitalized ("Slim"/"Wide"), matching the wire enum's naming - match
+		//case-insensitively so we're not relying on an unconfirmed exact casing convention.
+		return match(strtolower($armSize)){
 			"slim" => SkinData::ARM_SIZE_SLIM,
 			"wide", "" => SkinData::ARM_SIZE_WIDE,
 			default => throw new \InvalidArgumentException("Unknown arm size \"$armSize\""),
@@ -65,7 +103,13 @@ final class LegacySkinDataConverter{
 	}
 
 	public static function colorFromString(string $color) : int{
-		return (int) hexdec(ltrim($color, "#"));
+		$value = (int) hexdec(ltrim($color, "#"));
+		//hexdec() gives the unsigned 32-bit interpretation, but colors are stored/transmitted as signed int32
+		//everywhere else (wire encoding, NBT IntTag), so wrap values above the signed range down into it.
+		if($value > 0x7fffffff){
+			$value -= 0x100000000;
+		}
+		return $value;
 	}
 
 	public static function colorToString(int $color) : string{
@@ -73,12 +117,22 @@ final class LegacySkinDataConverter{
 	}
 
 	public static function personaPieceTypeFromString(string $pieceType) : int{
-		return self::PERSONA_PIECE_TYPES[$pieceType] ??
+		return self::PERSONA_PIECE_TYPES[strtolower($pieceType)] ??
 			throw new \InvalidArgumentException("Unknown persona piece type \"$pieceType\"");
 	}
 
 	public static function personaPieceTypeToString(int $pieceType) : string{
 		$result = array_search($pieceType, self::PERSONA_PIECE_TYPES, true);
+		return $result !== false ? $result : throw new \InvalidArgumentException("Unknown persona piece type $pieceType");
+	}
+
+	public static function personaPieceTypeFromBareString(string $pieceType) : int{
+		return self::PERSONA_PIECE_TYPES_BARE[strtolower($pieceType)] ??
+			throw new \InvalidArgumentException("Unknown persona piece type \"$pieceType\"");
+	}
+
+	public static function personaPieceTypeToBareString(int $pieceType) : string{
+		$result = array_search($pieceType, self::PERSONA_PIECE_TYPES_BARE, true);
 		return $result !== false ? $result : throw new \InvalidArgumentException("Unknown persona piece type $pieceType");
 	}
 

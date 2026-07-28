@@ -13,7 +13,6 @@
 declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
-
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -27,7 +26,6 @@ use pocketmine\network\mcpe\protocol\types\DimensionIds;
 
 class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::LEVEL_CHUNK_PACKET;
-
 	/**
 	 * Client will request all subchunks as needed up to the top of the world
 	 */
@@ -37,9 +35,8 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	 * that height is air (wtf mojang ...)
 	 */
 	private const CLIENT_REQUEST_TRUNCATED_COLUMN_FAKE_COUNT = Limits::UINT32_MAX - 1;
-
 	//this appears large enough for a world height of 1024 blocks - it may need to be increased in the future
-	private const MAX_BLOB_HASHES = 64;
+	private const MAX_BLOB_HASHES = 65;
 
 	private ChunkPosition $chunkPosition;
 	/** @phpstan-var DimensionIds::* */
@@ -50,7 +47,6 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	/** @var int[] */
 	private array $usedBlobHashes;
 	private string $extraPayload;
-
 	/**
 	 * @generate-create-func
 	 * @param int[] $usedBlobHashes
@@ -66,7 +62,6 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 		$result->extraPayload = $extraPayload;
 		return $result;
 	}
-
 	public function getChunkPosition() : ChunkPosition{ return $this->chunkPosition; }
 
 	public function getDimensionId() : int{ return $this->dimensionId; }
@@ -83,7 +78,6 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	public function isClientSubChunkRequestEnabled() : bool{
 		return $this->clientRequestSubChunkLimit !== null;
 	}
-
 	public function isCacheEnabled() : bool{
 		return $this->cacheEnabled;
 	}
@@ -100,7 +94,6 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	public function getExtraPayload() : string{
 		return $this->extraPayload;
 	}
-
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->chunkPosition = ChunkPosition::read($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
@@ -122,7 +115,6 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 				$this->clientRequestSubChunkLimit = null;
 			}
 		}
-
 		$this->cacheEnabled = CommonTypes::getBool($in);
 		$this->usedBlobHashes = [];
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40 || $this->cacheEnabled){
@@ -136,7 +128,6 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 		}
 		$this->extraPayload = CommonTypes::getString($in);
 	}
-
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
 		$this->chunkPosition->write($out);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_60){
@@ -160,7 +151,6 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 				VarInt::writeUnsignedInt($out, $this->subChunkCount);
 			}
 		}
-
 		CommonTypes::putBool($out, $this->cacheEnabled);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40 || $this->cacheEnabled){
 			VarInt::writeUnsignedInt($out, count($this->usedBlobHashes));

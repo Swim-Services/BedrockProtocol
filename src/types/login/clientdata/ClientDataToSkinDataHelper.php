@@ -67,14 +67,19 @@ final class ClientDataToSkinDataHelper{
 			self::safeB64Decode($clientData->SkinGeometryDataEngineVersion ?? "", "SkinGeometryDataEngineVersion"), //yes, they actually base64'd the version!
 			self::safeB64Decode($clientData->SkinAnimationData, "SkinAnimationData"),
 			$clientData->CapeId,
-			null,
+			//ClientData has no distinct "FullId" field, but real clients always send FullID == ID for a
+			//PlayerSkinPacket, so mirror that instead of minting an unrelated random UUID (which some clients
+			//appear to reject for persona skins presented at login).
+			$clientData->SkinId,
 			LegacySkinDataConverter::armSizeFromString($clientData->ArmSize),
 			LegacySkinDataConverter::colorFromString($clientData->SkinColor),
 			array_map(function(ClientDataPersonaSkinPiece $piece) : PersonaSkinPiece{
 				return new PersonaSkinPiece(
 					$piece->PieceId,
 					LegacySkinDataConverter::personaPieceTypeFromString($piece->PieceType),
-					Uuid::fromString($piece->PackId),
+					//PackId is empty for persona pieces that don't belong to any purchased content pack (the
+					//common case for default pieces), so it's not always a valid UUID string.
+					Uuid::fromString(Uuid::isValid($piece->PackId) ? $piece->PackId : Uuid::NIL),
 					$piece->IsDefault,
 					$piece->ProductId
 				);
