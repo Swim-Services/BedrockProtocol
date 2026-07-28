@@ -17,6 +17,8 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\CraftingDataPacket;
+use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
@@ -85,7 +87,11 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 	public static function decode(int $recipeType, ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::getString($in);
 		$input = [];
-		for($j = 0, $ingredientCount = VarInt::readUnsignedInt($in); $j < $ingredientCount; ++$j){
+		$ingredientCount = VarInt::readUnsignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40 && $ingredientCount > 128){
+			throw new PacketDecodeException("Shapeless recipe ingredient count $ingredientCount exceeds the maximum of 128");
+		}
+		for($j = 0; $j < $ingredientCount; ++$j){
 			$input[] = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40
 				? RecipeIngredient::read($in, $protocolId)
 				: CommonTypes::getRecipeIngredient($in, $protocolId);
@@ -98,12 +104,18 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 		$block = CommonTypes::getString($in);
 		$priority = VarInt::readSignedInt($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$unlockingRequirement = CommonTypes::getBool($in) ? RecipeUnlockingRequirement::read($in, $protocolId) : null;
+			$hasUnlockingRequirement = CommonTypes::getBool($in);
+			$expectedUnlockingRequirement = $recipeType === CraftingDataPacket::ENTRY_SHAPELESS ||
+				$recipeType === CraftingDataPacket::ENTRY_USER_DATA_SHAPELESS;
+			if($hasUnlockingRequirement !== $expectedUnlockingRequirement){
+				throw new PacketDecodeException("Unlocking requirement presence does not match shapeless recipe type $recipeType");
+			}
+			$unlockingRequirement = $hasUnlockingRequirement ? RecipeUnlockingRequirement::read($in, $protocolId) : null;
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
 			$unlockingRequirement = RecipeUnlockingRequirement::read($in, $protocolId);
 		}
 
-		$recipeNetId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readSignedInt($in) : CommonTypes::readRecipeNetId($in);
+		$recipeNetId = CommonTypes::readRecipeNetId($in);
 
 		$resolvedUnlockingRequirement = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40
 			? ($unlockingRequirement ?? null)
@@ -113,6 +125,9 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 
 	public function encode(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->recipeId);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40 && count($this->inputs) > 128){
+			throw new \InvalidArgumentException("Shapeless recipe ingredient count exceeds the maximum of 128");
+		}
 		VarInt::writeUnsignedInt($out, count($this->inputs));
 		foreach($this->inputs as $item){
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
@@ -131,16 +146,16 @@ final class ShapelessRecipe extends RecipeWithTypeId{
 		CommonTypes::putString($out, $this->blockName);
 		VarInt::writeSignedInt($out, $this->priority);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::putBool($out, $this->unlockingRequirement !== null);
-			$this->unlockingRequirement?->write($out, $protocolId);
+			$hasUnlockingRequirement = $this->getTypeId() === CraftingDataPacket::ENTRY_SHAPELESS ||
+				$this->getTypeId() === CraftingDataPacket::ENTRY_USER_DATA_SHAPELESS;
+			CommonTypes::putBool($out, $hasUnlockingRequirement);
+			if($hasUnlockingRequirement){
+				($this->unlockingRequirement ?? new RecipeUnlockingRequirement([]))->write($out, $protocolId);
+			}
 		}elseif($protocolId >= ProtocolInfo::PROTOCOL_1_21_0){
 			($this->unlockingRequirement ?? new RecipeUnlockingRequirement(null))->write($out, $protocolId);
 		}
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			VarInt::writeSignedInt($out, $this->recipeNetId);
-		}else{
-			CommonTypes::writeRecipeNetId($out, $this->recipeNetId);
-		}
+		CommonTypes::writeRecipeNetId($out, $this->recipeNetId);
 	}
 }

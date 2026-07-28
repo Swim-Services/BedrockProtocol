@@ -17,6 +17,7 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use function count;
@@ -47,10 +48,21 @@ final class RecipeUnlockingRequirement{
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			$context = VarInt::readSignedInt($in);
+			if($context < self::CONTEXT_NONE || $context > self::CONTEXT_PLAYER_HAS_MANY_ITEMS){
+				throw new PacketDecodeException("Unknown recipe unlocking context $context");
+			}
 			$ingredients = null;
-			if(CommonTypes::getBool($in)){
+			$hasIngredients = CommonTypes::getBool($in);
+			if($hasIngredients !== ($context === self::CONTEXT_NONE)){
+				throw new PacketDecodeException("Unlocking ingredients presence does not match context $context");
+			}
+			if($hasIngredients){
 				$ingredients = [];
-				for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+				$count = VarInt::readUnsignedInt($in);
+				if($count > 128){
+					throw new PacketDecodeException("Recipe unlocking ingredient count $count exceeds the maximum of 128");
+				}
+				for($i = 0; $i < $count; ++$i){
 					$ingredients[] = RecipeIngredient::read($in, $protocolId);
 				}
 			}
@@ -72,11 +84,19 @@ final class RecipeUnlockingRequirement{
 
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			if($this->unlockingContext < self::CONTEXT_NONE || $this->unlockingContext > self::CONTEXT_PLAYER_HAS_MANY_ITEMS){
+				throw new \InvalidArgumentException("Unknown recipe unlocking context " . $this->unlockingContext);
+			}
 			VarInt::writeSignedInt($out, $this->unlockingContext);
-			CommonTypes::putBool($out, $this->unlockingIngredients !== null);
-			if($this->unlockingIngredients !== null){
-				VarInt::writeUnsignedInt($out, count($this->unlockingIngredients));
-				foreach($this->unlockingIngredients as $ingredient){
+			$hasIngredients = $this->unlockingContext === self::CONTEXT_NONE;
+			CommonTypes::putBool($out, $hasIngredients);
+			if($hasIngredients){
+				$ingredients = $this->unlockingIngredients ?? [];
+				if(count($ingredients) > 128){
+					throw new \InvalidArgumentException("Recipe unlocking ingredient count exceeds the maximum of 128");
+				}
+				VarInt::writeUnsignedInt($out, count($ingredients));
+				foreach($ingredients as $ingredient){
 					$ingredient->write($out, $protocolId);
 				}
 			}
