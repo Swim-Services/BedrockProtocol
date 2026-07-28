@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
+
 /**
  * Version numbers and packet IDs for the current Minecraft PE protocol
  */
@@ -75,7 +76,7 @@ final class ProtocolInfo{
 	public const PROTOCOL_1_18_10 = 486;
 	public const PROTOCOL_1_18_0 = 475;
 	public const PROTOCOL_1_16_100 = 419;
-	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_40;
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_30;
 	public const ACCEPTED_PROTOCOL = [
 		self::PROTOCOL_1_18_10,
 		/*self::PROTOCOL_1_18_30,
