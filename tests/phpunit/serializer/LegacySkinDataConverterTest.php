@@ -18,6 +18,23 @@ use PHPUnit\Framework\TestCase;
 use pocketmine\network\mcpe\protocol\types\skin\PersonaSkinPiece;
 
 final class LegacySkinDataConverterTest extends TestCase{
+	public function testPersonaTintWireNamesMatchV2168() : void{
+		$expectedNames = [
+			"persona_facial_hair" => "facial_hair",
+			"persona_face_accessory" => "face_accessory",
+			"persona_left_leg" => "left_leg",
+			"persona_right_leg" => "right_leg",
+			"persona_left_arm" => "left_arm",
+			"persona_right_arm" => "right_arm",
+			"persona_classic_skin" => "classic_skin",
+		];
+
+		foreach($expectedNames as $legacyName => $wireName){
+			$type = LegacySkinDataConverter::personaPieceTypeFromString($legacyName);
+			self::assertSame($wireName, LegacySkinDataConverter::personaPieceTypeToBareString($type));
+			self::assertSame($type, LegacySkinDataConverter::personaPieceTypeFromBareString($wireName));
+		}
+	}
 
 	public function testSingularPersonaHandPieceTypeIsAccepted() : void{
 		self::assertSame(

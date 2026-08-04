@@ -44,8 +44,8 @@ class PlayerSkinPacket extends DataPacket implements ClientboundPacket, Serverbo
 		$this->uuid = CommonTypes::getUUID($in);
 		$this->skin = CommonTypes::getSkin($in, $protocolId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$this->oldSkinName = CommonTypes::getString($in);
 			$this->newSkinName = CommonTypes::getString($in);
+			$this->oldSkinName = CommonTypes::getString($in);
 		}else{
 			$this->newSkinName = CommonTypes::getString($in);
 			$this->oldSkinName = CommonTypes::getString($in);
@@ -57,8 +57,8 @@ class PlayerSkinPacket extends DataPacket implements ClientboundPacket, Serverbo
 		CommonTypes::putUUID($out, $this->uuid);
 		CommonTypes::putSkin($out, $this->skin, $protocolId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::putString($out, $this->oldSkinName);
 			CommonTypes::putString($out, $this->newSkinName);
+			CommonTypes::putString($out, $this->oldSkinName);
 		}else{
 			CommonTypes::putString($out, $this->newSkinName);
 			CommonTypes::putString($out, $this->oldSkinName);

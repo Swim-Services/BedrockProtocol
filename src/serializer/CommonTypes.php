@@ -67,6 +67,7 @@ use function array_pad;
 use function array_slice;
 use function count;
 use function strlen;
+use function strtolower;
 use function strrev;
 use function substr;
 final class CommonTypes{
@@ -194,7 +195,11 @@ final class CommonTypes{
 		$trustedSkinFlag = SkinData::TRUSTED_SKIN_FLAG_UNSET;
 		$profileHash = "";
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			$trustedSkinFlag = self::getString($in);
+			//v2168 serializes this enum as lowercase boolean text. Treat every non-true value as false,
+			//matching the client and Cloudburst's codec behaviour.
+			$trustedSkinFlag = strtolower(self::getString($in)) === "true" ?
+				SkinData::TRUSTED_SKIN_FLAG_TRUE :
+				SkinData::TRUSTED_SKIN_FLAG_FALSE;
 			$profileHash = self::getString($in);
 		}
 		return new SkinData(
@@ -302,7 +307,7 @@ final class CommonTypes{
 			self::putBool($out, $skin->isOverride());
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			self::putString($out, $skin->getTrustedSkinFlag());
+			self::putString($out, strtolower($skin->getTrustedSkinFlag()) === "true" ? "true" : "false");
 			self::putString($out, $skin->getProfileHash());
 		}
 	}
