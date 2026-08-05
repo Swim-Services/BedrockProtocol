@@ -141,7 +141,7 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 				CommonTypes::putString($out, $entry->username);
 				CommonTypes::putString($out, $entry->xboxUserId);
 				CommonTypes::putString($out, $entry->platformChatId);
-				LE::writeSignedInt($out, $entry->buildPlatform);
+				LE::writeSignedInt($out, 1);
 				$skinData = $entry->skinData ?? throw new \InvalidArgumentException("Player list addition entries must have skin data");
 				CommonTypes::putSkin($out, $skinData, $protocolId);
 				CommonTypes::putBool($out, $entry->isTeacher);
