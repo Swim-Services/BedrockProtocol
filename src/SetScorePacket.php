@@ -125,7 +125,11 @@ class SetScorePacket extends DataPacket implements ClientboundPacket{
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 				switch($entryType){
 					case ScorePacketEntry::TYPE_REMOVE:
-						CommonTypes::writeOptional($out, $entry->objectiveName, CommonTypes::putString(...));
+						$oname = $entry->objectiveName;
+						if ($oname === "" || $oname === "§r") {
+							$oname = null;
+						}
+						CommonTypes::writeOptional($out, $oname, CommonTypes::putString(...));
 						break;
 					case ScorePacketEntry::TYPE_PLAYER:
 					case ScorePacketEntry::TYPE_ENTITY:
