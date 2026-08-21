@@ -51,11 +51,11 @@ abstract class TransactionData{
 	 * @throws DataDecodeException
 	 * @throws PacketDecodeException
 	 */
-	final public function decodeAuthInput(ByteBufferReader $in) : void{
+	final public function decodeAuthInput(ByteBufferReader $in, int $protocolId) : void{
 		$actionCount = VarInt::readUnsignedInt($in);
 		$this->actions = [];
 		for($i = 0; $i < $actionCount; ++$i){
-			$this->actions[] = (new NetworkInventoryAction())->readAuthInput($in);
+			$this->actions[] = (new NetworkInventoryAction())->readAuthInput($in, $protocolId);
 		}
 	}
 
@@ -73,10 +73,10 @@ abstract class TransactionData{
 		$this->encodeData($out, $protocolId);
 	}
 
-	final public function encodeAuthInput(ByteBufferWriter $out) : void{
+	final public function encodeAuthInput(ByteBufferWriter $out, int $protocolId) : void{
 		VarInt::writeUnsignedInt($out, count($this->actions));
 		foreach($this->actions as $action){
-			$action->writeAuthInput($out);
+			$action->writeAuthInput($out, $protocolId);
 		}
 	}
 

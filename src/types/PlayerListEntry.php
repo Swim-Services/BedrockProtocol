@@ -20,10 +20,18 @@ use Ramsey\Uuid\UuidInterface;
 
 class PlayerListEntry{
 
+	public const ACTION_ADD = 0;
+	public const ACTION_REMOVE = 1;
+
+	/**
+	 * This is encoded per entry starting with 1.26.40. Null makes
+	 * PlayerListPacket fall back to its packet-level type for compatibility.
+	 */
+	public ?int $action = null;
 	public UuidInterface $uuid;
 	public int $actorUniqueId;
 	public string $username;
-	public SkinData $skinData;
+	public ?SkinData $skinData = null;
 	public string $xboxUserId;
 	public string $platformChatId = "";
 	public int $buildPlatform = DeviceOS::UNKNOWN;
@@ -34,6 +42,7 @@ class PlayerListEntry{
 
 	public static function createRemovalEntry(UuidInterface $uuid) : PlayerListEntry{
 		$entry = new PlayerListEntry();
+		$entry->action = self::ACTION_REMOVE;
 		$entry->uuid = $uuid;
 
 		return $entry;
@@ -53,6 +62,7 @@ class PlayerListEntry{
 		?Color $color = null
 	) : PlayerListEntry{
 		$entry = new PlayerListEntry();
+		$entry->action = self::ACTION_ADD;
 		$entry->uuid = $uuid;
 		$entry->actorUniqueId = $actorUniqueId;
 		$entry->username = $username;

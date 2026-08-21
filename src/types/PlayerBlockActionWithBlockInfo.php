@@ -27,11 +27,7 @@ final class PlayerBlockActionWithBlockInfo implements PlayerBlockAction{
 		private int $actionType,
 		private BlockPosition $blockPosition,
 		private int $face
-	){
-		if(!self::isValidActionType($actionType)){
-			throw new \InvalidArgumentException("Invalid action type for " . self::class);
-		}
-	}
+	){}
 
 	public function getActionType() : int{ return $this->actionType; }
 

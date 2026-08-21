@@ -14,16 +14,19 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\login\clientdata;
 
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\serializer\LegacySkinDataConverter;
 use pocketmine\network\mcpe\protocol\types\skin\PersonaPieceTintColor;
 use pocketmine\network\mcpe\protocol\types\skin\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\skin\SkinAnimation;
 use pocketmine\network\mcpe\protocol\types\skin\SkinData;
 use pocketmine\network\mcpe\protocol\types\skin\SkinImage;
+use Ramsey\Uuid\Uuid;
 use function array_map;
+use function array_values;
 use function base64_decode;
 
 final class ClientDataToSkinDataHelper{
-
 	/**
 	 * @throws \InvalidArgumentException
 	 */
@@ -38,7 +41,7 @@ final class ClientDataToSkinDataHelper{
 	/**
 	 * @throws \InvalidArgumentException
 	 */
-	public static function fromClientData(ClientData $clientData) : SkinData{
+	public static function fromClientData(ClientData $clientData, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : SkinData{
 		/** @var SkinAnimation[] $animations */
 		$animations = [];
 		foreach($clientData->AnimatedImageData as $k => $animation){
@@ -64,14 +67,25 @@ final class ClientDataToSkinDataHelper{
 			self::safeB64Decode($clientData->SkinGeometryDataEngineVersion ?? "", "SkinGeometryDataEngineVersion"), //yes, they actually base64'd the version!
 			self::safeB64Decode($clientData->SkinAnimationData, "SkinAnimationData"),
 			$clientData->CapeId,
-			null,
-			$clientData->ArmSize,
-			$clientData->SkinColor,
+			//ClientData has no distinct "FullId" field, but real clients always send FullID == ID for a
+			//PlayerSkinPacket, so mirror that instead of minting an unrelated random UUID (which some clients
+			//appear to reject for persona skins presented at login).
+			$clientData->SkinId,
+			LegacySkinDataConverter::armSizeFromString($clientData->ArmSize),
+			LegacySkinDataConverter::colorFromString($clientData->SkinColor),
 			array_map(function(ClientDataPersonaSkinPiece $piece) : PersonaSkinPiece{
-				return new PersonaSkinPiece($piece->PieceId, $piece->PieceType, $piece->PackId, $piece->IsDefault, $piece->ProductId);
+				return new PersonaSkinPiece(
+					$piece->PieceId,
+					LegacySkinDataConverter::personaPieceTypeFromString($piece->PieceType),
+					//PackId is empty for persona pieces that don't belong to any purchased content pack (the
+					//common case for default pieces), so it's not always a valid UUID string.
+					Uuid::fromString(Uuid::isValid($piece->PackId) ? $piece->PackId : Uuid::NIL),
+					$piece->IsDefault,
+					$piece->ProductId
+				);
 			}, $clientData->PersonaPieces),
 			array_map(function(ClientDataPersonaPieceTintColor $tint) : PersonaPieceTintColor{
-				return new PersonaPieceTintColor($tint->PieceType, $tint->Colors);
+				return new PersonaPieceTintColor($tint->PieceType, LegacySkinDataConverter::colorsFromStrings(array_values($tint->Colors)));
 			}, $clientData->PieceTintColors),
 			true,
 			$clientData->PremiumSkin,
@@ -79,6 +93,20 @@ final class ClientDataToSkinDataHelper{
 			$clientData->CapeOnClassicSkin,
 			true, //assume this is true? there's no field for it ...
 			$clientData->OverrideSkin ?? true,
+			self::trustedSkinFlagFromClientData($clientData),
+			$clientData->ProfileHash,
 		);
+	}
+
+	/**
+	 * $clientData->TrustedSkin only exists on >= PROTOCOL_1_19_20; older clients won't have sent it at all, in
+	 * which case there's nothing to derive a trust state from and we fall back to unset.
+	 */
+	private static function trustedSkinFlagFromClientData(ClientData $clientData) : string{
+		$trustedSkin = $clientData->TrustedSkin ?? null;
+		if($trustedSkin === null){
+			return SkinData::TRUSTED_SKIN_FLAG_UNSET;
+		}
+		return $trustedSkin ? SkinData::TRUSTED_SKIN_FLAG_TRUE : SkinData::TRUSTED_SKIN_FLAG_FALSE;
 	}
 }

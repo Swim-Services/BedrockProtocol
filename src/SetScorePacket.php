@@ -28,6 +28,12 @@ class SetScorePacket extends DataPacket implements ClientboundPacket{
 
 	public const TYPE_CHANGE = 0;
 	public const TYPE_REMOVE = 1;
+	private const ACTION_IDS = [
+		ScorePacketEntry::TYPE_REMOVE => "remove",
+		ScorePacketEntry::TYPE_PLAYER => "changeplayer",
+		ScorePacketEntry::TYPE_ENTITY => "changeentity",
+		ScorePacketEntry::TYPE_FAKE_PLAYER => "changefakeplayer",
+	];
 
 	public int $type;
 	/** @var ScorePacketEntry[] */
@@ -45,49 +51,114 @@ class SetScorePacket extends DataPacket implements ClientboundPacket{
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
-		$this->type = Byte::readUnsigned($in);
-		for($i = 0, $i2 = VarInt::readUnsignedInt($in); $i < $i2; ++$i){
+		if($protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+			$this->type = Byte::readUnsigned($in);
+		}
+		$onlyRemovals = true;
+		for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
 			$entry = new ScorePacketEntry();
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				$entry->type = VarInt::readUnsignedInt($in);
+				CommonTypes::getString($in); //action ID, redundant with the type
+			}
 			$entry->scoreboardId = VarInt::readSignedLong($in);
-			$entry->objectiveName = CommonTypes::getString($in);
-			$entry->score = LE::readSignedInt($in);
-			if($this->type !== self::TYPE_REMOVE){
-				$entry->type = Byte::readUnsigned($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 				switch($entry->type){
+					case ScorePacketEntry::TYPE_REMOVE:
+						$entry->objectiveName = CommonTypes::readOptional($in, CommonTypes::getString(...));
+						break;
 					case ScorePacketEntry::TYPE_PLAYER:
 					case ScorePacketEntry::TYPE_ENTITY:
+						$onlyRemovals = false;
+						$entry->objectiveName = CommonTypes::getString($in);
+						$entry->score = LE::readSignedInt($in);
 						$entry->actorUniqueId = CommonTypes::getActorUniqueId($in);
 						break;
 					case ScorePacketEntry::TYPE_FAKE_PLAYER:
+						$onlyRemovals = false;
+						$entry->objectiveName = CommonTypes::getString($in);
+						$entry->score = LE::readSignedInt($in);
 						$entry->customName = CommonTypes::getString($in);
 						break;
 					default:
 						throw new PacketDecodeException("Unknown entry type $entry->type");
 				}
+			}else{
+				$entry->objectiveName = CommonTypes::getString($in);
+				$entry->score = LE::readSignedInt($in);
+				if($this->type !== self::TYPE_REMOVE){
+					$entry->type = Byte::readUnsigned($in);
+					switch($entry->type){
+						case ScorePacketEntry::TYPE_PLAYER:
+						case ScorePacketEntry::TYPE_ENTITY:
+							$entry->actorUniqueId = CommonTypes::getActorUniqueId($in);
+							break;
+						case ScorePacketEntry::TYPE_FAKE_PLAYER:
+							$entry->customName = CommonTypes::getString($in);
+							break;
+						default:
+							throw new PacketDecodeException("Unknown entry type $entry->type");
+					}
+				}
 			}
 			$this->entries[] = $entry;
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			$this->type = $onlyRemovals ? self::TYPE_REMOVE : self::TYPE_CHANGE;
 		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
-		Byte::writeUnsigned($out, $this->type);
+		if($protocolId < ProtocolInfo::PROTOCOL_1_26_40){
+			Byte::writeUnsigned($out, $this->type);
+		}
 		VarInt::writeUnsignedInt($out, count($this->entries));
 		foreach($this->entries as $entry){
+			$entryType = $entry->type;
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				$entryType = $this->type === self::TYPE_REMOVE ? ScorePacketEntry::TYPE_REMOVE : $entry->type;
+				$actionId = self::ACTION_IDS[$entryType] ?? throw new \InvalidArgumentException("Unknown entry type $entryType");
+				VarInt::writeUnsignedInt($out, $entryType);
+				CommonTypes::putString($out, $actionId);
+			}
 			VarInt::writeSignedLong($out, $entry->scoreboardId);
-			CommonTypes::putString($out, $entry->objectiveName);
-			LE::writeSignedInt($out, $entry->score);
-			if($this->type !== self::TYPE_REMOVE){
-				Byte::writeUnsigned($out, $entry->type);
-				switch($entry->type){
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				switch($entryType){
+					case ScorePacketEntry::TYPE_REMOVE:
+						$oname = $entry->objectiveName;
+						if ($protocolId === ProtocolInfo::PROTOCOL_1_26_40) {
+							$oname = null;
+						}
+						CommonTypes::writeOptional($out, $oname, CommonTypes::putString(...));
+						break;
 					case ScorePacketEntry::TYPE_PLAYER:
 					case ScorePacketEntry::TYPE_ENTITY:
-						CommonTypes::putActorUniqueId($out, $entry->actorUniqueId);
+						CommonTypes::putString($out, $entry->objectiveName ?? throw new \InvalidArgumentException("objectiveName must be set"));
+						LE::writeSignedInt($out, $entry->score);
+						CommonTypes::putActorUniqueId($out, $entry->actorUniqueId ?? throw new \InvalidArgumentException("actorUniqueId must be set"));
 						break;
 					case ScorePacketEntry::TYPE_FAKE_PLAYER:
-						CommonTypes::putString($out, $entry->customName);
+						CommonTypes::putString($out, $entry->objectiveName ?? throw new \InvalidArgumentException("objectiveName must be set"));
+						LE::writeSignedInt($out, $entry->score);
+						CommonTypes::putString($out, $entry->customName ?? throw new \InvalidArgumentException("customName must be set"));
 						break;
-					default:
-						throw new \InvalidArgumentException("Unknown entry type $entry->type");
+				}
+			}else{
+				CommonTypes::putString($out, $entry->objectiveName ?? throw new \InvalidArgumentException("objectiveName must be set"));
+				LE::writeSignedInt($out, $entry->score);
+				if($this->type !== self::TYPE_REMOVE){
+					Byte::writeUnsigned($out, $entry->type);
+					switch($entry->type){
+						case ScorePacketEntry::TYPE_PLAYER:
+						case ScorePacketEntry::TYPE_ENTITY:
+							CommonTypes::putActorUniqueId($out, $entry->actorUniqueId);
+							break;
+						case ScorePacketEntry::TYPE_FAKE_PLAYER:
+							CommonTypes::putString($out, $entry->customName);
+							break;
+						default:
+							throw new \InvalidArgumentException("Unknown entry type $entry->type");
+					}
 				}
 			}
 		}

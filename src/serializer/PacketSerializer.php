@@ -130,14 +130,14 @@ class PacketSerializer extends BinaryStream{
 		$animationData = $this->getString();
 		$capeId = $this->getString();
 		$fullSkinId = $this->getString();
-		$armSize = $this->getString();
-		$skinColor = $this->getString();
+		$armSize = LegacySkinDataConverter::armSizeFromString($this->getString());
+		$skinColor = LegacySkinDataConverter::colorFromString($this->getString());
 		$personaPieceCount = $this->getLInt();
 		$personaPieces = [];
 		for($i = 0; $i < $personaPieceCount; ++$i){
 			$pieceId = $this->getString();
-			$pieceType = $this->getString();
-			$packId = $this->getString();
+			$pieceType = LegacySkinDataConverter::personaPieceTypeFromString($this->getString());
+			$packId = Uuid::fromString($this->getString());
 			$isDefaultPiece = $this->getBool();
 			$productId = $this->getString();
 			$personaPieces[] = new PersonaSkinPiece($pieceId, $pieceType, $packId, $isDefaultPiece, $productId);
@@ -151,10 +151,7 @@ class PacketSerializer extends BinaryStream{
 			for($j = 0; $j < $colorCount; ++$j){
 				$colors[] = $this->getString();
 			}
-			$pieceTintColors[] = new PersonaPieceTintColor(
-				$pieceType,
-				$colors
-			);
+			$pieceTintColors[] = new PersonaPieceTintColor($pieceType, LegacySkinDataConverter::colorsFromStrings($colors));
 		}
 
 		$premium = $this->getBool();
@@ -210,13 +207,13 @@ class PacketSerializer extends BinaryStream{
 		$this->putString($skin->getAnimationData());
 		$this->putString($skin->getCapeId());
 		$this->putString($skin->getFullSkinId());
-		$this->putString($skin->getArmSize());
-		$this->putString($skin->getSkinColor());
+		$this->putString(LegacySkinDataConverter::armSizeToString($skin->getArmSize()));
+		$this->putString(LegacySkinDataConverter::colorToString($skin->getSkinColor()));
 		$this->putLInt(count($skin->getPersonaPieces()));
 		foreach($skin->getPersonaPieces() as $piece){
 			$this->putString($piece->getPieceId());
-			$this->putString($piece->getPieceType());
-			$this->putString($piece->getPackId());
+			$this->putString(LegacySkinDataConverter::personaPieceTypeToString($piece->getPieceType()));
+			$this->putString($piece->getPackId()->toString());
 			$this->putBool($piece->isDefaultPiece());
 			$this->putString($piece->getProductId());
 		}
@@ -225,7 +222,7 @@ class PacketSerializer extends BinaryStream{
 			$this->putString($tint->getPieceType());
 			$this->putLInt(count($tint->getColors()));
 			foreach($tint->getColors() as $color){
-				$this->putString($color);
+				$this->putString(LegacySkinDataConverter::colorToString($color));
 			}
 		}
 		$this->putBool($skin->isPremium());

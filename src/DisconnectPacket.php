@@ -42,6 +42,7 @@ class DisconnectPacket extends DataPacket implements ClientboundPacket, Serverbo
 	}
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
+		$this->filteredMessage = null;
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_20_40){
 			$this->reason = VarInt::readSignedInt($in);
 		}

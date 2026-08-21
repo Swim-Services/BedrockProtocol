@@ -13,18 +13,20 @@
 declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\skin;
-
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use Ramsey\Uuid\Uuid;
 
 class SkinData{
 
-	public const ARM_SIZE_SLIM = "slim";
-	public const ARM_SIZE_WIDE = "wide";
+	public const ARM_SIZE_SLIM = 0;
+	public const ARM_SIZE_WIDE = 1;
+
+	public const TRUSTED_SKIN_FLAG_UNSET = "Unset";
+	public const TRUSTED_SKIN_FLAG_FALSE = "False";
+	public const TRUSTED_SKIN_FLAG_TRUE = "True";
 
 	private SkinImage $capeImage;
 	private string $fullSkinId;
-
 	/**
 	 * @param SkinAnimation[]         $animations
 	 * @param PersonaSkinPiece[]      $personaPieces
@@ -42,8 +44,8 @@ class SkinData{
 		private string $animationData = "",
 		private string $capeId = "",
 		?string $fullSkinId = null,
-		private string $armSize = self::ARM_SIZE_WIDE,
-		private string $skinColor = "",
+		private int $armSize = self::ARM_SIZE_WIDE,
+		private int $skinColor = 0,
 		private array $personaPieces = [],
 		private array $pieceTintColors = [],
 		private bool $isVerified = true,
@@ -51,13 +53,14 @@ class SkinData{
 		private bool $persona = false,
 		private bool $personaCapeOnClassic = false,
 		private bool $isPrimaryUser = true,
-		private bool $override = true
+		private bool $override = true,
+		private string $trustedSkinFlag = self::TRUSTED_SKIN_FLAG_UNSET,
+		private string $profileHash = ""
 	){
 		$this->capeImage = $capeImage ?? new SkinImage(0, 0, "");
 		//this has to be unique or the client will do stupid things
 		$this->fullSkinId = $fullSkinId ?? Uuid::uuid4()->toString();
 	}
-
 	public function getSkinId() : string{
 		return $this->skinId;
 	}
@@ -82,7 +85,6 @@ class SkinData{
 	public function getCapeImage() : SkinImage{
 		return $this->capeImage;
 	}
-
 	public function getGeometryData() : string{
 		return $this->geometryData;
 	}
@@ -101,11 +103,10 @@ class SkinData{
 		return $this->fullSkinId;
 	}
 
-	public function getArmSize() : string{
+	public function getArmSize() : int{
 		return $this->armSize;
 	}
-
-	public function getSkinColor() : string{
+	public function getSkinColor() : int{
 		return $this->skinColor;
 	}
 
@@ -130,7 +131,6 @@ class SkinData{
 	public function isPremium() : bool{
 		return $this->premium;
 	}
-
 	public function isPersonaCapeOnClassic() : bool{
 		return $this->personaCapeOnClassic;
 	}
@@ -139,10 +139,13 @@ class SkinData{
 
 	public function isOverride() : bool{ return $this->override; }
 
+	public function getTrustedSkinFlag() : string{ return $this->trustedSkinFlag; }
+
+	public function getProfileHash() : string{ return $this->profileHash; }
+
 	public function isVerified() : bool{
 		return $this->isVerified;
 	}
-
 	/**
 	 * @internal
 	 */

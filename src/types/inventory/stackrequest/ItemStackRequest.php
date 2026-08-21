@@ -85,7 +85,12 @@ final class ItemStackRequest{
 		$requestId = CommonTypes::readItemStackRequestId($in);
 		$actions = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
-			$typeId = Byte::readUnsigned($in);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				$typeId = ItemStackRequestActionType::fromModernTypeId(VarInt::readUnsignedInt($in));
+				Byte::readUnsigned($in);
+			}else{
+				$typeId = Byte::readUnsigned($in);
+			}
 			$actions[] = self::readAction($in, $protocolId, $typeId);
 		}
 		$filterStrings = [];
@@ -102,7 +107,12 @@ final class ItemStackRequest{
 		CommonTypes::writeItemStackRequestId($out, $this->requestId);
 		VarInt::writeUnsignedInt($out, count($this->actions));
 		foreach($this->actions as $action){
-			Byte::writeUnsigned($out, $action->getTypeId());
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+				VarInt::writeUnsignedInt($out, ItemStackRequestActionType::toModernTypeId($action->getTypeId()));
+				Byte::writeUnsigned($out, $action->getTypeId());
+			}else{
+				Byte::writeUnsigned($out, $action->getTypeId());
+			}
 			$action->write($out, $protocolId);
 		}
 		VarInt::writeUnsignedInt($out, count($this->filterStrings));

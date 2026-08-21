@@ -18,6 +18,8 @@ use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use function count;
 
 final class AbilitiesData{
@@ -50,7 +52,10 @@ final class AbilitiesData{
 		$commandPermission = Byte::readUnsigned($in);
 
 		$abilityLayers = [];
-		for($i = 0, $len = Byte::readUnsigned($in); $i < $len; $i++){
+		$layerCount = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ?
+			VarInt::readUnsignedInt($in) :
+			Byte::readUnsigned($in);
+		for($i = 0; $i < $layerCount; $i++){
 			$abilityLayers[] = AbilitiesLayer::decode($in, $protocolId);
 		}
 
@@ -62,7 +67,11 @@ final class AbilitiesData{
 		Byte::writeUnsigned($out, $this->playerPermission);
 		Byte::writeUnsigned($out, $this->commandPermission);
 
-		Byte::writeUnsigned($out, count($this->abilityLayers));
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
+			VarInt::writeUnsignedInt($out, count($this->abilityLayers));
+		}else{
+			Byte::writeUnsigned($out, count($this->abilityLayers));
+		}
 		foreach($this->abilityLayers as $abilityLayer){
 			$abilityLayer->encode($out, $protocolId);
 		}

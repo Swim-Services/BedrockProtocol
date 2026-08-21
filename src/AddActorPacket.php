@@ -111,7 +111,7 @@ class AddActorPacket extends DataPacket implements ClientboundPacket{
 			$this->attributes[] = new Attribute($id, $min, $max, $current, $current, []);
 		}
 
-		$this->metadata = CommonTypes::getEntityMetadata($in);
+		$this->metadata = CommonTypes::getEntityMetadata($in, $protocolId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
 			$this->syncedProperties = PropertySyncData::read($in);
 		}
@@ -143,7 +143,7 @@ class AddActorPacket extends DataPacket implements ClientboundPacket{
 			LE::writeFloat($out, $attribute->getMax());
 		}
 
-		CommonTypes::putEntityMetadata($out, $this->metadata);
+		CommonTypes::putEntityMetadata($out, $this->metadata, $protocolId);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_40){
 			$this->syncedProperties->write($out);
 		}

@@ -32,7 +32,8 @@ final class ProtocolInfo{
 	 */
 
 	/** Actual Minecraft: PE protocol version */
-
+	public const PROTOCOL_1_26_45 = 2169;
+	public const PROTOCOL_1_26_40 = 2168;
 	public const PROTOCOL_1_26_30 = 1001;
 	public const PROTOCOL_1_26_20 = 975;
 	public const PROTOCOL_1_26_10 = 944;
@@ -76,8 +77,7 @@ final class ProtocolInfo{
 	public const PROTOCOL_1_18_10 = 486;
 	public const PROTOCOL_1_18_0 = 475;
 	public const PROTOCOL_1_16_100 = 419;
-
-	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_30;
+	public const CURRENT_PROTOCOL = self::PROTOCOL_1_26_45;
 	public const ACCEPTED_PROTOCOL = [
 		self::PROTOCOL_1_18_10,
 		/*self::PROTOCOL_1_18_30,
@@ -92,14 +92,14 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_19_63,
 		self::PROTOCOL_1_19_70,
 		self::PROTOCOL_1_19_80,*/
-		self::PROTOCOL_1_20_0,
+		/*self::PROTOCOL_1_20_0,
 		self::PROTOCOL_1_20_10,
 		self::PROTOCOL_1_20_30,
 		self::PROTOCOL_1_20_40,
 		self::PROTOCOL_1_20_50,
 		self::PROTOCOL_1_20_60,
 		self::PROTOCOL_1_20_70,
-		self::PROTOCOL_1_20_80,
+		self::PROTOCOL_1_20_80,*/
 		self::PROTOCOL_1_21_0,
 		self::PROTOCOL_1_21_2,
 		self::PROTOCOL_1_21_20,
@@ -119,14 +119,14 @@ final class ProtocolInfo{
 		self::PROTOCOL_1_26_0,
 		self::PROTOCOL_1_26_10,
 		self::PROTOCOL_1_26_20,
+		self::PROTOCOL_1_26_30,
+		self::PROTOCOL_1_26_40,
 		self::CURRENT_PROTOCOL
 	];
-
 	/** Version number sent to clients in ping responses. */
-	public const MINECRAFT_VERSION_NETWORK = '1.26.30';
+	public const MINECRAFT_VERSION_NETWORK = '1.26.45';
 	/** Current Minecraft PE version reported by the server. This is usually the earliest currently supported version. */
 	public const MINECRAFT_VERSION = 'v' . self::MINECRAFT_VERSION_NETWORK;
-
 	public const LOGIN_PACKET = 0x01;
 	public const PLAY_STATUS_PACKET = 0x02;
 	public const SERVER_TO_CLIENT_HANDSHAKE_PACKET = 0x03;
@@ -142,7 +142,6 @@ final class ProtocolInfo{
 	public const ADD_ACTOR_PACKET = 0x0d;
 	public const REMOVE_ACTOR_PACKET = 0x0e;
 	public const ADD_ITEM_ACTOR_PACKET = 0x0f;
-
 	public const SERVER_PLAYER_POST_MOVE_POSITION_PACKET = 0x10;
 	public const TAKE_ITEM_ACTOR_PACKET = 0x11;
 	public const MOVE_ACTOR_ABSOLUTE_PACKET = 0x12;
@@ -243,7 +242,6 @@ final class ProtocolInfo{
 	public const SET_LOCAL_PLAYER_AS_INITIALIZED_PACKET = 0x71;
 	public const UPDATE_SOFT_ENUM_PACKET = 0x72;
 	public const NETWORK_STACK_LATENCY_PACKET = 0x73;
-
 	public const SPAWN_PARTICLE_EFFECT_PACKET = 0x76;
 	public const AVAILABLE_ACTOR_IDENTIFIERS_PACKET = 0x77;
 	public const LEVEL_SOUND_EVENT_PACKET_V2 = 0x78;
@@ -252,7 +250,6 @@ final class ProtocolInfo{
 	public const LEVEL_SOUND_EVENT_PACKET = 0x7b;
 	public const LEVEL_EVENT_GENERIC_PACKET = 0x7c;
 	public const LECTERN_UPDATE_PACKET = 0x7d;
-
 	public const ADD_ENTITY_PACKET = 0x7f;
 	public const REMOVE_ENTITY_PACKET = 0x80;
 	public const CLIENT_CACHE_STATUS_PACKET = 0x81;
@@ -260,7 +257,6 @@ final class ProtocolInfo{
 	public const MAP_CREATE_LOCKED_COPY_PACKET = 0x83;
 	public const STRUCTURE_TEMPLATE_DATA_REQUEST_PACKET = 0x84;
 	public const STRUCTURE_TEMPLATE_DATA_RESPONSE_PACKET = 0x85;
-
 	public const CLIENT_CACHE_BLOB_STATUS_PACKET = 0x87;
 	public const CLIENT_CACHE_MISS_RESPONSE_PACKET = 0x88;
 	public const EDUCATION_SETTINGS_PACKET = 0x89;
@@ -299,7 +295,6 @@ final class ProtocolInfo{
 	public const EDU_URI_RESOURCE_PACKET = 0xaa;
 	public const CREATE_PHOTO_PACKET = 0xab;
 	public const UPDATE_SUB_CHUNK_BLOCKS_PACKET = 0xac;
-
 	public const SUB_CHUNK_PACKET = 0xae;
 	public const SUB_CHUNK_REQUEST_PACKET = 0xaf;
 	public const PLAYER_START_ITEM_COOLDOWN_PACKET = 0xb0;
@@ -323,10 +318,8 @@ final class ProtocolInfo{
 	public const GAME_TEST_REQUEST_PACKET = 0xc2;
 	public const GAME_TEST_RESULTS_PACKET = 0xc3;
 	public const UPDATE_CLIENT_INPUT_LOCKS_PACKET = 0xc4;
-
 	public const CAMERA_PRESETS_PACKET = 0xc6;
 	public const UNLOCKED_RECIPES_PACKET = 0xc7;
-
 	public const CAMERA_INSTRUCTION_PACKET = 0x12c;
 	public const COMPRESSED_BIOME_DEFINITION_LIST_PACKET = 0x12d;
 	public const TRIM_DATA_PACKET = 0x12e;
@@ -338,7 +331,6 @@ final class ProtocolInfo{
 	public const SET_HUD_PACKET = 0x134;
 	public const AWARD_ACHIEVEMENT_PACKET = 0x135;
 	public const CLIENTBOUND_CLOSE_FORM_PACKET = 0x136;
-
 	public const SERVERBOUND_LOADING_SCREEN_PACKET = 0x138;
 	public const JIGSAW_STRUCTURE_DATA_PACKET = 0x139;
 	public const CURRENT_STRUCTURE_FEATURE_PACKET = 0x13a;
@@ -378,5 +370,4 @@ final class ProtocolInfo{
 	public const CLIENTBOUND_UPDATE_SOUND_DATA_PACKET = 0x15c;
 	public const SEND_PARTY_DESTINATION_COOKIE_PACKET = 0x15d;
 	public const PARTY_DESTINATION_COOKIE_RESPONSE_PACKET = 0x15e;
-
 }

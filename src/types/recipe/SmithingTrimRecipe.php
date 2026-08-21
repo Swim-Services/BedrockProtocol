@@ -16,6 +16,7 @@ namespace pocketmine\network\mcpe\protocol\types\recipe;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 final class SmithingTrimRecipe extends RecipeWithTypeId{
@@ -46,9 +47,9 @@ final class SmithingTrimRecipe extends RecipeWithTypeId{
 
 	public static function decode(int $typeId, ByteBufferReader $in, int $protocolId) : self{
 		$recipeId = CommonTypes::getString($in);
-		$template = CommonTypes::getRecipeIngredient($in, $protocolId);
-		$input = CommonTypes::getRecipeIngredient($in, $protocolId);
-		$addition = CommonTypes::getRecipeIngredient($in, $protocolId);
+		$template = RecipeIngredient::read($in, $protocolId);
+		$input = RecipeIngredient::read($in, $protocolId);
+		$addition = RecipeIngredient::read($in, $protocolId);
 		$blockName = CommonTypes::getString($in);
 		$recipeNetId = CommonTypes::readRecipeNetId($in);
 
@@ -65,9 +66,9 @@ final class SmithingTrimRecipe extends RecipeWithTypeId{
 
 	public function encode(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->recipeId);
-		CommonTypes::putRecipeIngredient($out, $this->template, $protocolId);
-		CommonTypes::putRecipeIngredient($out, $this->input, $protocolId);
-		CommonTypes::putRecipeIngredient($out, $this->addition, $protocolId);
+		$this->template->write($out, $protocolId);
+		$this->input->write($out, $protocolId);
+		$this->addition->write($out, $protocolId);
 		CommonTypes::putString($out, $this->blockName);
 		CommonTypes::writeRecipeNetId($out, $this->recipeNetId);
 	}

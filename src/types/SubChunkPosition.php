@@ -49,6 +49,10 @@ final class SubChunkPosition{
 		return new self($x, $y, $z);
 	}
 
+	public static function read(ByteBufferReader $in, bool $cereal = false) : self{
+		return $cereal ? self::readFixedInts($in) : self::readVarInts($in);
+	}
+
 	public function writeFixedInts(ByteBufferWriter $out) : void{
 		LE::writeSignedInt($out, $this->x);
 		LE::writeSignedInt($out, $this->y);
@@ -59,5 +63,13 @@ final class SubChunkPosition{
 		VarInt::writeSignedInt($out, $this->x);
 		VarInt::writeSignedInt($out, $this->y);
 		VarInt::writeSignedInt($out, $this->z);
+	}
+
+	public function write(ByteBufferWriter $out, bool $cereal = false) : void{
+		if($cereal){
+			$this->writeFixedInts($out);
+		}else{
+			$this->writeVarInts($out);
+		}
 	}
 }

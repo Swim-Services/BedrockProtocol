@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types\ddui;
+namespace pocketmine\network\mcpe\protocol\types;
 
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
@@ -21,70 +21,31 @@ use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
-use pocketmine\network\mcpe\protocol\types\ddui\update\BoolDataStoreUpdateValue;
-use pocketmine\network\mcpe\protocol\types\ddui\update\DataStoreUpdateValue;
-use pocketmine\network\mcpe\protocol\types\ddui\update\DataStoreUpdateValueType;
-use pocketmine\network\mcpe\protocol\types\ddui\update\DoubleDataStoreUpdateValue;
-use pocketmine\network\mcpe\protocol\types\ddui\update\StringDataStoreUpdateValue;
-use pocketmine\network\mcpe\protocol\types\GetTypeIdFromConstTrait;
 
-/**
- * @see ServerboundDataStorePacket
- * @see ClientboundDataStorePacket
- */
-final class DataStoreUpdate implements DataStoreOperation{
-	use GetTypeIdFromConstTrait;
-
-	public const ID = DataStoreOperationType::UPDATE;
-
-	public function __construct(
-		private string $name,
-		private string $property,
-		private string $path,
-		private DataStoreUpdateValue $data,
-		private int $updateCount,
-		private int $pathUpdateCount,
-	){}
-
+final class DataStoreUpdate extends DataStore{
+	public const ID = DataStoreType::UPDATE;
+	public function __construct(private string $name, private string $property, private string $path, private DataStoreValue $data, private int $updateCount, private int $pathUpdateCount){}
+	public function getTypeId() : int{ return self::ID; }
 	public function getName() : string{ return $this->name; }
-
 	public function getProperty() : string{ return $this->property; }
-
 	public function getPath() : string{ return $this->path; }
-
-	public function getData() : DataStoreUpdateValue{ return $this->data; }
-
+	public function getData() : DataStoreValue{ return $this->data; }
 	public function getUpdateCount() : int{ return $this->updateCount; }
-
 	public function getPathUpdateCount() : int{ return $this->pathUpdateCount; }
-
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$name = CommonTypes::getString($in);
 		$property = CommonTypes::getString($in);
 		$path = CommonTypes::getString($in);
-
 		$data = match(VarInt::readUnsignedInt($in)){
-			DataStoreUpdateValueType::DOUBLE => DoubleDataStoreUpdateValue::read($in),
-			DataStoreUpdateValueType::BOOL => BoolDataStoreUpdateValue::read($in),
-			DataStoreUpdateValueType::STRING => StringDataStoreUpdateValue::read($in),
+			DataStoreValueType::DOUBLE => DoubleDataStoreValue::read($in),
+			DataStoreValueType::BOOL => BoolDataStoreValue::read($in),
+			DataStoreValueType::STRING => StringDataStoreValue::read($in),
 			default => throw new PacketDecodeException("Unknown DataStoreValueType"),
 		};
-
 		$updateCount = LE::readUnsignedInt($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
-			$pathUpdateCount = LE::readUnsignedInt($in);
-		}
-
-		return new self(
-			$name,
-			$property,
-			$path,
-			$data,
-			$updateCount,
-			$pathUpdateCount ?? -1,
-		);
+		$pathUpdateCount = $protocolId >= ProtocolInfo::PROTOCOL_1_26_0 ? LE::readUnsignedInt($in) : -1;
+		return new self($name, $property, $path, $data, $updateCount, $pathUpdateCount);
 	}
-
 	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::putString($out, $this->name);
 		CommonTypes::putString($out, $this->property);
@@ -92,7 +53,7 @@ final class DataStoreUpdate implements DataStoreOperation{
 		VarInt::writeUnsignedInt($out, $this->data->getTypeId());
 		$this->data->write($out);
 		LE::writeUnsignedInt($out, $this->updateCount);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0) {
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_0){
 			LE::writeUnsignedInt($out, $this->pathUpdateCount);
 		}
 	}
