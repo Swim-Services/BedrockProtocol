@@ -45,9 +45,6 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 
 	protected function decodePayload(ByteBufferReader $in, int $protocolId) : void{
 		$this->protocol = BE::readUnsignedInt($in);
-		if ($this->protocol === 2169) {
-			$this->protocol = 2168;
-		}
 		$this->decodeConnectionRequest(CommonTypes::getString($in));
 	}
 
