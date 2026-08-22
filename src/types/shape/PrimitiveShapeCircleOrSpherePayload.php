@@ -35,7 +35,7 @@ final class PrimitiveShapeCircleOrSpherePayload extends PrimitiveShapePayload{
 		return new self($segments);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		Byte::writeUnsigned($out, $this->segments);
 	}
 }

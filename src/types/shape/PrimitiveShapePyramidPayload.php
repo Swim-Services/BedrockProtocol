@@ -45,7 +45,7 @@ final class PrimitiveShapePyramidPayload extends PrimitiveShapePayload{
 		return new self($width, $depth, $height);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		LE::writeFloat($out, $this->width);
 		CommonTypes::writeOptional($out, $this->depth, LE::writeFloat(...));
 		LE::writeFloat($out, $this->height);

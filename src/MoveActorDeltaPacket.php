@@ -18,6 +18,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\DataDecodeException;
 use pmmp\encoding\LE;
+use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 
 class MoveActorDeltaPacket extends DataPacket implements ClientboundPacket{
@@ -44,6 +45,7 @@ class MoveActorDeltaPacket extends DataPacket implements ClientboundPacket{
 	public ?float $pitch = null;
 	public ?float $yaw = null;
 	public ?float $headYaw = null;
+	public int $ticks = 3;
 
 	/** @throws DataDecodeException */
 	private function readCoord(ByteBufferReader $in, int $protocolId, int $flag) : ?float{
@@ -99,6 +101,9 @@ class MoveActorDeltaPacket extends DataPacket implements ClientboundPacket{
 			$this->readBooleanFlag($in, self::FLAG_TELEPORT);
 			$this->readBooleanFlag($in, self::FLAG_FORCE_MOVE_LOCAL_ENTITY);
 			$this->readBooleanFlag($in, self::FLAG_FORCE_COMPLETION);
+			if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_50) {
+				$this->ticks = VarInt::readUnsignedLong($in);
+			}
 		}
 	}
 
@@ -149,6 +154,9 @@ class MoveActorDeltaPacket extends DataPacket implements ClientboundPacket{
 			CommonTypes::putBool($out, ($this->flags & self::FLAG_TELEPORT) !== 0);
 			CommonTypes::putBool($out, ($this->flags & self::FLAG_FORCE_MOVE_LOCAL_ENTITY) !== 0);
 			CommonTypes::putBool($out, ($this->flags & self::FLAG_FORCE_COMPLETION) !== 0);
+			if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_50) {
+				VarInt::writeUnsignedLong($out, $this->ticks);
+			}
 		}
 	}
 

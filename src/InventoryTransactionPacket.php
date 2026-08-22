@@ -74,11 +74,11 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 			}
 		}
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && Byte::readUnsigned($in) !== 1){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && $protocolId < ProtocolInfo::PROTOCOL_1_26_50 && Byte::readUnsigned($in) !== 1){
 			throw new PacketDecodeException("Dummy optional bool for transactionType should always be 1");
 		}
 		$transactionType = VarInt::readUnsignedInt($in);
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && Byte::readUnsigned($in) !== 1){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && $protocolId < ProtocolInfo::PROTOCOL_1_26_50 && Byte::readUnsigned($in) !== 1){
 			throw new PacketDecodeException("Dummy optional bool for trData should always be 1");
 		}
 		$this->trData = match($transactionType) {
@@ -103,7 +103,9 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 				}
 			});
 
-			Byte::writeUnsigned($out, 1);
+			if ($protocolId < ProtocolInfo::PROTOCOL_1_26_50) {
+				Byte::writeUnsigned($out, 1);
+			}
 		}elseif($this->requestId !== 0){
 			VarInt::writeUnsignedInt($out, count($this->requestChangedSlots ?? []));
 			foreach(($this->requestChangedSlots ?? []) as $changedSlots){
@@ -112,7 +114,7 @@ class InventoryTransactionPacket extends DataPacket implements ClientboundPacket
 		}
 		VarInt::writeUnsignedInt($out, $this->trData->getTypeId());
 
-		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30 && $protocolId < ProtocolInfo::PROTOCOL_1_26_50){
 			Byte::writeUnsigned($out, 1);
 		}
 		$this->trData->encodeTransaction($out, $protocolId);

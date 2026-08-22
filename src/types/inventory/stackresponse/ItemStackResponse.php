@@ -18,8 +18,8 @@ use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
-use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use function count;
 
 final class ItemStackResponse{
@@ -54,7 +54,7 @@ final class ItemStackResponse{
 		$requestId = CommonTypes::readItemStackRequestId($in);
 		$containerInfos = [];
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			if(CommonTypes::getBool($in) && CommonTypes::getBool($in)){
+			if(($protocolId >= ProtocolInfo::PROTOCOL_1_26_50 || CommonTypes::getBool(in: $in)) && CommonTypes::getBool($in)){
 				for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 					$containerInfos[] = ItemStackResponseContainerInfo::read($in, $protocolId);
 				}
@@ -73,7 +73,9 @@ final class ItemStackResponse{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 			CommonTypes::putBool($out, $hasContainers = count($this->containerInfos) !== 0);
 			if($hasContainers){
-				CommonTypes::putBool($out, true);
+				if ($protocolId < ProtocolInfo::PROTOCOL_1_26_50) {
+					CommonTypes::putBool($out, true);
+				}
 				VarInt::writeUnsignedInt($out, count($this->containerInfos));
 				foreach($this->containerInfos as $containerInfo){
 					$containerInfo->write($out, $protocolId);

@@ -53,6 +53,8 @@ final class CameraPreset{
 		private ?bool $alignTargetAndCameraForward,
 		private ?CameraPresetAimAssist $aimAssist,
 		private ?ControlScheme $controlScheme,
+		private bool $applyInheritedStartingRotation,
+		private ?Vector2 $startingRotation,
 	){}
 
 	public function getName() : string{ return $this->name; }
@@ -101,6 +103,10 @@ final class CameraPreset{
 
 	public function getControlScheme() : ?ControlScheme{ return $this->controlScheme; }
 
+	public function getApplyInheritedStartingRotation() : bool{ return $this->applyInheritedStartingRotation; }
+
+	public function getStartingRotation() : ?Vector2{ return $this->startingRotation; }
+
 	public static function read(ByteBufferReader $in, int $protocolId) : self{
 		$name = CommonTypes::getString($in);
 		$parent = CommonTypes::getString($in);
@@ -148,6 +154,10 @@ final class CameraPreset{
 					$aimAssist = CommonTypes::readOptional($in, fn() => CommonTypes::getBool($in) ? new CameraPresetAimAssist(null, null, null, null) : null);
 				}
 			}
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+				$applyInheritedStartingRotation = CommonTypes::getBool($in);
+				$startingRotation = CommonTypes::readOptional($in, CommonTypes::getVector2(...));
+			}
 		}
 
 		return new self(
@@ -174,6 +184,8 @@ final class CameraPreset{
 			$alignTargetAndCameraForward ?? null,
 			$aimAssist ?? null,
 			$controlScheme ?? null,
+			$applyInheritedStartingRotation ?? false,
+			$startingRotation ?? null
 		);
 	}
 
@@ -205,6 +217,8 @@ final class CameraPreset{
 			$nbt->getTag("player_effects") === null ? null : $nbt->getByte("player_effects") !== 0,
 			null,
 			null,
+			null,
+			false,
 			null,
 		);
 	}
@@ -255,6 +269,10 @@ final class CameraPreset{
 				}else{
 					CommonTypes::writeOptional($out, $this->aimAssist, fn(ByteBufferWriter $out, CameraPresetAimAssist $v) => $v->write($out));
 				}
+			}
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_50){
+				CommonTypes::putBool($out, $this->applyInheritedStartingRotation);
+				CommonTypes::writeOptional($out, $this->startingRotation, CommonTypes::putVector2(...));
 			}
 		}
 	}

@@ -56,7 +56,7 @@ final class PrimitiveShapeArrowPayload extends PrimitiveShapePayload{
 		);
 	}
 
-	public function write(ByteBufferWriter $out) : void{
+	public function write(ByteBufferWriter $out, int $protocolId) : void{
 		CommonTypes::writeOptional($out, $this->lineEndLocation, CommonTypes::putVector3(...));
 		CommonTypes::writeOptional($out, $this->arrowHeadLength, LE::writeFloat(...));
 		CommonTypes::writeOptional($out, $this->arrowHeadRadius, LE::writeFloat(...));

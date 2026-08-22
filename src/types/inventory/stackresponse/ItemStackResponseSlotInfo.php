@@ -51,7 +51,7 @@ final class ItemStackResponseSlotInfo{
 		$hotbarSlot = Byte::readUnsigned($in);
 		$count = Byte::readUnsigned($in);
 		$itemStackId = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40
-			? CommonTypes::readOptional($in, static fn(ByteBufferReader $in) => CommonTypes::getBool($in) ? CommonTypes::readServerItemStackId($in) : null)
+			? CommonTypes::readOptional($in, static fn(ByteBufferReader $in) => ($protocolId >= ProtocolInfo::PROTOCOL_1_26_50 || CommonTypes::getBool(in: $in)) ? CommonTypes::readServerItemStackId($in) : null)
 			: CommonTypes::readServerItemStackId($in);
 		$customName = CommonTypes::getString($in);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
@@ -68,8 +68,10 @@ final class ItemStackResponseSlotInfo{
 		Byte::writeUnsigned($out, $this->hotbarSlot);
 		Byte::writeUnsigned($out, $this->count);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-			CommonTypes::writeOptional($out, $this->itemStackId, static function(ByteBufferWriter $out, int $itemStackId) : void{
-				CommonTypes::putBool($out, true);
+			CommonTypes::writeOptional($out, $this->itemStackId,  function(ByteBufferWriter $out, int $itemStackId) use($protocolId) : void{
+				if ($protocolId < ProtocolInfo::PROTOCOL_1_26_50) {
+					CommonTypes::putBool($out, true);
+				}
 				CommonTypes::writeServerItemStackId($out, $itemStackId);
 			});
 		}else{
