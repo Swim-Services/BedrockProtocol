@@ -36,6 +36,7 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 	public int $actorRuntimeId;
 	public float $data = 0.0;
 	public ?string $swingSource = null;
+	private ?int $hand = null;
 
 	public static function create(int $actorRuntimeId, int $action, float $data = 0.0, ?string $swingSource = null) : self{
 		$result = new self;
@@ -65,6 +66,9 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
 			$this->swingSource = CommonTypes::readOptional($in, CommonTypes::getString(...));
 		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			$this->hand = CommonTypes::readOptional($in, Byte::readUnsigned(...));
+		}
 	}
 
 	protected function encodePayload(ByteBufferWriter $out, int $protocolId) : void{
@@ -79,6 +83,9 @@ class AnimatePacket extends DataPacket implements ClientboundPacket, Serverbound
 		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_21_130){
 			CommonTypes::writeOptional($out, $this->swingSource, CommonTypes::putString(...));
+		}
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			CommonTypes::writeOptional($out, $this->hand, Byte::writeUnsigned(...));
 		}
 	}
 

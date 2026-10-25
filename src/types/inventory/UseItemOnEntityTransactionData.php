@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
@@ -35,6 +36,7 @@ class UseItemOnEntityTransactionData extends TransactionData{
 	private int $actorRuntimeId;
 	private int $actionType;
 	private int $hotbarSlot;
+	private int $hand;
 	private ItemStackWrapper $itemInHand;
 	private Vector3 $playerPosition;
 	private Vector3 $clickPosition;
@@ -49,6 +51,9 @@ class UseItemOnEntityTransactionData extends TransactionData{
 
 	public function getHotbarSlot() : int{
 		return $this->hotbarSlot;
+	}
+	public function getHand() : int{
+		return $this->hand;
 	}
 
 	public function getItemInHand() : ItemStackWrapper{
@@ -71,6 +76,11 @@ class UseItemOnEntityTransactionData extends TransactionData{
 			$this->actionType = VarInt::readUnsignedInt($in);
 		}
 		$this->hotbarSlot = VarInt::readSignedInt($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			$this->hand = Byte::readUnsigned($in);
+		} else {
+			$this->hand = UseItemTransactionData::HAND_SLOT_MAIN_HAND;
+		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
 			$this->itemInHand = CommonTypes::getNetworkItemStackDescriptor($in, $protocolId);
 		}else{
@@ -88,6 +98,9 @@ class UseItemOnEntityTransactionData extends TransactionData{
 			VarInt::writeUnsignedInt($out, $this->actionType);
 		}
 		VarInt::writeSignedInt($out, $this->hotbarSlot);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			Byte::writeUnsigned($out, $this->hand);
+		}
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
 			CommonTypes::putNetworkItemStackDescriptor($out, $this->itemInHand, $protocolId);
 		}else{

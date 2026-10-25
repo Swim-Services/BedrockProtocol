@@ -13,16 +13,17 @@
 declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
+
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
 use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\ChunkPosition;
+use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\utils\Limits;
 use function count;
 use const PHP_INT_MAX;
-use pocketmine\network\mcpe\protocol\types\DimensionIds;
 
 class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::LEVEL_CHUNK_PACKET;
@@ -47,6 +48,7 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	/** @var int[] */
 	private array $usedBlobHashes;
 	private string $extraPayload;
+	private bool $clientBiomeUpdate = true;
 	/**
 	 * @generate-create-func
 	 * @param int[] $usedBlobHashes
@@ -159,6 +161,9 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 			}
 		}
 		CommonTypes::putString($out, $this->extraPayload);
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_60) {
+			CommonTypes::putBool($out, $this->clientBiomeUpdate);
+		}
 	}
 
 	public function handle(PacketHandlerInterface $handler) : bool{

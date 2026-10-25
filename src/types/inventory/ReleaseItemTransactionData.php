@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types\inventory;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\VarInt;
@@ -35,6 +36,7 @@ class ReleaseItemTransactionData extends TransactionData{
 	private int $hotbarSlot;
 	private ItemStackWrapper $itemInHand;
 	private Vector3 $headPosition;
+	private int $hand;
 
 	public function getActionType() : int{
 		return $this->actionType;
@@ -65,6 +67,11 @@ class ReleaseItemTransactionData extends TransactionData{
 			$this->itemInHand = CommonTypes::getItemStackWrapper($in);
 		}
 		$this->headPosition = CommonTypes::getVector3($in);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			$this->hand = Byte::readUnsigned($in);
+		} else {
+			$this->hand = UseItemTransactionData::HAND_SLOT_MAIN_HAND;
+		}
 	}
 
 	protected function encodeData(ByteBufferWriter $out, int $protocolId) : void{
@@ -80,6 +87,9 @@ class ReleaseItemTransactionData extends TransactionData{
 			CommonTypes::putItemStackWrapper($out, $this->itemInHand);
 		}
 		CommonTypes::putVector3($out, $this->headPosition);
+		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+			Byte::writeUnsigned($out, $this->hand);
+		}
 	}
 
 	/**

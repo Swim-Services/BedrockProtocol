@@ -50,7 +50,11 @@ final class EntityDiagnosticTimingInfo{
 		$timeInNS = LE::readUnsignedLong($in);
 		$percentOfTotal = Byte::readUnsigned($in);
 
-		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_50) {
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_60) {
+			$position = CommonTypes::readOptional($in, CommonTypes::getVector3(...));
+			$dimension = CommonTypes::readOptional($in, CommonTypes::getString(...));
+
+		}elseif ($protocolId >= ProtocolInfo::PROTOCOL_1_26_50) {
 			$position = CommonTypes::getVector3($in);
 			$dimension = CommonTypes::getString($in);
 		}

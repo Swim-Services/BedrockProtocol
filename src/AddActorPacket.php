@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
+use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
@@ -151,6 +152,9 @@ class AddActorPacket extends DataPacket implements ClientboundPacket{
 		VarInt::writeUnsignedInt($out, count($this->links));
 		foreach($this->links as $link){
 			CommonTypes::putEntityLink($out, $protocolId, $link);
+		}
+		if ($protocolId >= ProtocolInfo::PROTOCOL_1_26_60) {
+			Byte::writeUnsigned($out, 0);
 		}
 	}
 

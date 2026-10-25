@@ -18,6 +18,7 @@ use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
 use pmmp\encoding\LE;
 use pmmp\encoding\VarInt;
+use pocketmine\network\mcpe\protocol\serializer\CommonTypes;
 use pocketmine\network\mcpe\protocol\types\EntityDiagnosticTimingInfo;
 use pocketmine\network\mcpe\protocol\types\MemoryCategoryCounter;
 use pocketmine\network\mcpe\protocol\types\SystemCategory;
@@ -183,8 +184,10 @@ class ServerboundDiagnosticsPacket extends DataPacket implements ServerboundPack
 				if($protocolId >= ProtocolInfo::PROTOCOL_1_26_30){
 					if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
 						$this->systemCategories = [];
-						for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
-							$this->systemCategories[] = SystemCategory::read($in);
+						if ($protocolId < ProtocolInfo::PROTOCOL_1_26_60 || CommonTypes::getBool($in) === true) {
+							for($i = 0, $count = VarInt::readUnsignedInt($in); $i < $count; ++$i){
+								$this->systemCategories[] = SystemCategory::read($in);
+							}
 						}
 					}
 					$this->whiskerScopes = [];
