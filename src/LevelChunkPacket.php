@@ -48,7 +48,7 @@ class LevelChunkPacket extends DataPacket implements ClientboundPacket{
 	/** @var int[] */
 	private array $usedBlobHashes;
 	private string $extraPayload;
-	private bool $clientBiomeUpdate = true;
+	private bool $clientBiomeUpdate = false;
 	/**
 	 * @generate-create-func
 	 * @param int[] $usedBlobHashes
