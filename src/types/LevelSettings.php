@@ -201,6 +201,9 @@ final class LevelSettings{
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_19_80){
 			CommonTypes::putBool($out, $this->createdInEditorMode);
 			CommonTypes::putBool($out, $this->exportedFromEditorMode);
+			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_60){
+				Byte::writeSigned($out, 0);
+			}
 		}
 		VarInt::writeSignedInt($out, $this->time);
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){

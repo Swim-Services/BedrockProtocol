@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\serializer;
+
 use pmmp\encoding\Byte;
 use pmmp\encoding\ByteBufferReader;
 use pmmp\encoding\ByteBufferWriter;
@@ -67,8 +68,8 @@ use function array_pad;
 use function array_slice;
 use function count;
 use function strlen;
-use function strtolower;
 use function strrev;
+use function strtolower;
 use function substr;
 final class CommonTypes{
 
@@ -108,7 +109,11 @@ final class CommonTypes{
 	/** @throws DataDecodeException */
 	public static function getSkin(ByteBufferReader $in, int $protocolId) : SkinData{
 		$skinId = self::getString($in);
-		$skinPlayFabId = self::getString($in);
+		if ($protocolId < ProtocolInfo::PROTOCOL_1_26_60) {
+			$skinPlayFabId = self::getString($in);
+		} else {
+			$skinPlayFabId = "";
+		}
 		$skinResourcePatch = self::getString($in);
 		$skinData = self::getSkinImage($in);
 		$animationCount = $protocolId >= ProtocolInfo::PROTOCOL_1_26_40 ? VarInt::readUnsignedInt($in) : LE::readUnsignedInt($in);
@@ -230,7 +235,9 @@ final class CommonTypes{
 	}
 	public static function putSkin(ByteBufferWriter $out, SkinData $skin, int $protocolId) : void{
 		self::putString($out, $skin->getSkinId());
-		self::putString($out, $skin->getPlayFabId());
+		if ($protocolId < ProtocolInfo::PROTOCOL_1_26_60) {
+			self::putString($out, $skin->getPlayFabId());
+		}
 		self::putString($out, $skin->getResourcePatch());
 		self::putSkinImage($out, $skin->getSkinImage());
 		if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
