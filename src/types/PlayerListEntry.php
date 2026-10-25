@@ -33,6 +33,7 @@ class PlayerListEntry{
 	public string $username;
 	public ?SkinData $skinData = null;
 	public string $xboxUserId;
+	public string $playfabId = "";
 	public string $platformChatId = "";
 	public int $buildPlatform = DeviceOS::UNKNOWN;
 	public bool $isTeacher = false;
