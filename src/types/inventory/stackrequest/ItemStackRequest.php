@@ -75,6 +75,7 @@ final class ItemStackRequest{
 			CraftRecipeOptionalStackRequestAction::ID => CraftRecipeOptionalStackRequestAction::read($in, $protocolId),
 			GrindstoneStackRequestAction::ID => GrindstoneStackRequestAction::read($in, $protocolId),
 			LoomStackRequestAction::ID => LoomStackRequestAction::read($in, $protocolId),
+			CraftingReservedStackRequestAction::ID => CraftingReservedStackRequestAction::read($in, $protocolId),
 			DeprecatedCraftingNonImplementedStackRequestAction::ID => DeprecatedCraftingNonImplementedStackRequestAction::read($in, $protocolId),
 			DeprecatedCraftingResultsStackRequestAction::ID => DeprecatedCraftingResultsStackRequestAction::read($in, $protocolId),
 			default => throw new PacketDecodeException("Unhandled item stack request action type $typeId"),
@@ -86,7 +87,7 @@ final class ItemStackRequest{
 		$actions = [];
 		for($i = 0, $len = VarInt::readUnsignedInt($in); $i < $len; ++$i){
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-				$typeId = ItemStackRequestActionType::fromModernTypeId(VarInt::readUnsignedInt($in));
+				$typeId = ItemStackRequestActionType::fromModernTypeId(VarInt::readUnsignedInt($in), $protocolId);
 				Byte::readUnsigned($in);
 			}else{
 				$typeId = Byte::readUnsigned($in);
@@ -108,8 +109,9 @@ final class ItemStackRequest{
 		VarInt::writeUnsignedInt($out, count($this->actions));
 		foreach($this->actions as $action){
 			if($protocolId >= ProtocolInfo::PROTOCOL_1_26_40){
-				VarInt::writeUnsignedInt($out, ItemStackRequestActionType::toModernTypeId($action->getTypeId()));
-				Byte::writeUnsigned($out, $action->getTypeId());
+				$modernTypeId = ItemStackRequestActionType::toModernTypeId($action->getTypeId(), $protocolId);
+				VarInt::writeUnsignedInt($out, $modernTypeId);
+				Byte::writeUnsigned($out, $modernTypeId >= 7 ? $modernTypeId + 2 : $modernTypeId);
 			}else{
 				Byte::writeUnsigned($out, $action->getTypeId());
 			}
